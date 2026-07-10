@@ -14,15 +14,29 @@ Runs entirely in the browser — no backend. Word parsing via [mammoth.js](https
 
 Metadata is picked up from `Feed headline:`, `Article headline:`, `Article subhead:` and `Words:` lines. Bold in body text and italics everywhere are preserved. Lines starting with `pics:`, `web gallery`, `embed`/`imbed`, `embargo` and bare URLs are treated as editorial instructions and skipped.
 
-## Using inside WoodWing Studio
+## Files
 
-Registered as a custom app via the Management Console (Integrations → Studio → Apps menu page):
+- `index.html` — standalone web version (also the single source of truth for the conversion engine)
+- `word-digital-plugin.js` — **generated** Content Station SDK plug-in for WoodWing Studio; adds the converter to Studio's Apps menu
+- `plugin-shell.js` — plug-in UI and SDK wiring (template for the generated file)
+- `build-plugin.js` — extracts the conversion engine from `index.html` and produces `word-digital-plugin.js`
 
-- **Name:** Word → Digital Article
-- **Application URL:** `https://<pages-url>/index.html?ticket={SESSION_ID}&server={SERVER_URL}`
-- **thisTab:** false
+After changing `index.html`, regenerate the plug-in with:
 
-The `ticket`/`server` wildcards are filled in by Studio Server. They are not used yet — they're in place for a future version that creates the digital article directly in Studio (requires the app origin to be added to Studio Server's CORS allowlist by WoodWing support).
+```
+node build-plugin.js
+```
+
+## Installing in WoodWing Studio (cloud, self-service)
+
+The plug-in runs inside Studio's own page (same origin), so it needs no CORS changes and no WoodWing involvement.
+
+1. Host this repo on GitHub Pages (or any HTTPS host).
+2. In the Studio Server **Management Console** go to **Integrations → Studio → Plug-ins → Studio** and click **Add new**.
+3. Enter the absolute URL of the plug-in file, e.g. `https://<pages-url>/word-digital-plugin.js`, and make sure it is enabled.
+4. Refresh Studio — **Word → Digital Article** appears in the Apps menu.
+
+Note: `{SESSION_ID}` URL-app wildcards are deprecated since Studio 10.40 / Enterprise Server 10.7 — the SDK plug-in route above is the supported way to integrate, and is what enables a future version to create the digital article directly in Studio via the workflow API (same-origin session).
 
 ## Workflow
 
