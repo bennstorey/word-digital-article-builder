@@ -62,5 +62,6 @@ Note: `{SESSION_ID}` URL-app wildcards are deprecated since Studio 10.40 / Enter
 ## Roadmap
 
 - **Next: use a Word doc already in the Dossier.** In the dossier modal, offer any selected/contained .docx object as the default source (download its native file via the workflow API, parse as usual), with the file picker as the alternative for new uploads. The `onAction(config, selection, dossier)` handler already receives the selection; docx objects have Format `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+- **Brand-hosted templates instead of embedded ones.** The three article templates are currently baked into the plug-in (extracted from the original `.digitmpl` files). Investigate sourcing them from the brand the dossier belongs to instead: query for `ArticleTemplate` objects (Format `application/ww-digitmpl+json`) in the dossier's Publication, download the native `.digitmpl` same-origin, and build against that. Templates would then be maintained in Studio per brand, with no plug-in redeploy when a template changes.
 - Workflow-status picker in the modal (currently: first Article status for the brand).
 - Brand defaults for more titles in `BRAND_DEFAULTS`.
