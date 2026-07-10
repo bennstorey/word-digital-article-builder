@@ -534,11 +534,18 @@ function buildCrosshead(template, meta, entries) {
     return serverIndexUrl().replace(/index\.php.*$/, 'transferindex.php');
   }
 
+  // Studio uses cookie-based sessions on current Studio Server versions:
+  // requests authenticate via the session cookie plus the X-WoodWing-Application
+  // header (CSRF guard), with Ticket set to null in the payload. On older
+  // ticket-based setups getInfo().Ticket is populated and used instead.
+  var WW_APP_HEADER = { 'X-WoodWing-Application': 'Content Station' };
+
   function callServer(method, params) {
+    params.Ticket = getTicket() || null;
     return fetch(serverIndexUrl() + '?protocol=JSON', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, WW_APP_HEADER),
       body: JSON.stringify({ method: method, id: '1', params: [params], jsonrpc: '2.0' }),
     }).then(function (r) {
       if (!r.ok) throw new Error(method + ' failed: HTTP ' + r.status);
@@ -549,41 +556,43 @@ function buildCrosshead(template, meta, entries) {
     });
   }
 
+  function guid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  // Upload to the Transfer Server the way Studio itself does: client-side
+  // fileguid, PUT to transferindex.php, and the PUT URL doubles as the
+  // Attachment FileUrl in CreateObjects.
   function uploadToTransferServer(content) {
+    var url = transferUrl() + '?fileguid=' + guid() + '&ww-app=' + encodeURIComponent('Content+Station');
     var ticket = getTicket();
-    var url = transferUrl() + '?ticket=' + encodeURIComponent(ticket) + '&uploadtokens=1';
-    return fetch(url, { credentials: 'same-origin' })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Transfer Server token request failed: HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (tokens) {
-        var tokenUrl = Array.isArray(tokens) ? tokens[0] : tokens;
-        if (!tokenUrl) throw new Error('Transfer Server returned no upload token');
-        return fetch(tokenUrl, {
-          method: 'PUT',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': DIGITAL_MIME },
-          body: content,
-        }).then(function (r) {
-          if (!r.ok) throw new Error('File upload failed: HTTP ' + r.status);
-          return tokenUrl;
-        });
-      });
+    if (ticket) url += '&ticket=' + encodeURIComponent(ticket);
+    url += '&format=' + encodeURIComponent(DIGITAL_MIME);
+    return fetch(url, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: Object.assign({ 'Content-Type': DIGITAL_MIME }, WW_APP_HEADER),
+      body: content,
+    }).then(function (r) {
+      if (!r.ok) throw new Error('File upload to Transfer Server failed: HTTP ' + r.status);
+      return url;
+    });
   }
 
   // Create the digital article inside the given dossier.
   // Publication/Category are taken from the dossier; Targets are copied from
   // the dossier so the article lands on the same channel/issue.
   function createArticleInDossier(digitalJson, name, feedHeadline, dossier) {
-    var ticket = getTicket();
     var pubId = String(dossier.PublicationId || (dossier.Publication && dossier.Publication.Id) || '');
     var catId = String(dossier.CategoryId || (dossier.Category && dossier.Category.Id) || '');
     var dossierId = String(dossier.ID || dossier.Id);
 
     var dossierTargets = [];
     return callServer('GetObjects', {
-      Ticket: ticket, IDs: [dossierId], Lock: false, Rendition: 'none',
+      IDs: [dossierId], Lock: false, Rendition: 'none',
       RequestInfo: ['Targets', 'MetaData'], HaveVersions: null, Areas: null, EditionId: null,
     }).then(function (res) {
       var obj = res.Objects && res.Objects[0];
@@ -596,7 +605,7 @@ function buildCrosshead(template, meta, entries) {
         }
       }
       return callServer('GetStates', {
-        Ticket: ticket, ID: null,
+        ID: null,
         Publication: { Id: pubId, __classname__: 'Publication' },
         Issue: null,
         Section: catId ? { Id: catId, __classname__: 'Category' } : null,
@@ -608,7 +617,7 @@ function buildCrosshead(template, meta, entries) {
       var state = states[0];
       return uploadToTransferServer(digitalJson).then(function (fileUrl) {
         return callServer('CreateObjects', {
-          Ticket: ticket, Lock: false, Autonaming: true,
+          Lock: false, Autonaming: true,
           Objects: [{
             __classname__: 'Object',
             MetaData: {
@@ -664,8 +673,9 @@ function buildCrosshead(template, meta, entries) {
 
   // ─── Shared converter UI ───────────────────────────────────────────────────
   var CSS = [
-    '.wdab-scroll{position:absolute;top:0;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch}',
+    '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.wdab{max-width:640px;margin:0 auto;padding:24px 16px 48px;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1e293b}',
+    '.wdab-modal{max-height:min(600px,calc(100vh - 280px));overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.wdab-modal .wdab{padding:4px 2px 8px;max-width:none}',
     '.wdab h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin:0 0 14px}',
     '.wdab .wdab-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}',
