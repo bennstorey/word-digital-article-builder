@@ -1,6 +1,6 @@
 # Word → Digital Article Builder
 
-Converts Top Gear AN+ Word documents (.docx) into WoodWing Studio digital articles (.digital).
+Converts TG AN+ Word documents (.docx) into WoodWing Studio digital articles (.digital).
 
 Runs entirely in the browser — no backend. Word parsing via [mammoth.js](https://github.com/mwilliamson/mammoth.js) (CDN). The Studio plug-in creates the digital article directly in the current Dossier via the workflow API.
 
