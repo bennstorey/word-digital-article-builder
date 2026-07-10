@@ -91,7 +91,25 @@
       if (!r.ok) throw new Error(method + ' failed: HTTP ' + r.status);
       return r.json();
     }).then(function (j) {
-      if (j.error) throw new Error(method + ' failed: ' + ((j.error.data && j.error.data.detail) || j.error.message || JSON.stringify(j.error)));
+      if (j.error) {
+        console.error('[word-digital] ' + method + ' error response:', j.error);
+        var e = j.error;
+        var parts = [];
+        if (e.message) parts.push(e.message);
+        if (e.data && e.data.detail && e.data.detail !== e.message) parts.push(e.data.detail);
+        if (e.code) parts.push('(code ' + e.code + ')');
+        throw new Error(method + ' failed: ' + (parts.join(' — ') || JSON.stringify(e)));
+      }
+      // Some services report per-object failures in Reports with an otherwise
+      // successful envelope — treat those as errors too.
+      if (j.result && j.result.Reports && j.result.Reports.length &&
+          (!j.result.Objects || !j.result.Objects.length)) {
+        console.error('[word-digital] ' + method + ' reports:', j.result.Reports);
+        var msgs = j.result.Reports.map(function (rep) {
+          return (rep.Entries || []).map(function (en) { return en.Message || ''; }).join(' ') || rep.BelongsTo && rep.BelongsTo.Id || '';
+        }).filter(Boolean);
+        throw new Error(method + ' failed: ' + (msgs.join(' | ') || 'server returned error reports'));
+      }
       return j.result;
     });
   }
