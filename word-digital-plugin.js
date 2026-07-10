@@ -600,6 +600,17 @@ function buildCrosshead(template, meta, entries) {
     });
   }
 
+  // Object names may not contain the characters Enterprise rejects (/ \ : * ? " < > |).
+  // Only the Studio object name is sanitised — headlines inside the article keep them.
+  function sanitizeObjectName(name) {
+    return String(name)
+      .replace(/[\/\\:*?"<>|]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60)
+      .trim();
+  }
+
   // Create the digital article inside the given dossier.
   // Publication/Category are taken from the dossier; Targets are copied from
   // the dossier so the article lands on the same channel/issue.
@@ -643,7 +654,7 @@ function buildCrosshead(template, meta, entries) {
               BasicMetaData: {
                 __classname__: 'BasicMetaData',
                 ID: null, DocumentID: null,
-                Name: String(name).slice(0, 60),
+                Name: sanitizeObjectName(name),
                 Type: 'Article',
                 Publication: { Id: pubId, __classname__: 'Publication' },
                 Category: { Id: catId, __classname__: 'Category' },
