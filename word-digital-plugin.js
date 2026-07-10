@@ -491,6 +491,18 @@ function buildCrosshead(template, meta, entries) {
 
   var DIGITAL_MIME = 'application/ww-digital+json';
 
+  // Per-brand defaults applied to created digital articles, keyed by
+  // Publication (Brand) id. GUIDs verified against existing articles on
+  // lab-studio.woodwing.cloud (all current TG AN+ articles carry these).
+  var BRAND_DEFAULTS = {
+    // Top Gear
+    '3': {
+      componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
+      lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
+      twixlCollectionId: '102069',
+    },
+  };
+
   // Word parsing dependency, loaded on demand and kept plugin-local per the
   // SDK guidance on managing external dependencies.
   var mammothPromise = null;
@@ -611,10 +623,21 @@ function buildCrosshead(template, meta, entries) {
       .trim();
   }
 
+  function extraMeta(property, values) {
+    return { __classname__: 'ExtraMetaData', Property: property, Values: values };
+  }
+
   // Create the digital article inside the given dossier.
   // Publication/Category are taken from the dossier; Targets are copied from
-  // the dossier so the article lands on the same channel/issue.
-  function createArticleInDossier(digitalJson, name, feedHeadline, dossier) {
+  // the dossier so the article lands on the same channel/issue. Component set,
+  // Look and Feel and Twixl collection come from BRAND_DEFAULTS.
+  function createArticleInDossier(digital, name, feedHeadline, dossier) {
+    var digitalJson = JSON.stringify(digital);
+    // Unique component identifiers in order of first use (C_CS_DE_COMPONENT_NAMES)
+    var componentNames = [];
+    (digital.data.content || []).forEach(function (comp) {
+      if (comp.identifier && componentNames.indexOf(comp.identifier) === -1) componentNames.push(comp.identifier);
+    });
     var pubId = String(dossier.PublicationId || (dossier.Publication && dossier.Publication.Id) || '');
     var catId = String(dossier.CategoryId || (dossier.Category && dossier.Category.Id) || '');
     var dossierId = String(dossier.ID || dossier.Id);
@@ -670,11 +693,20 @@ function buildCrosshead(template, meta, entries) {
                 __classname__: 'WorkflowMetaData',
                 State: { Id: state.Id, __classname__: 'State' },
               },
-              ExtraMetaData: feedHeadline ? [{
-                __classname__: 'ExtraMetaData',
-                Property: 'C_HEADLINE',
-                Values: [feedHeadline],
-              }] : [],
+              ExtraMetaData: (function () {
+                var extra = [
+                  extraMeta('C_CS_FILEFORMATVERSION', [digital.version || '2.4']),
+                  extraMeta('C_CS_DE_COMPONENT_NAMES', [componentNames.join(',')]),
+                ];
+                if (feedHeadline) extra.push(extraMeta('C_HEADLINE', [feedHeadline]));
+                var bd = BRAND_DEFAULTS[pubId];
+                if (bd) {
+                  extra.push(extraMeta('C_CS_COMPONENTSET', [bd.componentSet]));
+                  extra.push(extraMeta('C_CS_STYLEID', [bd.lookAndFeel]));
+                  if (bd.twixlCollectionId) extra.push(extraMeta('C_TW_COLLECTION_ID', [bd.twixlCollectionId]));
+                }
+                return extra;
+              })(),
             },
             Relations: [{
               __classname__: 'Relation',
@@ -929,7 +961,7 @@ function buildCrosshead(template, meta, entries) {
         errEl.style.display = 'none';
 
         var name = result.meta.title || result.filename;
-        createArticleInDossier(JSON.stringify(result.digital), name, result.meta.feedHeadline, dossier)
+        createArticleInDossier(result.digital, name, result.meta.feedHeadline, dossier)
           .then(function (res) {
             var created = res && res.Objects && res.Objects[0];
             var newName = created && created.MetaData && created.MetaData.BasicMetaData
