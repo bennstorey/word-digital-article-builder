@@ -157,14 +157,25 @@
 
   // Object names may not contain the characters Enterprise rejects (/ \ : * ? " < > |).
   // Only the Studio object name is sanitised — headlines inside the article keep them.
-  function sanitizeObjectName(name) {
-    return String(name)
+  // Enterprise rejects / \ : * ? " < > | and enforces a name-length limit that
+  // varies by install — 60 chars has been seen to fail with S1026. Cut on a word
+  // boundary so a shortened name still reads sensibly.
+  function sanitizeObjectName(name, maxLen) {
+    var out = String(name)
       .replace(/[\/\\:*?"<>|]/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 60)
       .trim();
+    var limit = maxLen || NAME_LIMITS[0];
+    if (out.length > limit) {
+      out = out.slice(0, limit);
+      var cut = out.lastIndexOf(' ');
+      if (cut > limit * 0.5) out = out.slice(0, cut);
+    }
+    return out.trim();
   }
+
+  // Tried in order when the server rejects a name as too long (S1026).
+  var NAME_LIMITS = [60, 40, 25];
 
   function extraMeta(property, values) {
     return { __classname__: 'ExtraMetaData', Property: property, Values: values };
@@ -174,7 +185,7 @@
   // Publication/Category are taken from the dossier; Targets are copied from
   // the dossier so the article lands on the same channel/issue. Component set,
   // Look and Feel and Twixl collection come from BRAND_DEFAULTS.
-  function createArticleInDossier(digital, name, feedHeadline, dossier) {
+  function createArticleInDossier(digital, name, feedHeadline, dossier, nameLimit) {
     var digitalJson = JSON.stringify(digital);
     // Unique component identifiers in order of first use (C_CS_DE_COMPONENT_NAMES)
     var componentNames = [];
@@ -220,7 +231,7 @@
               BasicMetaData: {
                 __classname__: 'BasicMetaData',
                 ID: null, DocumentID: null,
-                Name: sanitizeObjectName(name),
+                Name: sanitizeObjectName(name, nameLimit),
                 Type: 'Article',
                 Publication: { Id: pubId, __classname__: 'Publication' },
                 Category: { Id: catId, __classname__: 'Category' },
@@ -444,8 +455,8 @@
           $('count').textContent = parsed.entries.length;
           $('entries').innerHTML = parsed.entries.slice(0, 60).map(function (e, i) {
             return type === 'crosshead'
-              ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || '(no crosshead)') + '</div>'
-              : '<div><span class="n">[' + e.number + ']</span>' + esc(e.name) + '</div>';
+              ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || e.name || '(no crosshead)') + '</div>'
+              : '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
           }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
 
           $('preview').classList.remove('wdab-hidden');
@@ -526,7 +537,19 @@
         errEl.style.display = 'none';
 
         var name = result.meta.title || result.filename;
-        createArticleInDossier(result.digital, name, result.meta.feedHeadline, dossier)
+
+        // The server's name-length limit varies by install, so step down through
+        // NAME_LIMITS rather than hard-coding a guess.
+        function attempt(i) {
+          return createArticleInDossier(result.digital, name, result.meta.feedHeadline, dossier, NAME_LIMITS[i])
+            .catch(function (err) {
+              var tooLong = /S1026|too long|invalid characters/i.test(err.message || '');
+              if (tooLong && i + 1 < NAME_LIMITS.length) return attempt(i + 1);
+              throw err;
+            });
+        }
+
+        attempt(0)
           .then(function (res) {
             var created = res && res.Objects && res.Objects[0];
             var newName = created && created.MetaData && created.MetaData.BasicMetaData

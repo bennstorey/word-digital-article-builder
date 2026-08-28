@@ -596,7 +596,9 @@ function parseListicleItems(article) {
     // Item titles can carry italics (model names), so keep them rich too
     const nameDoc = new DOMParser().parseFromString('<div>' + (item.title || '') + '</div>', 'text/html');
     const nameDeltas = trimDeltas(nodesToDeltas(nameDoc.body.firstChild.childNodes, { italicOnly: true }));
-    return { number, name, nameDeltas, bodyParts };
+    // Carry the item name as a crosshead too, so a listicle URL still builds
+    // correctly if the user picks Type 3 (crosshead) rather than Type 1/2.
+    return { number, name, nameDeltas, crosshead: name, crossheadDeltas: nameDeltas, bodyParts };
   });
   return { entries, flagged };
 }
@@ -1228,8 +1230,8 @@ parseBtn.addEventListener('click', async () => {
     entryCount.textContent = entries.length;
     entryList.innerHTML = entries.slice(0, 60).map((e, i) => {
       const label = type === 'crosshead'
-        ? `<span class="text-slate-400 mr-2">${i + 1}.</span>${escapeHtml(e.crosshead || '(no crosshead)')}`
-        : `<span class="text-slate-400 mr-2">[${e.number}]</span>${escapeHtml(e.name)}`;
+        ? `<span class="text-slate-400 mr-2">${i + 1}.</span>${escapeHtml(e.crosshead || e.name || '(no crosshead)')}`
+        : `<span class="text-slate-400 mr-2">[${e.number}]</span>${escapeHtml(e.name || e.crosshead || '')}`;
       return `<div class="py-0.5">${label}</div>`;
     }).join('') + (entries.length > 60 ? `<div class="text-slate-400 italic pt-1">… and ${entries.length - 60} more</div>` : '');
 
