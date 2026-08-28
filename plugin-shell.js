@@ -139,15 +139,16 @@
   // Upload to the Transfer Server the way Studio itself does: client-side
   // fileguid, PUT to transferindex.php, and the PUT URL doubles as the
   // Attachment FileUrl in CreateObjects.
-  function uploadToTransferServer(content) {
+  function uploadToTransferServer(content, mime) {
+    var type = mime || DIGITAL_MIME;
     var url = transferUrl() + '?fileguid=' + guid() + '&ww-app=' + encodeURIComponent('Content+Station');
     var ticket = getTicket();
     if (ticket) url += '&ticket=' + encodeURIComponent(ticket);
-    url += '&format=' + encodeURIComponent(DIGITAL_MIME);
+    url += '&format=' + encodeURIComponent(type);
     return fetch(url, {
       method: 'PUT',
       credentials: 'same-origin',
-      headers: Object.assign({ 'Content-Type': DIGITAL_MIME }, WW_APP_HEADER),
+      headers: Object.assign({ 'Content-Type': type }, WW_APP_HEADER),
       body: content,
     }).then(function (r) {
       if (!r.ok) throw new Error('File upload to Transfer Server failed: HTTP ' + r.status);
@@ -181,6 +182,30 @@
     return { __classname__: 'ExtraMetaData', Property: property, Values: values };
   }
 
+  // Brand/Category/Targets for a dossier — shared by the article and image
+  // creation paths so both land in the same place with the same targets.
+  function resolveDossierContext(dossier) {
+    var pubId = String(dossier.PublicationId || (dossier.Publication && dossier.Publication.Id) || '');
+    var catId = String(dossier.CategoryId || (dossier.Category && dossier.Category.Id) || '');
+    var dossierId = String(dossier.ID || dossier.Id);
+    return callServer('GetObjects', {
+      IDs: [dossierId], Lock: false, Rendition: 'none',
+      RequestInfo: ['Targets', 'MetaData'], HaveVersions: null, Areas: null, EditionId: null,
+    }).then(function (res) {
+      var obj = res.Objects && res.Objects[0];
+      var targets = [];
+      if (obj) {
+        targets = obj.Targets || [];
+        var bm = obj.MetaData && obj.MetaData.BasicMetaData;
+        if (bm) {
+          pubId = pubId || String((bm.Publication && bm.Publication.Id) || '');
+          catId = catId || String((bm.Category && bm.Category.Id) || '');
+        }
+      }
+      return { pubId: pubId, catId: catId, dossierId: dossierId, targets: targets };
+    });
+  }
+
   // Create the digital article inside the given dossier.
   // Publication/Category are taken from the dossier; Targets are copied from
   // the dossier so the article lands on the same channel/issue. Component set,
@@ -197,19 +222,9 @@
     var dossierId = String(dossier.ID || dossier.Id);
 
     var dossierTargets = [];
-    return callServer('GetObjects', {
-      IDs: [dossierId], Lock: false, Rendition: 'none',
-      RequestInfo: ['Targets', 'MetaData'], HaveVersions: null, Areas: null, EditionId: null,
-    }).then(function (res) {
-      var obj = res.Objects && res.Objects[0];
-      if (obj) {
-        dossierTargets = obj.Targets || [];
-        var bm = obj.MetaData && obj.MetaData.BasicMetaData;
-        if (bm) {
-          pubId = pubId || String((bm.Publication && bm.Publication.Id) || '');
-          catId = catId || String((bm.Category && bm.Category.Id) || '');
-        }
-      }
+    return resolveDossierContext(dossier).then(function (ctx) {
+      dossierTargets = ctx.targets;
+      pubId = ctx.pubId; catId = ctx.catId;
       return callServer('GetStates', {
         ID: null,
         Publication: { Id: pubId, __classname__: 'Publication' },
@@ -286,6 +301,127 @@
     });
   }
 
+  // ─── Images into the dossier ──────────────────────────────────────────────
+  // Article images are fetched through the proxy (topgear.com sends no CORS
+  // headers), uploaded to the Transfer Server exactly like the .digital file,
+  // then created as Image objects contained in the same dossier.
+
+  var IMAGE_MIME_BY_EXT = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+    gif: 'image/gif', webp: 'image/webp', avif: 'image/avif',
+  };
+
+  function imageNameFromUrl(u) {
+    var base = '';
+    try { base = decodeURIComponent(new URL(u).pathname.split('/').pop() || ''); }
+    catch (e) { base = String(u).split('/').pop() || ''; }
+    return base || 'image';
+  }
+
+  function imageMimeFromUrl(u, blobType) {
+    if (blobType && blobType.indexOf('image/') === 0) return blobType;
+    var ext = (imageNameFromUrl(u).split('.').pop() || '').toLowerCase();
+    return IMAGE_MIME_BY_EXT[ext] || 'image/jpeg';
+  }
+
+  // Creates one Image object. Returns the created object's Id.
+  function createImageObject(blob, url, ctx, state) {
+    var mime = imageMimeFromUrl(url, blob.type);
+    var name = imageNameFromUrl(url).replace(/\.[a-z0-9]+$/i, '');
+    return uploadToTransferServer(blob, mime).then(function (fileUrl) {
+      return callServer('CreateObjects', {
+        Lock: false, Autonaming: true,
+        Objects: [{
+          __classname__: 'Object',
+          MetaData: {
+            __classname__: 'MetaData',
+            BasicMetaData: {
+              __classname__: 'BasicMetaData',
+              ID: null, DocumentID: null,
+              Name: sanitizeObjectName(name),
+              Type: 'Image',
+              Publication: { Id: ctx.pubId, __classname__: 'Publication' },
+              Category: { Id: ctx.catId, __classname__: 'Category' },
+              ContentSource: null,
+            },
+            RightsMetaData: null, SourceMetaData: null,
+            ContentMetaData: { __classname__: 'ContentMetaData', Format: mime },
+            WorkflowMetaData: {
+              __classname__: 'WorkflowMetaData',
+              State: { Id: state.Id, __classname__: 'State' },
+              Comment: null, Version: null, Modifier: null, Modified: null,
+              Creator: null, Created: null, Deletor: null, Deleted: null,
+              Routing: null, LockedBy: null,
+            },
+            ExtraMetaData: [],
+          },
+          Relations: [{
+            __classname__: 'Relation',
+            Parent: ctx.dossierId, Child: null, Type: 'Contained',
+            Placements: null, ParentVersion: null, ChildVersion: null,
+            Geometry: null, Rating: null, Targets: null,
+          }],
+          Pages: null,
+          Files: [{
+            __classname__: 'Attachment',
+            Rendition: 'native', Type: mime,
+            Content: null, FilePath: null, FileUrl: fileUrl,
+            EditionId: null, ContentSourceFileLink: null, ContentSourceProxyLink: null,
+          }],
+          Messages: null, Elements: null,
+          Targets: ctx.targets,
+          Renditions: null, MessageList: null, ObjectLabels: null, Operations: null,
+        }],
+      });
+    }).then(function (res) {
+      var created = res && res.Objects && res.Objects[0];
+      var id = created && created.MetaData && created.MetaData.BasicMetaData
+        ? created.MetaData.BasicMetaData.ID : null;
+      return { id: id, name: name, url: url };
+    });
+  }
+
+  // Uploads sequentially so a long gallery can't swamp the server, and so a
+  // single failure is reported against its own image rather than aborting all.
+  function createImagesInDossier(urls, dossier, onProgress) {
+    if (!urls || !urls.length) return Promise.resolve({ created: [], failed: [] });
+    return resolveDossierContext(dossier).then(function (ctx) {
+      return callServer('GetStates', {
+        ID: null,
+        Publication: { Id: ctx.pubId, __classname__: 'Publication' },
+        Issue: null,
+        Section: ctx.catId ? { Id: ctx.catId, __classname__: 'Category' } : null,
+        Type: 'Image',
+      }).then(function (res) {
+        var states = (res && res.States) || [];
+        if (!states.length) {
+          throw new Error('No workflow statuses available for Images in this Brand/Category — ' +
+                          'the article was created, but images could not be added.');
+        }
+        var state = states[0];
+        var created = [], failed = [];
+        var chain = Promise.resolve();
+        urls.forEach(function (u, i) {
+          chain = chain.then(function () {
+            if (onProgress) onProgress(i, urls.length);
+            return fetch(proxyUrl(u), { credentials: 'omit' })
+              .then(function (r) {
+                if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
+                return r.blob();
+              })
+              .then(function (blob) { return createImageObject(blob, u, ctx, state); })
+              .then(function (info) { created.push(info); })
+              .catch(function (e) { failed.push({ url: u, error: e.message }); });
+          });
+        });
+        return chain.then(function () {
+          if (onProgress) onProgress(urls.length, urls.length);
+          return { created: created, failed: failed };
+        });
+      });
+    });
+  }
+
   // ─── Shared converter UI ───────────────────────────────────────────────────
   var CSS = [
     '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
@@ -298,6 +434,8 @@
     '.wdab label{display:block;font-weight:500;color:#334155;margin:0 0 4px}',
     '.wdab select,.wdab input[type=text]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
     '.wdab input[type=file]{width:100%;font:inherit}',
+    '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle}',
+    '.wdab-row label input[type=checkbox]+span{font-weight:400;color:#334155}',
     '.wdab .wdab-row{margin-bottom:14px}',
     '.wdab button.wdab-btn{display:inline-block;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;background:#2563eb;color:#fff;width:100%}',
     '.wdab button.wdab-btn:disabled{opacity:.4;cursor:not-allowed}',
@@ -365,6 +503,10 @@
       '      <div class="wdab-row"><label>Article title</label><input type="text" id="' + p + '-title"></div>' +
       '      <div class="wdab-row"><label>Subtitle</label><input type="text" id="' + p + '-subtitle"></div>' +
       '      <div class="wdab-row"><label>Author name</label><input type="text" id="' + p + '-author"></div>' +
+      '      <div class="wdab-row wdab-hidden" id="' + p + '-images-row">' +
+      '        <label><input type="checkbox" id="' + p + '-images-add" checked> <span id="' + p + '-images-label"></span></label>' +
+      '        <p class="wdab-note" id="' + p + '-images-progress"></p>' +
+      '      </div>' +
       '      <div class="wdab-warn" id="' + p + '-warn"><strong>Flagged for review — kept in the article:</strong> these look like editor instructions rather than copy. Each stays in place as plain body text; delete any that shouldn\'t ship.<ul id="' + p + '-warn-list"></ul></div>' +
       '    </div>' +
       '    <div class="wdab-card">' +
@@ -452,6 +594,14 @@
             $('warn').style.display = 'none';
           }
 
+          var imgs = state.imageUrls || [];
+          $('images-row').classList.toggle('wdab-hidden', !imgs.length);
+          if (imgs.length) {
+            $('images-label').textContent = 'Also add ' + imgs.length + ' article image' +
+              (imgs.length === 1 ? '' : 's') + ' to this Dossier';
+            $('images-progress').textContent = '';
+          }
+
           $('count').textContent = parsed.entries.length;
           $('entries').innerHTML = parsed.entries.slice(0, 60).map(function (e, i) {
             return type === 'crosshead'
@@ -497,7 +647,11 @@
         var digital = state.parsedData.type === 'crosshead'
           ? buildCrosshead(template, meta, state.parsedData.entries)
           : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
-        return { digital: digital, meta: meta, filename: state.uploadedFilename };
+        return {
+          digital: digital, meta: meta, filename: state.uploadedFilename,
+          imageUrls: (state.imageUrls || []),
+          addImages: !!($('images-add') && $('images-add').checked && (state.imageUrls || []).length),
+        };
       },
     };
     return controller;
@@ -554,10 +708,32 @@
             var created = res && res.Objects && res.Objects[0];
             var newName = created && created.MetaData && created.MetaData.BasicMetaData
               ? created.MetaData.BasicMetaData.Name : name;
-            ContentStationSdk.showNotification({
-              content: 'Digital article “' + esc(newName) + '” created in Dossier “' + esc(dossier.Name || '') + '”.',
-              icon: 'check',
-            });
+
+            // The article exists from here on. Image upload is best-effort: a
+            // failure is reported but never undoes the article.
+            if (!result.addImages) return { newName: newName, images: null };
+
+            btn.textContent = 'Adding images…';
+            var progEl = ctl.$('images-progress');
+            return createImagesInDossier(result.imageUrls, dossier, function (done, total) {
+              if (progEl) progEl.textContent = 'Uploading image ' + Math.min(done + 1, total) + ' of ' + total + '…';
+            })
+              .then(function (r) { return { newName: newName, images: r }; })
+              .catch(function (e) { return { newName: newName, images: { created: [], failed: [], fatal: e.message } }; });
+          })
+          .then(function (out) {
+            var msg = 'Digital article “' + esc(out.newName) + '” created in Dossier “' + esc(dossier.Name || '') + '”.';
+            var im = out.images;
+            if (im) {
+              if (im.fatal) msg += ' Images were not added: ' + esc(im.fatal);
+              else {
+                msg += ' ' + im.created.length + ' image' + (im.created.length === 1 ? '' : 's') + ' added';
+                if (im.failed.length) msg += ', ' + im.failed.length + ' failed';
+                msg += '.';
+                if (im.failed.length) console.warn('[word-digital] image failures:', im.failed);
+              }
+            }
+            ContentStationSdk.showNotification({ content: msg, icon: 'check' });
             try { ContentStationSdk.refreshCurrentSearch(); } catch (e) { /* non-fatal */ }
             if (dialogId !== null) ContentStationSdk.closeModalDialog(dialogId);
           })
