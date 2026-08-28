@@ -1414,6 +1414,32 @@ function buildCrosshead(template, meta, entries) {
     });
   }
 
+  // How a Digital Editor image component references a Studio Image object.
+  // Mirrors the shape the templates already use for the apple-news-follow
+  // component's image. If Studio expects something different, this is the only
+  // place that needs changing.
+  function imageRef(objectId) {
+    return { id: String(objectId), focuspoint: { x: 0.5, y: 0.5 }, cropper: false };
+  }
+
+  // Fills the article's image slots, in document order, from the created Image
+  // objects. imageUrls order is hero first then the gallery, and the template's
+  // slots run header-image then one per entry, so index order lines up.
+  // apple-news-follow is untouched — it carries its own branded image.
+  function applyImageIds(digital, ids) {
+    if (!ids || !ids.length) return digital;
+    var slots = (digital.data.content || []).filter(function (c) {
+      return c.identifier === 'image' || c.identifier === 'header-image';
+    });
+    var filled = 0;
+    for (var i = 0; i < slots.length && i < ids.length; i++) {
+      if (!ids[i]) continue;
+      slots[i].content = Object.assign({}, slots[i].content || {}, { image: imageRef(ids[i]) });
+      filled++;
+    }
+    return { digital: digital, filled: filled, slots: slots.length };
+  }
+
   // ─── Shared converter UI ───────────────────────────────────────────────────
   var CSS = [
     '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
@@ -1635,12 +1661,15 @@ function buildCrosshead(template, meta, entries) {
           titleDeltas: $('title').value === pm.title ? pd.title : null,
           subtitleDeltas: $('subtitle').value === pm.subtitle ? pd.subtitle : null,
         };
-        var template = deepClone(TEMPLATES[state.parsedData.type]);
-        var digital = state.parsedData.type === 'crosshead'
-          ? buildCrosshead(template, meta, state.parsedData.entries)
-          : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
+        function build(imageIds) {
+          var template = deepClone(TEMPLATES[state.parsedData.type]);
+          var d = state.parsedData.type === 'crosshead'
+            ? buildCrosshead(template, meta, state.parsedData.entries)
+            : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
+          return imageIds && imageIds.length ? applyImageIds(d, imageIds) : { digital: d, filled: 0, slots: 0 };
+        }
         return {
-          digital: digital, meta: meta, filename: state.uploadedFilename,
+          digital: build().digital, build: build, meta: meta, filename: state.uploadedFilename,
           imageUrls: (state.imageUrls || []),
           addImages: !!($('images-add') && $('images-add').checked && (state.imageUrls || []).length),
         };
@@ -1686,32 +1715,43 @@ function buildCrosshead(template, meta, entries) {
 
         // The server's name-length limit varies by install, so step down through
         // NAME_LIMITS rather than hard-coding a guess.
-        function attempt(i) {
-          return createArticleInDossier(result.digital, name, result.meta.feedHeadline, dossier, NAME_LIMITS[i])
+        function attempt(digital, i) {
+          return createArticleInDossier(digital, name, result.meta.feedHeadline, dossier, NAME_LIMITS[i])
             .catch(function (err) {
               var tooLong = /S1026|too long|invalid characters/i.test(err.message || '');
-              if (tooLong && i + 1 < NAME_LIMITS.length) return attempt(i + 1);
+              if (tooLong && i + 1 < NAME_LIMITS.length) return attempt(digital, i + 1);
               throw err;
             });
         }
 
-        attempt(0)
-          .then(function (res) {
-            var created = res && res.Objects && res.Objects[0];
+        // Images are created first so the article can reference their object
+        // IDs and arrive with pictures already in its image slots. Image failure
+        // is never fatal — the article is still created, just without them.
+        var imagesStep = Promise.resolve(null);
+        if (result.addImages) {
+          btn.textContent = 'Adding images…';
+          var progEl = ctl.$('images-progress');
+          imagesStep = createImagesInDossier(result.imageUrls, dossier, function (done, total) {
+            if (progEl) progEl.textContent = 'Uploading image ' + Math.min(done + 1, total) + ' of ' + total + '…';
+          }).catch(function (e) {
+            return { created: [], failed: [], fatal: e.message };
+          });
+        }
+
+        imagesStep
+          .then(function (images) {
+            btn.textContent = 'Creating…';
+            var ids = images ? images.created.map(function (c) { return c.id; }) : [];
+            var built = result.build(ids);
+            return attempt(built.digital, 0).then(function (res) {
+              return { res: res, images: images, placed: built.filled, slots: built.slots };
+            });
+          })
+          .then(function (r) {
+            var created = r.res && r.res.Objects && r.res.Objects[0];
             var newName = created && created.MetaData && created.MetaData.BasicMetaData
               ? created.MetaData.BasicMetaData.Name : name;
-
-            // The article exists from here on. Image upload is best-effort: a
-            // failure is reported but never undoes the article.
-            if (!result.addImages) return { newName: newName, images: null };
-
-            btn.textContent = 'Adding images…';
-            var progEl = ctl.$('images-progress');
-            return createImagesInDossier(result.imageUrls, dossier, function (done, total) {
-              if (progEl) progEl.textContent = 'Uploading image ' + Math.min(done + 1, total) + ' of ' + total + '…';
-            })
-              .then(function (r) { return { newName: newName, images: r }; })
-              .catch(function (e) { return { newName: newName, images: { created: [], failed: [], fatal: e.message } }; });
+            return { newName: newName, images: r.images, placed: r.placed, slots: r.slots };
           })
           .then(function (out) {
             var msg = 'Digital article “' + esc(out.newName) + '” created in Dossier “' + esc(dossier.Name || '') + '”.';
@@ -1720,6 +1760,7 @@ function buildCrosshead(template, meta, entries) {
               if (im.fatal) msg += ' Images were not added: ' + esc(im.fatal);
               else {
                 msg += ' ' + im.created.length + ' image' + (im.created.length === 1 ? '' : 's') + ' added';
+                if (out.placed) msg += ' (' + out.placed + ' of ' + out.slots + ' slots filled)';
                 if (im.failed.length) msg += ', ' + im.failed.length + ' failed';
                 msg += '.';
                 if (im.failed.length) console.warn('[word-digital] image failures:', im.failed);
