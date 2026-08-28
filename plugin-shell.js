@@ -435,10 +435,10 @@
   // slots run header-image then one per entry, so index order lines up.
   // apple-news-follow is untouched — it carries its own branded image.
   function applyImageIds(digital, ids) {
-    if (!ids || !ids.length) return digital;
     var slots = (digital.data.content || []).filter(function (c) {
       return c.identifier === 'image' || c.identifier === 'header-image';
     });
+    if (!ids || !ids.length) return { digital: digital, filled: 0, slots: slots.length };
     var filled = 0;
     for (var i = 0; i < slots.length && i < ids.length; i++) {
       if (!ids[i]) continue;
@@ -569,6 +569,18 @@
     });
     $('url').addEventListener('input', refreshParse);
 
+    // Slots available in the layout the current article type would produce.
+    function ctlSlotCount() {
+      if (!state.parsedData) return 0;
+      var t = deepClone(TEMPLATES[state.parsedData.type]);
+      var d = state.parsedData.type === 'crosshead'
+        ? buildCrosshead(t, state.parsedData.meta, state.parsedData.entries)
+        : buildNumbered(t, state.parsedData.meta, state.parsedData.entries, state.parsedData.type);
+      return (d.data.content || []).filter(function (c) {
+        return c.identifier === 'image' || c.identifier === 'header-image';
+      }).length;
+    }
+
     function refreshParse() {
       var isDocx = $('source').value === 'docx';
       $('parse').disabled = isDocx ? !$('file').files.length : !$('url').value.trim();
@@ -623,9 +635,18 @@
           var imgs = state.imageUrls || [];
           $('images-row').classList.toggle('wdab-hidden', !imgs.length);
           if (imgs.length) {
+            var slotCount = 0;
+            try { slotCount = ctlSlotCount(); } catch (e) { slotCount = 0; }
+            var placeable = Math.min(slotCount, imgs.length);
             $('images-label').textContent = 'Also add ' + imgs.length + ' article image' +
               (imgs.length === 1 ? '' : 's') + ' to this Dossier';
-            $('images-progress').textContent = '';
+            var note = placeable + ' of ' + imgs.length + ' will be placed in the article' +
+              ' (' + slotCount + ' image slot' + (slotCount === 1 ? '' : 's') + ' in this layout).';
+            if (imgs.length > slotCount) {
+              note += ' The rest are added to the Dossier only' +
+                (type === 'crosshead' ? ' — Type 1 or 2 has one image slot per entry.' : '.');
+            }
+            $('images-progress').textContent = note;
           }
 
           $('count').textContent = parsed.entries.length;
@@ -674,7 +695,7 @@
           var d = state.parsedData.type === 'crosshead'
             ? buildCrosshead(template, meta, state.parsedData.entries)
             : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
-          return imageIds && imageIds.length ? applyImageIds(d, imageIds) : { digital: d, filled: 0, slots: 0 };
+          return applyImageIds(d, imageIds);
         }
         return {
           digital: build().digital, build: build, meta: meta, filename: state.uploadedFilename,
