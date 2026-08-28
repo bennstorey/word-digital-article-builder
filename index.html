@@ -6,6 +6,7 @@
   <title>Word → Digital Article Builder</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans">
 
@@ -22,6 +23,14 @@
     <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">1 — Set up</h2>
 
     <div class="mb-4">
+      <label class="block text-sm font-medium text-slate-700 mb-1" for="sourceType">Source</label>
+      <select id="sourceType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="docx">Word document (.docx)</option>
+        <option value="url">TopGear article URL</option>
+      </select>
+    </div>
+
+    <div class="mb-4">
       <label class="block text-sm font-medium text-slate-700 mb-1" for="articleType">Article type</label>
       <select id="articleType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
         <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>
@@ -30,10 +39,16 @@
       </select>
     </div>
 
-    <div class="mb-5">
+    <div class="mb-5" id="docxRow">
       <label class="block text-sm font-medium text-slate-700 mb-1" for="fileInput">Word document (.docx)</label>
       <input type="file" id="fileInput" accept=".docx"
         class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+    </div>
+
+    <div class="mb-5 hidden" id="urlRow">
+      <label class="block text-sm font-medium text-slate-700 mb-1" for="urlInput">TopGear article URL</label>
+      <input type="url" id="urlInput" placeholder="https://www.topgear.com/car-news/list/…"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 
     <button id="parseBtn"
@@ -80,7 +95,7 @@
 
       <!-- Unrecognized lines warning -->
       <div id="unrecognizedBox" class="hidden mt-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-sm text-yellow-800">
-        <strong>Unrecognised lines (skipped):</strong>
+        <strong>Flagged for review.</strong> These lines look like editor instructions rather than copy. They have <em>not</em> been dropped — each stays in the article as body text where it appeared. Delete them in Studio if they shouldn't ship.
         <ul id="unrecognizedList" class="list-disc ml-4 mt-1"></ul>
       </div>
     </div>
@@ -101,7 +116,12 @@
         class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors">
         Download .digital file
       </button>
-      <p class="mt-2 text-xs text-slate-400 text-center">File will be named after the uploaded Word document.</p>
+      <button id="downloadImagesBtn"
+        class="hidden w-full mt-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors">
+        Download all images (.zip)
+      </button>
+      <p id="zipStatus" class="hidden mt-2 text-sm text-slate-500 text-center"></p>
+      <p class="mt-2 text-xs text-slate-400 text-center">File is named after the Word document, or the article slug.</p>
     </div>
 
   </div>
@@ -155,15 +175,27 @@ function nodesToDeltas(nodes, opts = {}) {
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
     const tag = node.tagName.toLowerCase();
+    // Non-text embeds carry no copy — skip so alt/caption text isn't inlined
+    if (tag === 'img' || tag === 'figure' || tag === 'script' || tag === 'style') return;
     const next = Object.assign({}, fmt);
     if (tag === 'strong' || tag === 'b') next.bold = true;
     if (tag === 'em' || tag === 'i') next.italic = true;
-    if (tag === 'a' && node.getAttribute('href')) next.href = node.getAttribute('href');
+    if (tag === 'a' && node.getAttribute('href')) next.href = absoluteHref(node.getAttribute('href'));
     for (const child of node.childNodes) walk(child, next);
   }
   for (const node of nodes) walk(node, {});
   return ops;
 }
+
+// Web body HTML uses site-relative hrefs; .digital needs them absolute.
+// Absolute and mailto/tel links (as Word produces) pass through untouched.
+function absoluteHref(href) {
+  if (!href) return href;
+  if (/^(https?:|mailto:|tel:|#)/i.test(href)) return href;
+  return 'https://www.topgear.com' + (href.startsWith('/') ? href : '/' + href);
+}
+
+const deltasToText = ops => (ops || []).map(o => o.insert).join('');
 
 function paraToDeltas(para, opts) {
   return nodesToDeltas(para.childNodes, opts);
@@ -224,14 +256,16 @@ function matchMetaPrefix(text) {
 // so headings must be walked too — mammoth emits them as <h1>–<h6>.
 function paras(html) {
   const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
-  return Array.from(doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6'));
+  return Array.from(doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, li'));
 }
 
-// Lines that are editor instructions, not article content
-const SKIP_PREFIXES = ['pics:', 'web gallery', 'imbed ', 'imbedded', 'embed ', 'embargo'];
-function shouldSkip(text) {
+// Lines that read as editor instructions rather than article copy.
+// These are NOT dropped: they are recorded in meta.flagged for the review box
+// and still placed inline as body text where they appeared, so nothing is lost.
+const FLAG_PREFIXES = ['pics:', 'web gallery', 'imbed ', 'imbedded', 'embed ', 'embargo'];
+function shouldFlag(text) {
   const lower = text.toLowerCase();
-  return SKIP_PREFIXES.some(p => lower.startsWith(p)) || /^https?:\/\/\S+$/.test(text);
+  return FLAG_PREFIXES.some(p => lower.startsWith(p)) || /^https?:\/\/\S+$/.test(text);
 }
 
 // Returns { crosshead, remainingBody } if paragraph is (or starts with) bold, else null.
@@ -242,7 +276,7 @@ function extractCrosshead(para) {
   const text = para.textContent.trim();
   if (!text) return null;
   const headlineDeltas = () => trimDeltas(paraToDeltas(para, { italicOnly: true }));
-  const firstStrong = para.querySelector('strong');
+  const firstStrong = para.querySelector('strong, b');
   if (!firstStrong) {
     // Heading elements are crossheads even without explicit bold runs
     if (/^H[1-6]$/.test(para.tagName)) {
@@ -258,7 +292,7 @@ function extractCrosshead(para) {
   }
   // Starts with bold (mixed paragraph: bold question + plain answer)
   const firstEl = para.firstElementChild;
-  if (firstEl && firstEl.tagName === 'STRONG') {
+  if (firstEl && (firstEl.tagName === 'STRONG' || firstEl.tagName === 'B')) {
     const rest = [];
     let past = false;
     for (const child of para.childNodes) {
@@ -278,13 +312,14 @@ function extractCrosshead(para) {
 // Rich version of a numbered-entry name ("12. Route 66" minus the "12. ")
 function entryNameDeltas(p) {
   const ops = paraToDeltas(p, { italicOnly: true });
-  const m = ops.map(o => o.insert).join('').match(/^\s*\d+\.\s+/);
-  return m ? deltasAfterText(ops, m[0]) : null;
+  const m = deltasToText(ops).match(/^\s*\d+[.:\s]\s*/);
+  return m ? deltasAfterText(ops, m[0]) : trimDeltas(ops);
 }
 
-function parseNumbered(html) {
+function parseNumbered(html, type) {
   const ENTRY_RE = /^(\d+)\.\s+(.+)$/;
-  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', unrecognized: [], deltas: {} };
+  const meta = { feedHeadline: '', title: '', subtitle: '', author: '',
+                 flagged: [], leadParts: [], deltas: {} };
   const entries = [];
   let inEntries = false;
   let pending = null;
@@ -297,7 +332,7 @@ function parseNumbered(html) {
     if (!inEntries) {
       // Multi-line metadata: previous line was a label with no value
       if (pendingMetaKey) {
-        if (!shouldSkip(text) && !ENTRY_RE.test(text)) {
+        if (!shouldFlag(text) && !ENTRY_RE.test(text)) {
           meta[pendingMetaKey] = text;
           meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
           pendingMetaKey = null;
@@ -319,8 +354,13 @@ function parseNumbered(html) {
           meta[match.key] = match.value;
           meta.deltas[match.key] = deltasAfterText(paraToDeltas(p, { italicOnly: true }), match.prefix);
         }
-      } else if (!shouldSkip(text)) {
-        meta.unrecognized.push(text);
+      } else {
+        // Not metadata and not an entry heading. Never dropped: kept as body
+        // copy at the point it appeared, and flagged if it reads like an
+        // editor instruction so it can be reviewed before publishing.
+        if (shouldFlag(text)) meta.flagged.push(text);
+        const deltas = trimDeltas(paraToDeltas(p));
+        if (deltas.length) meta.leadParts.push(deltas);
       }
     } else {
       const m = text.match(ENTRY_RE);
@@ -328,19 +368,60 @@ function parseNumbered(html) {
         if (pending) entries.push(pending);
         pending = { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
       } else {
+        if (shouldFlag(text)) meta.flagged.push(text);
         if (pending) {
-          const deltas = paraToDeltas(p);
+          const deltas = trimDeltas(paraToDeltas(p));
           if (deltas.length) pending.bodyParts.push(deltas);
         }
       }
     }
   }
   if (pending) entries.push(pending);
+
+  // Some countdown docs are written with bold entry names and no "1. " prefix,
+  // so ENTRY_RE never matches and the whole article would come through as one
+  // undifferentiated run of body copy. Fall back to the crosshead parser and
+  // number the entries by position instead.
+  if (entries.length === 0) {
+    const byBold = parseCrosshead(html);
+    const m = byBold.meta;
+    // Editor instructions are often bold too ("PICS: To come"), which would
+    // otherwise become entry 1 and shift every number. Pull them out of the
+    // entry list — their copy still travels as lead paragraphs.
+    const leadFromFlagged = [];
+    const realEntries = byBold.entries.filter(e => {
+      if (!shouldFlag(e.crosshead || '')) return true;
+      if (e.crossheadDeltas && e.crossheadDeltas.length) leadFromFlagged.push(e.crossheadDeltas);
+      leadFromFlagged.push(...(e.bodyParts || []));
+      return false;
+    });
+
+    if (realEntries.length > 1) {
+      const total = realEntries.length;
+      const numbered = realEntries.map((e, i) => ({
+        number: type === 'ascending' ? i + 1 : total - i,
+        name: e.crosshead,
+        nameDeltas: e.crossheadDeltas,
+        bodyParts: e.bodyParts,
+      }));
+      // Keep whatever metadata the crosshead pass recognised. Its intro
+      // paragraphs and any pulled-out instructions become lead copy, so
+      // everything still appears above entry 1 rather than disappearing.
+      m.leadParts = (m.introParts || [])
+        .concat(leadFromFlagged)
+        .concat(m.leadParts || []);
+      m.introParts = [];
+      m.autoNumbered = true;
+      return { meta: m, entries: numbered };
+    }
+  }
+
   return { meta, entries };
 }
 
 function parseCrosshead(html) {
-  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', intro: '', score: '', unrecognized: [], deltas: {}, introParts: [] };
+  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', intro: '', score: '',
+                 flagged: [], leadParts: [], deltas: {}, introParts: [] };
   const entries = [];
   let inContent = false;
   let curCrosshead = null;
@@ -354,7 +435,7 @@ function parseCrosshead(html) {
 
     // 1. Multi-line metadata: previous line was a label with no value
     if (pendingMetaKey) {
-      if (!shouldSkip(text)) {
+      if (!shouldFlag(text)) {
         // Don't consume the value if it looks like a crosshead we've been waiting for
         const crosshead = extractCrosshead(p);
         const isMeta = !!matchMetaPrefix(text);
@@ -379,8 +460,12 @@ function parseCrosshead(html) {
       continue;
     }
 
-    // 3. Skip editor instructions and bare URLs
-    if (shouldSkip(text)) continue;
+    // 3. Editor instructions and bare URLs are flagged, not skipped — they fall
+    //    through to the body handling below so the copy stays where it was.
+    //    They are often bold, so they must not be read as crossheads: an
+    //    instruction promoted to a crosshead would open a spurious section.
+    const isInstruction = shouldFlag(text);
+    if (isInstruction) meta.flagged.push(text);
 
     // 3.5. Detect score line (e.g. "SCORE: 7/10") — must run before crosshead detection
     if (/^score:\s*\d/i.test(text)) {
@@ -389,7 +474,7 @@ function parseCrosshead(html) {
     }
 
     // 4. Detect crosshead (fully bold, or starts with bold)
-    const crosshead = extractCrosshead(p);
+    const crosshead = isInstruction ? null : extractCrosshead(p);
     if (crosshead) {
       if (inContent && curCrosshead !== null) {
         entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
@@ -415,6 +500,429 @@ function parseCrosshead(html) {
   }
   if (curCrosshead !== null) entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
   return { meta, entries };
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOURCE ADAPTER: topgear.com URL
+// Everything above is shared with the .docx path. Below is only how a live web
+// article is fetched and turned into the same { meta, entries } shape.
+// Requires the proxy in server.js (topgear.com sends no CORS headers).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Where /proxy lives. '' means same-origin (served by server.js). A Studio
+// plug-in runs on Studio's origin, so it sets this to the deployed proxy URL.
+// Same-origin when a host that provides /proxy is serving this page (server.js
+// locally, or the Fly app). Anywhere else — notably GitHub Pages — fall back to
+// the deployed proxy, since topgear.com can't be fetched from the browser.
+window.PROXY_BASE = window.PROXY_BASE || (function () {
+  var h = location.hostname;
+  var selfHosted = h === 'localhost' || h === '127.0.0.1' || /(^|\.)topgear-web-word-digital\.fly\.dev$/.test(h);
+  return selfHosted ? '' : 'https://topgear-web-word-digital.fly.dev';
+})();
+
+
+// ─── __NEXT_DATA__ parsing ─────────────────────────────────────────────────
+function extractNextData(html) {
+  const m = html.match(/<script[^>]+id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+function findArticleInNextData(nextData) {
+  const pp = nextData?.props?.pageProps;
+  const candidates = [
+    pp?.article,
+    pp?.data?.article,
+    pp?.initialData?.article,
+    pp?.content,
+    pp?.pageData?.article,
+  ];
+  return candidates.find(c => c && (c.title || c.headline)) ?? null;
+}
+
+function extractMetaFromNextData(article) {
+  // author may be a string or an object with a title/name field
+  const authorRaw = article.author;
+  const author = typeof authorRaw === 'string'
+    ? authorRaw
+    : (authorRaw?.title || authorRaw?.name || (article.authors && article.authors[0]?.name) || article.byline || '');
+  return {
+    feedHeadline: '',
+    title:    article.title    || article.headline    || '',
+    subtitle: article.standfirst || article.subtitle || article.subTitle
+              || article.headline || article.teaser || article.kicker || '',
+    author,
+    intro:    '',
+    score:    '',
+    deltas:   {},
+    flagged:  [],
+    introParts: [],
+    leadParts:  [],
+  };
+}
+
+// TopGear listicle: items array with { title, body (HTML), media }
+function isListicle(article) {
+  return Array.isArray(article.items) && article.items.length > 0;
+}
+
+function parseListicleItems(article) {
+  const base = 'https://www.topgear.com';
+  const reversed = article.reversedList;
+  const total = article.items.length;
+
+  const flagged = [];
+  const entries = article.items.map((item, i) => {
+    const number = reversed ? (total - i) : (i + 1);
+    const name   = (item.title || '').trim();
+    // body is HTML — keep bold/italic/links and one component per paragraph
+    const bodyParts = [];
+    for (const p of paras(item.body || '')) {
+      const text = p.textContent.trim();
+      if (!text) continue;
+      const deltas = trimDeltas(paraToDeltas(p));
+      if (!deltas.length) continue;
+      if (shouldFlag(text)) flagged.push(text);
+      bodyParts.push(deltas);
+    }
+    // Item titles can carry italics (model names), so keep them rich too
+    const nameDoc = new DOMParser().parseFromString('<div>' + (item.title || '') + '</div>', 'text/html');
+    const nameDeltas = trimDeltas(nodesToDeltas(nameDoc.body.firstChild.childNodes, { italicOnly: true }));
+    return { number, name, nameDeltas, bodyParts };
+  });
+  return { entries, flagged };
+}
+
+// Collect every image the article carries, whatever its contentType.
+// Covers: hero, listicle items, carousel/gallery slides, and inline body images.
+function extractArticleImages(article) {
+  const base = 'https://www.topgear.com';
+  const urls = [];
+  const add = src => {
+    if (!src || typeof src !== 'string') return;
+    const abs = src.startsWith('http') ? src : base + src;
+    if (!urls.includes(abs)) urls.push(abs);
+  };
+
+  // Main hero image
+  add(article.image && article.image.src);
+
+  // Listicle: per-item images
+  (article.items || []).forEach(item => add(item.media && item.media.image && item.media.image.src));
+
+  // garageReview / review / news: carousel + gallery slides
+  ['carousel', 'gallery', 'images', 'media'].forEach(key => {
+    const list = article[key];
+    if (!Array.isArray(list)) return;
+    list.forEach(slide => {
+      if (!slide) return;
+      add(slide.image && slide.image.src);
+      add(slide.src);
+    });
+  });
+
+  // Inline images inside the body HTML
+  if (typeof article.body === 'string' && article.body.includes('<img')) {
+    const d = new DOMParser().parseFromString('<div>' + article.body + '</div>', 'text/html');
+    d.querySelectorAll('img').forEach(img => add(img.getAttribute('src')));
+  }
+
+  return urls;
+}
+
+// ─── DOM scraping fallback ─────────────────────────────────────────────────
+function extractImagesFromDoc(doc, baseUrl) {
+  const urls = new Set();
+  doc.querySelectorAll('img').forEach(img => {
+    const src = img.dataset.src || img.dataset.lazySrc || img.getAttribute('data-original') || img.src || '';
+    if (!src || src.startsWith('data:') || src.length < 10) return;
+    try {
+      const abs = new URL(src, baseUrl || 'https://www.topgear.com').href;
+      if (abs.startsWith('https://')) urls.add(abs.split('?')[0]);
+    } catch {}
+  });
+  // Also check srcset
+  doc.querySelectorAll('[srcset]').forEach(el => {
+    el.getAttribute('srcset').split(',').forEach(entry => {
+      const urlPart = entry.trim().split(/\s+/)[0];
+      try {
+        const abs = new URL(urlPart, 'https://www.topgear.com').href;
+        if (abs.startsWith('https://')) urls.add(abs.split('?')[0]);
+      } catch {}
+    });
+  });
+  return Array.from(urls).filter(u => /\.(jpg|jpeg|png|webp|gif)/i.test(u));
+}
+
+function scrapeFromDom(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const title =
+    doc.querySelector('h1')?.textContent?.trim() ||
+    doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+  const standfirst =
+    doc.querySelector('[class*="standfirst"]')?.textContent?.trim() ||
+    doc.querySelector('[class*="subtitle"]')?.textContent?.trim() ||
+    doc.querySelector('[class*="intro"]')?.textContent?.trim() ||
+    doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  const author =
+    doc.querySelector('[class*="byline"] a')?.textContent?.trim() ||
+    doc.querySelector('[class*="author"] a')?.textContent?.trim() ||
+    doc.querySelector('[rel="author"]')?.textContent?.trim() ||
+    doc.querySelector('meta[name="author"]')?.getAttribute('content') || '';
+  const bodyEl =
+    doc.querySelector('[class*="article-body"]') ||
+    doc.querySelector('[class*="article__body"]') ||
+    doc.querySelector('article') ||
+    doc.querySelector('main') || null;
+  const images = extractImagesFromDoc(doc, 'https://www.topgear.com');
+  return { title, standfirst, author, bodyEl, images };
+}
+
+// Nothing is ever discarded: every paragraph either becomes an entry heading or
+// is pushed as a body part at the position it occurred. Paragraphs that read as
+// editor instructions are still included, but recorded in `flagged` for review.
+function parseNumberedFromHtml(htmlString) {
+  const ENTRY_RE = /^(\d+)[.:\s]\s*(.+)$/;
+  const entries = [];
+  const leadParts = [];
+  const flagged = [];
+  let pending = null;
+
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+
+    const heading = /^H[1-6]$/.test(p.tagName) ? p.textContent.trim() : null;
+    const m = (heading || text).match(ENTRY_RE);
+    if (m) {
+      if (pending) entries.push(pending);
+      pending = {
+        number: parseInt(m[1], 10),
+        name: m[2].trim(),
+        nameDeltas: entryNameDeltas(p),
+        bodyParts: [],
+      };
+      continue;
+    }
+
+    if (shouldFlag(text)) flagged.push(text);
+    if (pending) pending.bodyParts.push(deltas);
+    else leadParts.push(deltas);
+  }
+  if (pending) entries.push(pending);
+  return { entries, leadParts, flagged };
+}
+
+function parseCrossheadFromHtml(htmlString) {
+  const entries = [];
+  const introParts = [];
+  const flagged = [];
+  let curCrosshead = null;
+  let curCrossheadDeltas = null;
+  let curBodyParts = [];
+  let inContent = false;
+  let score = '';
+
+  const flush = () => {
+    if (curCrosshead !== null) {
+      entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
+    }
+  };
+
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+
+    // Score line (e.g. "SCORE: 7/10") — must run before crosshead detection
+    if (/^score:\s*\d/i.test(text)) { score = text; continue; }
+
+    const crosshead = extractCrosshead(p);
+    if (crosshead) {
+      flush();
+      inContent = true;
+      curCrosshead = crosshead.crosshead;
+      curCrossheadDeltas = crosshead.crossheadDeltas;
+      curBodyParts = crosshead.remainingDeltas.length ? [crosshead.remainingDeltas] : [];
+      continue;
+    }
+
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+    if (shouldFlag(text)) flagged.push(text);
+
+    if (inContent) curBodyParts.push(deltas);
+    else introParts.push(deltas);
+  }
+  flush();
+  return { entries, introParts, flagged, score };
+}
+
+// Straight prose with no crossheads, numbering or bold leads (e.g. garageReview
+// long-term reports). Every paragraph becomes its own body component.
+function parseProseFromHtml(htmlString) {
+  const parts = [];
+  const flagged = [];
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+    if (shouldFlag(text)) flagged.push(text);
+    parts.push(deltas);
+  }
+  if (!parts.length) return { entries: [], flagged };
+  return { entries: [{ crosshead: '', crossheadDeltas: [], number: 1, name: '', nameDeltas: [], bodyParts: parts }], flagged };
+}
+
+// Runs the parser for the chosen type, falling back to prose when the article
+// has no crossheads or numbering. Text is never discarded by any branch.
+function parseBody(bodyHtml, type) {
+  if (!bodyHtml) return { entries: [], flagged: [] };
+  const parsed = type === 'crosshead'
+    ? parseCrossheadFromHtml(bodyHtml)
+    : parseNumberedFromHtml(bodyHtml);
+
+  if (parsed.entries.length) return parsed;
+
+  // No entries matched. Anything the parser gathered as intro/lead is real copy,
+  // so re-run as prose rather than emitting an article with no body.
+  const prose = parseProseFromHtml(bodyHtml);
+  prose.proseFallback = prose.entries.length > 0;
+  return prose;
+}
+
+// Copies parser output onto meta and records what happened for the debug box
+function applyParsed(meta, parsed, debugInfo) {
+  meta.introParts = parsed.introParts || [];
+  meta.leadParts  = parsed.leadParts || [];
+  meta.flagged    = parsed.flagged || [];
+  if (parsed.score) meta.score = parsed.score;
+  if (meta.introParts.length && !meta.intro) {
+    meta.intro = meta.introParts.map(deltasToText).join('\n\n');
+  }
+  if (parsed.proseFallback) debugInfo.proseFallback = true;
+  debugInfo.flaggedCount = meta.flagged.length;
+}
+
+function proxyUrl(targetUrl) {
+  return String(window.PROXY_BASE).replace(/\/$/, '') + '/proxy?url=' + encodeURIComponent(targetUrl);
+}
+
+async function fetchWithProxy(targetUrl) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 25000);
+  try {
+    const resp = await fetch(proxyUrl(targetUrl), { signal: controller.signal });
+    clearTimeout(tid);
+    if (resp.ok) return await resp.text();
+    throw new Error('Server returned HTTP ' + resp.status);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === 'AbortError') throw new Error('Request timed out after 25 seconds.');
+    throw new Error('Could not fetch the article: ' + e.message + '. Make sure server.js is running (node server.js) and you opened http://localhost:3456');
+  }
+}
+
+// ─── Image ZIP download ────────────────────────────────────────────────────
+async function downloadImagesAsZip(imageUrls, slug) {
+  const zipStatusEl = document.getElementById('zipStatus');
+  const downloadImagesBtn = document.getElementById('downloadImagesBtn');
+  downloadImagesBtn.disabled = true;
+
+  zipStatusEl.classList.remove('hidden');
+  zipStatusEl.textContent = 'Starting download…';
+
+  const zip = new JSZip();
+  const folder = zip.folder('images');
+  let done = 0;
+  let failed = 0;
+
+  for (const [i, url] of imageUrls.entries()) {
+    try {
+      const proxied = proxyUrl(url);
+      const resp = await fetch(proxied, { signal: AbortSignal.timeout(25000) });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const buf = await resp.arrayBuffer();
+      const ext = url.split('.').pop().split('?')[0].toLowerCase() || 'jpg';
+      folder.file('image-' + String(i + 1).padStart(2, '0') + '.' + ext, buf);
+      done++;
+    } catch {
+      failed++;
+    }
+    zipStatusEl.textContent = 'Downloading ' + (done + failed) + ' / ' + imageUrls.length + ' images…';
+  }
+
+  zipStatusEl.textContent = 'Building ZIP…';
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slug + '-images.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  zipStatusEl.textContent = done + ' image' + (done !== 1 ? 's' : '') + ' downloaded'
+    + (failed > 0 ? ' (' + failed + ' failed).' : '.');
+  downloadImagesBtn.disabled = false;
+}
+
+function slugFromUrl(url) {
+  try {
+    const parts = new URL(url).pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1] || 'topgear-article';
+  } catch { return 'topgear-article'; }
+}
+
+// Unified entry point for the URL source. Returns the same { meta, entries }
+// shape as parseNumbered/parseCrosshead, plus imageUrls which only the web
+// source can supply, so the builders and UI stay source-agnostic.
+async function parseFromUrl(articleUrl, type) {
+  const html = await fetchWithProxy(articleUrl);
+  const debug = {};
+
+  const nextData = extractNextData(html);
+  const article  = nextData ? findArticleInNextData(nextData) : null;
+  debug.nextDataFound = !!nextData;
+  debug.articleFound  = !!article;
+
+  let meta, entries, imageUrls;
+
+  if (article) {
+    meta = extractMetaFromNextData(article);
+    imageUrls = extractArticleImages(article);
+    debug.contentType = article.contentType || '';
+
+    if (isListicle(article)) {
+      const parsed = parseListicleItems(article);
+      entries = parsed.entries;
+      applyParsed(meta, parsed, debug);
+      debug.listicle = true;
+    } else {
+      const bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
+      debug.bodyHtmlLength = bodyHtml.length;
+      const parsed = parseBody(bodyHtml, type);
+      entries = parsed.entries;
+      applyParsed(meta, parsed, debug);
+    }
+  } else {
+    debug.fallback = true;
+    const scraped = scrapeFromDom(html);
+    meta = { feedHeadline: '', title: scraped.title, subtitle: scraped.standfirst,
+             author: scraped.author, intro: '', score: '', deltas: {},
+             flagged: [], introParts: [], leadParts: [] };
+    const bodyHtml = scraped.bodyEl ? scraped.bodyEl.innerHTML : '';
+    const parsed = parseBody(bodyHtml, type);
+    entries = parsed.entries;
+    applyParsed(meta, parsed, debug);
+    imageUrls = scraped.images;
+  }
+
+  debug.entriesFound = entries.length;
+  debug.imagesFound  = imageUrls.length;
+  return { meta, entries, imageUrls, debug };
 }
 
 // ─── Template building ───────────────────────────────────────────────────
@@ -452,6 +960,12 @@ function buildNumbered(template, meta, entries, type) {
   entries.sort((a, b) => type === 'countdown' ? b.number - a.number : a.number - b.number);
 
   const result = [...header];
+
+  // Copy that appeared before the first numbered entry is kept in place, as
+  // plain body components between the header and entry 1 — never dropped.
+  (meta.leadParts || []).forEach(deltas => {
+    result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+  });
 
   entries.forEach((entry, i) => {
     const group = deepClone(canonical);
@@ -607,33 +1121,78 @@ const entryCount  = document.getElementById('entryCount');
 const entryList   = document.getElementById('entryList');
 const downloadBtn = document.getElementById('downloadBtn');
 
-fileInput.addEventListener('change', () => {
-  parseBtn.disabled = !fileInput.files.length;
+const sourceType = document.getElementById('sourceType');
+const docxRow    = document.getElementById('docxRow');
+const urlRow     = document.getElementById('urlRow');
+const urlInput   = document.getElementById('urlInput');
+
+function currentSource() { return sourceType.value; }
+
+function refreshParseButton() {
+  parseBtn.disabled = currentSource() === 'docx'
+    ? !fileInput.files.length
+    : !urlInput.value.trim();
+  parseBtn.textContent = currentSource() === 'docx' ? 'Parse Document' : 'Fetch & Parse Article';
+}
+
+sourceType.addEventListener('change', () => {
+  const isDocx = currentSource() === 'docx';
+  docxRow.classList.toggle('hidden', !isDocx);
+  urlRow.classList.toggle('hidden', isDocx);
   preview.classList.add('hidden');
   parsedData = null;
   parseError.classList.add('hidden');
+  refreshParseButton();
+});
+
+fileInput.addEventListener('change', () => {
+  preview.classList.add('hidden');
+  parsedData = null;
+  parseError.classList.add('hidden');
+  refreshParseButton();
+});
+
+urlInput.addEventListener('input', () => {
+  preview.classList.add('hidden');
+  parsedData = null;
+  parseError.classList.add('hidden');
+  refreshParseButton();
 });
 
 parseBtn.addEventListener('click', async () => {
+  const source = currentSource();
   const file = fileInput.files[0];
-  if (!file) return;
+  if (source === 'docx' && !file) return;
+  if (source === 'url' && !urlInput.value.trim()) return;
 
   const type = document.getElementById('articleType').value;
   parseBtn.disabled = true;
-  parseBtn.textContent = 'Parsing…';
+  parseBtn.textContent = source === 'docx' ? 'Parsing…' : 'Fetching…';
   parseError.classList.add('hidden');
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.convertToHtml({ arrayBuffer });
-    const html = result.value;
+    let meta, entries, imageUrls = [];
 
-    const { meta, entries } = type === 'crosshead'
-      ? parseCrosshead(html)
-      : parseNumbered(html);
+    if (source === 'docx') {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      const html = result.value;
+      ({ meta, entries } = type === 'crosshead' ? parseCrosshead(html) : parseNumbered(html, type));
+      uploadedFilename = file.name.replace(/\.docx$/i, '');
+    } else {
+      const articleUrl = urlInput.value.trim();
+      parseBtn.textContent = 'Parsing…';
+      ({ meta, entries, imageUrls } = await parseFromUrl(articleUrl, type));
+      uploadedFilename = slugFromUrl(articleUrl);
+    }
 
-    parsedData = { meta, entries, type };
-    uploadedFilename = file.name.replace(/\.docx$/i, '');
+    parsedData = { meta, entries, type, imageUrls, source };
+
+    const imagesBtn = document.getElementById('downloadImagesBtn');
+    imagesBtn.classList.toggle('hidden', !imageUrls.length);
+    imagesBtn.textContent = 'Download all images (.zip)' +
+      (imageUrls.length ? ' — ' + imageUrls.length : '');
+    document.getElementById('zipStatus').classList.add('hidden');
 
     // Populate UI
     feedHeadlineInput.value = meta.feedHeadline;
@@ -642,8 +1201,8 @@ parseBtn.addEventListener('click', async () => {
     metaSubtitle.value = meta.subtitle;
     metaAuthor.value   = meta.author;
 
-    if (meta.unrecognized && meta.unrecognized.length) {
-      unrecognizedList.innerHTML = meta.unrecognized.map(t => `<li>${escapeHtml(t)}</li>`).join('');
+    if (meta.flagged && meta.flagged.length) {
+      unrecognizedList.innerHTML = meta.flagged.map(t => `<li>${escapeHtml(t)}</li>`).join('');
       unrecognizedBox.classList.remove('hidden');
     } else {
       unrecognizedBox.classList.add('hidden');
@@ -663,8 +1222,13 @@ parseBtn.addEventListener('click', async () => {
     parseError.classList.remove('hidden');
   } finally {
     parseBtn.disabled = false;
-    parseBtn.textContent = 'Parse Document';
+    refreshParseButton();
   }
+});
+
+document.getElementById('downloadImagesBtn').addEventListener('click', () => {
+  if (!parsedData || !parsedData.imageUrls || !parsedData.imageUrls.length) return;
+  downloadImagesAsZip(parsedData.imageUrls, uploadedFilename || 'images');
 });
 
 downloadBtn.addEventListener('click', () => {
@@ -681,6 +1245,7 @@ downloadBtn.addEventListener('click', () => {
     score:    pm.score,
     intro:      pm.intro,
     introParts: pm.introParts,
+    leadParts:  pm.leadParts,
     // Rich (italic/link-preserving) versions — only usable if the field wasn't hand-edited
     titleDeltas:    metaTitle.value === pm.title ? pd.title : null,
     subtitleDeltas: metaSubtitle.value === pm.subtitle ? pd.subtitle : null,

@@ -25,6 +25,10 @@
   }
 
   // ─── Conversion engine (generated from index.html) ────────────────────────
+  // The plug-in runs on Studio's origin, so /proxy must be absolute.
+  // Set this to your deployed Fly app before shipping.
+  window.PROXY_BASE = window.PROXY_BASE || 'https://topgear-web-word-digital.fly.dev';
+
   const TEMPLATES = {
   countdown: {"version":"2.4","data":{"content":[{"content":{},"identifier":"header-image","styles":{},"data":{"an-image-role":"photo"},"id":"doc-1jj1hvk1o0"},{"content":{},"id":"doc-1jgpus9k50","identifier":"title","styles":{"text-align":"_align-middle"}},{"content":{"title":[]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t2"},{"content":{"name":[]},"identifier":"author","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t3"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih890"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"50"},{"insert":" Xxxx"}]},"id":"doc-1jgpumpn20","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih892"},{"content":{"apple-news-follow_tagline":[{"insert":"For more content follow this channel"}],"link":[{"insert":"FOLLOW","attributes":{"href":"https://apple.news/TRtxUc-x1TtSqnoPE8MyWFA?subscribe=1"}}],"image":{"id":"72516","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"72513"}},"id":"doc-1jhtp4fs90"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih893"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih894"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih895"},{"content":{"text":[{"insert":"49","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpumtrb0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih897"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih898"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih899"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8910"},{"content":{"text":[{"insert":"48","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun0sn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8912"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8913"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8914"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8915"},{"content":{"text":[{"insert":"47","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun3hk0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8917"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8918"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8919"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8920"},{"content":{"text":[{"insert":"46","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun6ch0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8922"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8923"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8924"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8925"},{"content":{"text":[{"insert":"45","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun9dp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8927"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8928"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8929"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8930"},{"content":{"text":[{"insert":"44","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunc360","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8932"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8933"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8934"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8935"},{"content":{"text":[{"insert":"43","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunhei0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8937"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8938"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8939"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8940"},{"content":{"text":[{"insert":"42","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunk2d0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8942"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8943"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8944"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8945"},{"content":{"text":[{"insert":"41","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunmpp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8947"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8948"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8949"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8950"},{"content":{"text":[{"insert":"40","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunphh0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8952"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8953"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8954"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8955"},{"content":{"text":[{"insert":"39","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunth40","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8957"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8958"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8959"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8960"},{"content":{"text":[{"insert":"38","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuo0cq0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8962"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8963"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8964"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8965"},{"content":{"text":[{"insert":"37","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuo4tr0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8967"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8968"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8969"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8970"},{"content":{"text":[{"insert":"36","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuo7q10","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8972"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8973"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8974"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8975"},{"content":{"text":[{"insert":"35","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuoaii0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8977"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8978"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8979"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8980"},{"content":{"text":[{"insert":"34","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuodkc0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8982"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8983"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8984"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8985"},{"content":{"text":[{"insert":"33","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuoh9q0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8987"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8988"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8989"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8990"},{"content":{"text":[{"insert":"32","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuokp90","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8992"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8993"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8994"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8995"},{"content":{"text":[{"insert":"31","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuondt0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8997"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8998"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8999"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89100"},{"content":{"text":[{"insert":"30","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuoq210","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89102"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89103"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89104"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89105"},{"content":{"text":[{"insert":"29","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuosis0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89107"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89108"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89109"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89110"},{"content":{"text":[{"insert":"28","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuov970","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89112"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89113"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89114"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89115"},{"content":{"text":[{"insert":"27","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpup1oc0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89117"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89118"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89119"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89120"},{"content":{"text":[{"insert":"26","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpup4sp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89122"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89123"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89124"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89125"},{"content":{"text":[{"insert":"25","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpup7hl0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89127"},{"content":{"apple-news-follow_tagline":[{"insert":"Sign up to the TopGear Newsletter"}],"link":[{"insert":"SIGN UP","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup"}}],"image":{"id":"72514","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"72515"}},"id":"doc-1jhtp4fs91"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89128"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89129"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89130"},{"content":{"text":[{"insert":"24","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupans0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89132"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89133"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89134"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89135"},{"content":{"text":[{"insert":"23","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupdst0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89137"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89138"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89139"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89140"},{"content":{"text":[{"insert":"22","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx2"}]},"id":"doc-1jgpupgln0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89142"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89143"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89144"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89145"},{"content":{"text":[{"insert":"21","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupjgs0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89147"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89148"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89149"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89150"},{"content":{"text":[{"insert":"20","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuplti0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89152"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89153"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89154"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89155"},{"content":{"text":[{"insert":"19","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupojg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89157"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89158"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89159"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89160"},{"content":{"text":[{"insert":"18","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuprqs0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89162"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89163"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89164"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89165"},{"content":{"text":[{"insert":"17","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupuo30","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89167"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89168"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89169"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89170"},{"content":{"text":[{"insert":"16","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuq1vg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89172"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89173"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89174"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89175"},{"content":{"text":[{"insert":"15","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuq4n00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89177"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89178"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89179"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89180"},{"content":{"text":[{"insert":"14","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuq7i40","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89182"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89183"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89184"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89185"},{"content":{"text":[{"insert":"13","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqaio0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89187"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89188"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89189"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89190"},{"content":{"text":[{"insert":"12","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqdap0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89192"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa783"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e0"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e1"},{"content":{"text":[{"insert":"11","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqfvd0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e3"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e4"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e5"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e6"},{"content":{"text":[{"insert":"10","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqirn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e8"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e9"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e10"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e11"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"9"},{"insert":" Xxxx"}]},"id":"doc-1jgpuqlmf0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e13"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e14"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e15"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e16"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"8"},{"insert":" Xxxx"}]},"id":"doc-1jgpuqoit0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e18"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e19"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e20"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e21"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"7"},{"insert":" Xxxx"}]},"id":"doc-1jgpuqr820","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e23"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e24"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e25"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e26"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"6"},{"insert":" Xxxx"}]},"id":"doc-1jgpuquui0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e28"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e29"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e30"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e31"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"5"},{"insert":" Xxxx"}]},"id":"doc-1jgpur1gb0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e33"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e34"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e35"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e36"},{"content":{"text":[{"insert":"4","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpur4j90","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e38"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e39"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e40"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e41"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"3"},{"insert":" Xxxx"}]},"id":"doc-1jgpur8l80","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e43"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e44"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e45"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e46"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"2"},{"insert":" Xxxx"}]},"id":"doc-1jgpurbdp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e48"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e49"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e50"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e51"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"1"},{"insert":" Xxxx"}]},"id":"doc-1jgpure9f0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e53"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e54"},{"content":{},"identifier":"footer","styles":{"style":"_option1"},"id":"doc-1i1hesi1t7"},{"content":{"html":"<iframe allow=\"autoplay *; encrypted-media *; fullscreen *; clipboard-write\" frameborder=\"0\" height=\"450\" style=\"width:100%;max-width:660px;overflow:hidden;border-radius:10px;\" sandbox=\"allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation\" src=\"https://embed.podcasts.apple.com/us/podcast/top-gear-magazine/id1614649540\"></iframe>"},"id":"doc-1jflpkntf0","identifier":"podcast","styles":{}},{"content":{},"identifier":"container","styles":{"style":"_option14"},"containers":{"main":[{"content":{"image":{"id":"48816","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content","inside-caption":"_caption-none","style":"_option7"},"id":"doc-1is9kes3t12"},{"content":{"title":[{"insert":"Discover more","attributes":{"color":"#79d6f2"}}]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1is9kes3t13"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t14"},{"content":{"text":[{"insert":"Buy the magazine","attributes":{"href":"https://www.buysubscriptions.com/print/bbc-top-gear-magazine-subscription?promo=TGFMEV&utm_medium=brandsite&utm_source=topgear.com&utm_campaign=5for5_tgfmev&utm_content=footer-menu&style=brand","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t15"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t16"},{"content":{"text":[{"insert":"Visit our website","attributes":{"href":"https://www.topgear.com/","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t17"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t18"},{"content":{"text":[{"insert":"Listen to our podcast","attributes":{"href":"https://podcasts.apple.com/gb/podcast/top-gear-magazine/id1614649540","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t19"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t20"},{"content":{"text":[{"insert":"Watch films on YouTube","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t21"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t22"},{"content":{"text":[{"insert":"Sign up for our free newsletter","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t23"},{"content":{"text":[{"insert":"   "}]},"identifier":"body","styles":{},"id":"doc-1is9kes3t24"},{"content":{},"identifier":"container","styles":{"style":"_option15"},"containers":{"main":[{"content":{"text":[{"insert":"A","attributes":{"href":"https://www.facebook.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t26"},{"content":{"text":[{"insert":"C","attributes":{"href":"https://x.com/bbc_topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t27"},{"content":{"text":[{"insert":"D","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t28"},{"content":{"text":[{"insert":"E","attributes":{"href":"https://www.instagram.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t29"},{"content":{"text":[{"insert":"F","attributes":{"color":"#102935","href":"https://www.tiktok.com/@topgear?is_from_webapp=1&sender_device=pc"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t30"}]},"inlineStyles":{"background-color":"rgb(121, 214, 242)"},"data":{"an-content-display":"collection"},"id":"doc-1is9kes3t25"}]},"inlineStyles":{"background-color":"rgb(0, 39, 48)"},"id":"doc-1is9kes3t11"}]}},
   ascending: {"version":"2.4","data":{"content":[{"content":{},"identifier":"header-image","styles":{},"data":{"an-image-role":"photo"},"id":"doc-1jj1hv1ft0"},{"content":{},"id":"doc-1jgpv33pe0","identifier":"title","styles":{"text-align":"_align-middle"}},{"content":{"title":[]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t2"},{"content":{"name":[]},"identifier":"author","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t3"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa780"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"01"},{"insert":" Xxxx"}]},"id":"doc-1jgpuu24b0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa782"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa783"},{"content":{"apple-news-follow_tagline":[{"insert":"For more content follow this channel"}],"link":[{"insert":"FOLLOW","attributes":{"href":"https://apple.news/TRtxUc-x1TtSqnoPE8MyWFA?subscribe=1"}}],"image":{"id":"72519","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"72518"}},"id":"doc-1jhtpfbqq0"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa784"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa785"},{"content":{"text":[{"insert":"02","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuu7hg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa787"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa788"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa789"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7810"},{"content":{"text":[{"insert":"03","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuua8n0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7812"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7813"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7814"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7815"},{"content":{"text":[{"insert":"04","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuf0a0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7817"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7818"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7819"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7820"},{"content":{"text":[{"insert":"05","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuhlf0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7822"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7823"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7824"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7825"},{"content":{"text":[{"insert":"06","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuk360","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7827"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7828"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7829"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7830"},{"content":{"text":[{"insert":"07","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuumm00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7832"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7833"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7834"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7835"},{"content":{"text":[{"insert":"08","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuupru0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7837"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7838"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7839"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7840"},{"content":{"text":[{"insert":"09","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuusi00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7842"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7843"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7844"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7845"},{"content":{"text":[{"insert":"10","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuv0t0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7847"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7848"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7849"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7850"},{"content":{"text":[{"insert":"11","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuv1jn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7852"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7853"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7854"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7855"},{"content":{"text":[{"insert":"12","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuv4350","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7857"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7858"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7859"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7860"},{"content":{"text":[{"insert":"13","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuv8o80","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7862"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7863"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7864"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7865"},{"content":{"text":[{"insert":"14","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvbdd0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7867"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7868"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7869"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7870"},{"content":{"text":[{"insert":"15","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvdul0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7872"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7873"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7874"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7875"},{"content":{"text":[{"insert":"16","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvgfk0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7877"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7878"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7879"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7880"},{"content":{"text":[{"insert":"17","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvj6s0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7882"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7883"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7884"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7885"},{"content":{"text":[{"insert":"18","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvlns0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7887"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7888"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7889"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7890"},{"content":{"text":[{"insert":"19","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvovp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7892"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7893"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7894"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7895"},{"content":{"text":[{"insert":"20","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvrfr0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7897"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7898"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7899"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78100"},{"content":{"text":[{"insert":"21","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvu180","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78102"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78103"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78104"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78105"},{"content":{"text":[{"insert":"22","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv013d0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78107"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78108"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78109"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78110"},{"content":{"text":[{"insert":"23","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv05n20","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78112"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78113"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78114"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78115"},{"content":{"text":[{"insert":"24","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv08bi0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78117"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78118"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78119"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78120"},{"content":{"text":[{"insert":"25","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0avu0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78122"},{"content":{"apple-news-follow_tagline":[{"insert":"Sign up to the TopGear Newsletter"}],"link":[{"insert":"SIGN UP","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup"}}],"image":{"id":"72517","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"72520"}},"id":"doc-1jhtpfbqq1"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78123"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78124"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78125"},{"content":{"text":[{"insert":"26","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0dgu0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78127"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78128"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78129"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78130"},{"content":{"text":[{"insert":"27","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0ha50","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78132"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78133"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78134"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78135"},{"content":{"text":[{"insert":"28","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0k6j0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78137"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78138"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78139"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78140"},{"content":{"text":[{"insert":"29","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0mrk0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78142"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78143"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78144"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q0"},{"content":{"text":[{"insert":"30","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0pjd0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q2"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q3"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q4"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q5"},{"content":{"text":[{"insert":"31","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0s370","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q7"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q8"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q9"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q10"},{"content":{"text":[{"insert":"32","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0upl0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q12"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q13"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q14"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q15"},{"content":{"text":[{"insert":"33","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv11970","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q17"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q18"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q19"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q20"},{"content":{"text":[{"insert":"34","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv140f0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q22"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q23"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q24"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q25"},{"content":{"text":[{"insert":"35","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv16ls0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q27"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q28"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q29"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q30"},{"content":{"text":[{"insert":"36","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1ec70","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q32"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q33"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q34"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q35"},{"content":{"text":[{"insert":"37","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1gqg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q37"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q38"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q39"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q40"},{"content":{"text":[{"insert":"38","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1jft0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q42"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q43"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q44"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q45"},{"content":{"text":[{"insert":"39","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1m190","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q47"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q52"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q53"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q54"},{"content":{"text":[{"insert":"40","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1otj0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q56"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q57"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q58"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q59"},{"content":{"text":[{"insert":"41","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1r5o0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q61"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q62"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q63"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q64"},{"content":{"text":[{"insert":"42","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1vbn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q66"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q67"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q68"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q69"},{"content":{"text":[{"insert":"43","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv24120","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q71"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q72"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q73"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q74"},{"content":{"text":[{"insert":"44","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv26h00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q76"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q77"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q78"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q79"},{"content":{"text":[{"insert":"45","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv29lq0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q81"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q82"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q83"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q84"},{"content":{"text":[{"insert":"46","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2c9t0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q86"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q87"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q88"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q89"},{"content":{"text":[{"insert":"47","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2emn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q91"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q92"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q93"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q94"},{"content":{"text":[{"insert":"48","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2h5k0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q96"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q97"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q98"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q99"},{"content":{"text":[{"insert":"49","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2jo60","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q101"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q102"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q103"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q104"},{"content":{"text":[{"insert":"50","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2ovt0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q106"},{"content":{},"identifier":"footer","styles":{"style":"_option1"},"id":"doc-1i1hesi1t7"},{"content":{"html":"<iframe allow=\"autoplay *; encrypted-media *; fullscreen *; clipboard-write\" frameborder=\"0\" height=\"450\" style=\"width:100%;max-width:660px;overflow:hidden;border-radius:10px;\" sandbox=\"allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation\" src=\"https://embed.podcasts.apple.com/us/podcast/top-gear-magazine/id1614649540\"></iframe>"},"id":"doc-1jflpilaj0","identifier":"podcast","styles":{}},{"content":{},"identifier":"container","styles":{"style":"_option14"},"containers":{"main":[{"content":{"image":{"id":"48816","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content","inside-caption":"_caption-none","style":"_option7"},"id":"doc-1is9kes3t12"},{"content":{"title":[{"insert":"Discover more","attributes":{"color":"#79d6f2"}}]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1is9kes3t13"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t14"},{"content":{"text":[{"insert":"Buy the magazine","attributes":{"href":"https://www.buysubscriptions.com/print/bbc-top-gear-magazine-subscription?promo=TGFMEV&utm_medium=brandsite&utm_source=topgear.com&utm_campaign=5for5_tgfmev&utm_content=footer-menu&style=brand","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t15"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t16"},{"content":{"text":[{"insert":"Visit our website","attributes":{"href":"https://www.topgear.com/","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t17"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t18"},{"content":{"text":[{"insert":"Listen to our podcast","attributes":{"href":"https://podcasts.apple.com/gb/podcast/top-gear-magazine/id1614649540","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t19"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t20"},{"content":{"text":[{"insert":"Watch films on YouTube","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t21"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t22"},{"content":{"text":[{"insert":"Sign up for our free newsletter","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t23"},{"content":{"text":[{"insert":"   "}]},"identifier":"body","styles":{},"id":"doc-1is9kes3t24"},{"content":{},"identifier":"container","styles":{"style":"_option15"},"containers":{"main":[{"content":{"text":[{"insert":"A","attributes":{"href":"https://www.facebook.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t26"},{"content":{"text":[{"insert":"C","attributes":{"href":"https://x.com/bbc_topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t27"},{"content":{"text":[{"insert":"D","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t28"},{"content":{"text":[{"insert":"E","attributes":{"href":"https://www.instagram.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t29"},{"content":{"text":[{"insert":"F","attributes":{"color":"#102935","href":"https://www.tiktok.com/@topgear?is_from_webapp=1&sender_device=pc"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t30"}]},"inlineStyles":{"background-color":"rgb(121, 214, 242)"},"data":{"an-content-display":"collection"},"id":"doc-1is9kes3t25"}]},"inlineStyles":{"background-color":"rgb(0, 39, 48)"},"id":"doc-1is9kes3t11"}]}},
@@ -71,15 +75,27 @@ function nodesToDeltas(nodes, opts = {}) {
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
     const tag = node.tagName.toLowerCase();
+    // Non-text embeds carry no copy — skip so alt/caption text isn't inlined
+    if (tag === 'img' || tag === 'figure' || tag === 'script' || tag === 'style') return;
     const next = Object.assign({}, fmt);
     if (tag === 'strong' || tag === 'b') next.bold = true;
     if (tag === 'em' || tag === 'i') next.italic = true;
-    if (tag === 'a' && node.getAttribute('href')) next.href = node.getAttribute('href');
+    if (tag === 'a' && node.getAttribute('href')) next.href = absoluteHref(node.getAttribute('href'));
     for (const child of node.childNodes) walk(child, next);
   }
   for (const node of nodes) walk(node, {});
   return ops;
 }
+
+// Web body HTML uses site-relative hrefs; .digital needs them absolute.
+// Absolute and mailto/tel links (as Word produces) pass through untouched.
+function absoluteHref(href) {
+  if (!href) return href;
+  if (/^(https?:|mailto:|tel:|#)/i.test(href)) return href;
+  return 'https://www.topgear.com' + (href.startsWith('/') ? href : '/' + href);
+}
+
+const deltasToText = ops => (ops || []).map(o => o.insert).join('');
 
 function paraToDeltas(para, opts) {
   return nodesToDeltas(para.childNodes, opts);
@@ -140,14 +156,16 @@ function matchMetaPrefix(text) {
 // so headings must be walked too — mammoth emits them as <h1>–<h6>.
 function paras(html) {
   const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
-  return Array.from(doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6'));
+  return Array.from(doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, li'));
 }
 
-// Lines that are editor instructions, not article content
-const SKIP_PREFIXES = ['pics:', 'web gallery', 'imbed ', 'imbedded', 'embed ', 'embargo'];
-function shouldSkip(text) {
+// Lines that read as editor instructions rather than article copy.
+// These are NOT dropped: they are recorded in meta.flagged for the review box
+// and still placed inline as body text where they appeared, so nothing is lost.
+const FLAG_PREFIXES = ['pics:', 'web gallery', 'imbed ', 'imbedded', 'embed ', 'embargo'];
+function shouldFlag(text) {
   const lower = text.toLowerCase();
-  return SKIP_PREFIXES.some(p => lower.startsWith(p)) || /^https?:\/\/\S+$/.test(text);
+  return FLAG_PREFIXES.some(p => lower.startsWith(p)) || /^https?:\/\/\S+$/.test(text);
 }
 
 // Returns { crosshead, remainingBody } if paragraph is (or starts with) bold, else null.
@@ -158,7 +176,7 @@ function extractCrosshead(para) {
   const text = para.textContent.trim();
   if (!text) return null;
   const headlineDeltas = () => trimDeltas(paraToDeltas(para, { italicOnly: true }));
-  const firstStrong = para.querySelector('strong');
+  const firstStrong = para.querySelector('strong, b');
   if (!firstStrong) {
     // Heading elements are crossheads even without explicit bold runs
     if (/^H[1-6]$/.test(para.tagName)) {
@@ -174,7 +192,7 @@ function extractCrosshead(para) {
   }
   // Starts with bold (mixed paragraph: bold question + plain answer)
   const firstEl = para.firstElementChild;
-  if (firstEl && firstEl.tagName === 'STRONG') {
+  if (firstEl && (firstEl.tagName === 'STRONG' || firstEl.tagName === 'B')) {
     const rest = [];
     let past = false;
     for (const child of para.childNodes) {
@@ -194,13 +212,14 @@ function extractCrosshead(para) {
 // Rich version of a numbered-entry name ("12. Route 66" minus the "12. ")
 function entryNameDeltas(p) {
   const ops = paraToDeltas(p, { italicOnly: true });
-  const m = ops.map(o => o.insert).join('').match(/^\s*\d+\.\s+/);
-  return m ? deltasAfterText(ops, m[0]) : null;
+  const m = deltasToText(ops).match(/^\s*\d+[.:\s]\s*/);
+  return m ? deltasAfterText(ops, m[0]) : trimDeltas(ops);
 }
 
-function parseNumbered(html) {
+function parseNumbered(html, type) {
   const ENTRY_RE = /^(\d+)\.\s+(.+)$/;
-  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', unrecognized: [], deltas: {} };
+  const meta = { feedHeadline: '', title: '', subtitle: '', author: '',
+                 flagged: [], leadParts: [], deltas: {} };
   const entries = [];
   let inEntries = false;
   let pending = null;
@@ -213,7 +232,7 @@ function parseNumbered(html) {
     if (!inEntries) {
       // Multi-line metadata: previous line was a label with no value
       if (pendingMetaKey) {
-        if (!shouldSkip(text) && !ENTRY_RE.test(text)) {
+        if (!shouldFlag(text) && !ENTRY_RE.test(text)) {
           meta[pendingMetaKey] = text;
           meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
           pendingMetaKey = null;
@@ -235,8 +254,13 @@ function parseNumbered(html) {
           meta[match.key] = match.value;
           meta.deltas[match.key] = deltasAfterText(paraToDeltas(p, { italicOnly: true }), match.prefix);
         }
-      } else if (!shouldSkip(text)) {
-        meta.unrecognized.push(text);
+      } else {
+        // Not metadata and not an entry heading. Never dropped: kept as body
+        // copy at the point it appeared, and flagged if it reads like an
+        // editor instruction so it can be reviewed before publishing.
+        if (shouldFlag(text)) meta.flagged.push(text);
+        const deltas = trimDeltas(paraToDeltas(p));
+        if (deltas.length) meta.leadParts.push(deltas);
       }
     } else {
       const m = text.match(ENTRY_RE);
@@ -244,19 +268,60 @@ function parseNumbered(html) {
         if (pending) entries.push(pending);
         pending = { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
       } else {
+        if (shouldFlag(text)) meta.flagged.push(text);
         if (pending) {
-          const deltas = paraToDeltas(p);
+          const deltas = trimDeltas(paraToDeltas(p));
           if (deltas.length) pending.bodyParts.push(deltas);
         }
       }
     }
   }
   if (pending) entries.push(pending);
+
+  // Some countdown docs are written with bold entry names and no "1. " prefix,
+  // so ENTRY_RE never matches and the whole article would come through as one
+  // undifferentiated run of body copy. Fall back to the crosshead parser and
+  // number the entries by position instead.
+  if (entries.length === 0) {
+    const byBold = parseCrosshead(html);
+    const m = byBold.meta;
+    // Editor instructions are often bold too ("PICS: To come"), which would
+    // otherwise become entry 1 and shift every number. Pull them out of the
+    // entry list — their copy still travels as lead paragraphs.
+    const leadFromFlagged = [];
+    const realEntries = byBold.entries.filter(e => {
+      if (!shouldFlag(e.crosshead || '')) return true;
+      if (e.crossheadDeltas && e.crossheadDeltas.length) leadFromFlagged.push(e.crossheadDeltas);
+      leadFromFlagged.push(...(e.bodyParts || []));
+      return false;
+    });
+
+    if (realEntries.length > 1) {
+      const total = realEntries.length;
+      const numbered = realEntries.map((e, i) => ({
+        number: type === 'ascending' ? i + 1 : total - i,
+        name: e.crosshead,
+        nameDeltas: e.crossheadDeltas,
+        bodyParts: e.bodyParts,
+      }));
+      // Keep whatever metadata the crosshead pass recognised. Its intro
+      // paragraphs and any pulled-out instructions become lead copy, so
+      // everything still appears above entry 1 rather than disappearing.
+      m.leadParts = (m.introParts || [])
+        .concat(leadFromFlagged)
+        .concat(m.leadParts || []);
+      m.introParts = [];
+      m.autoNumbered = true;
+      return { meta: m, entries: numbered };
+    }
+  }
+
   return { meta, entries };
 }
 
 function parseCrosshead(html) {
-  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', intro: '', score: '', unrecognized: [], deltas: {}, introParts: [] };
+  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', intro: '', score: '',
+                 flagged: [], leadParts: [], deltas: {}, introParts: [] };
   const entries = [];
   let inContent = false;
   let curCrosshead = null;
@@ -270,7 +335,7 @@ function parseCrosshead(html) {
 
     // 1. Multi-line metadata: previous line was a label with no value
     if (pendingMetaKey) {
-      if (!shouldSkip(text)) {
+      if (!shouldFlag(text)) {
         // Don't consume the value if it looks like a crosshead we've been waiting for
         const crosshead = extractCrosshead(p);
         const isMeta = !!matchMetaPrefix(text);
@@ -295,8 +360,12 @@ function parseCrosshead(html) {
       continue;
     }
 
-    // 3. Skip editor instructions and bare URLs
-    if (shouldSkip(text)) continue;
+    // 3. Editor instructions and bare URLs are flagged, not skipped — they fall
+    //    through to the body handling below so the copy stays where it was.
+    //    They are often bold, so they must not be read as crossheads: an
+    //    instruction promoted to a crosshead would open a spurious section.
+    const isInstruction = shouldFlag(text);
+    if (isInstruction) meta.flagged.push(text);
 
     // 3.5. Detect score line (e.g. "SCORE: 7/10") — must run before crosshead detection
     if (/^score:\s*\d/i.test(text)) {
@@ -305,7 +374,7 @@ function parseCrosshead(html) {
     }
 
     // 4. Detect crosshead (fully bold, or starts with bold)
-    const crosshead = extractCrosshead(p);
+    const crosshead = isInstruction ? null : extractCrosshead(p);
     if (crosshead) {
       if (inContent && curCrosshead !== null) {
         entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
@@ -331,6 +400,429 @@ function parseCrosshead(html) {
   }
   if (curCrosshead !== null) entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
   return { meta, entries };
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOURCE ADAPTER: topgear.com URL
+// Everything above is shared with the .docx path. Below is only how a live web
+// article is fetched and turned into the same { meta, entries } shape.
+// Requires the proxy in server.js (topgear.com sends no CORS headers).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Where /proxy lives. '' means same-origin (served by server.js). A Studio
+// plug-in runs on Studio's origin, so it sets this to the deployed proxy URL.
+// Same-origin when a host that provides /proxy is serving this page (server.js
+// locally, or the Fly app). Anywhere else — notably GitHub Pages — fall back to
+// the deployed proxy, since topgear.com can't be fetched from the browser.
+window.PROXY_BASE = window.PROXY_BASE || (function () {
+  var h = location.hostname;
+  var selfHosted = h === 'localhost' || h === '127.0.0.1' || /(^|\.)topgear-web-word-digital\.fly\.dev$/.test(h);
+  return selfHosted ? '' : 'https://topgear-web-word-digital.fly.dev';
+})();
+
+
+// ─── __NEXT_DATA__ parsing ─────────────────────────────────────────────────
+function extractNextData(html) {
+  const m = html.match(/<script[^>]+id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+function findArticleInNextData(nextData) {
+  const pp = nextData?.props?.pageProps;
+  const candidates = [
+    pp?.article,
+    pp?.data?.article,
+    pp?.initialData?.article,
+    pp?.content,
+    pp?.pageData?.article,
+  ];
+  return candidates.find(c => c && (c.title || c.headline)) ?? null;
+}
+
+function extractMetaFromNextData(article) {
+  // author may be a string or an object with a title/name field
+  const authorRaw = article.author;
+  const author = typeof authorRaw === 'string'
+    ? authorRaw
+    : (authorRaw?.title || authorRaw?.name || (article.authors && article.authors[0]?.name) || article.byline || '');
+  return {
+    feedHeadline: '',
+    title:    article.title    || article.headline    || '',
+    subtitle: article.standfirst || article.subtitle || article.subTitle
+              || article.headline || article.teaser || article.kicker || '',
+    author,
+    intro:    '',
+    score:    '',
+    deltas:   {},
+    flagged:  [],
+    introParts: [],
+    leadParts:  [],
+  };
+}
+
+// TopGear listicle: items array with { title, body (HTML), media }
+function isListicle(article) {
+  return Array.isArray(article.items) && article.items.length > 0;
+}
+
+function parseListicleItems(article) {
+  const base = 'https://www.topgear.com';
+  const reversed = article.reversedList;
+  const total = article.items.length;
+
+  const flagged = [];
+  const entries = article.items.map((item, i) => {
+    const number = reversed ? (total - i) : (i + 1);
+    const name   = (item.title || '').trim();
+    // body is HTML — keep bold/italic/links and one component per paragraph
+    const bodyParts = [];
+    for (const p of paras(item.body || '')) {
+      const text = p.textContent.trim();
+      if (!text) continue;
+      const deltas = trimDeltas(paraToDeltas(p));
+      if (!deltas.length) continue;
+      if (shouldFlag(text)) flagged.push(text);
+      bodyParts.push(deltas);
+    }
+    // Item titles can carry italics (model names), so keep them rich too
+    const nameDoc = new DOMParser().parseFromString('<div>' + (item.title || '') + '</div>', 'text/html');
+    const nameDeltas = trimDeltas(nodesToDeltas(nameDoc.body.firstChild.childNodes, { italicOnly: true }));
+    return { number, name, nameDeltas, bodyParts };
+  });
+  return { entries, flagged };
+}
+
+// Collect every image the article carries, whatever its contentType.
+// Covers: hero, listicle items, carousel/gallery slides, and inline body images.
+function extractArticleImages(article) {
+  const base = 'https://www.topgear.com';
+  const urls = [];
+  const add = src => {
+    if (!src || typeof src !== 'string') return;
+    const abs = src.startsWith('http') ? src : base + src;
+    if (!urls.includes(abs)) urls.push(abs);
+  };
+
+  // Main hero image
+  add(article.image && article.image.src);
+
+  // Listicle: per-item images
+  (article.items || []).forEach(item => add(item.media && item.media.image && item.media.image.src));
+
+  // garageReview / review / news: carousel + gallery slides
+  ['carousel', 'gallery', 'images', 'media'].forEach(key => {
+    const list = article[key];
+    if (!Array.isArray(list)) return;
+    list.forEach(slide => {
+      if (!slide) return;
+      add(slide.image && slide.image.src);
+      add(slide.src);
+    });
+  });
+
+  // Inline images inside the body HTML
+  if (typeof article.body === 'string' && article.body.includes('<img')) {
+    const d = new DOMParser().parseFromString('<div>' + article.body + '</div>', 'text/html');
+    d.querySelectorAll('img').forEach(img => add(img.getAttribute('src')));
+  }
+
+  return urls;
+}
+
+// ─── DOM scraping fallback ─────────────────────────────────────────────────
+function extractImagesFromDoc(doc, baseUrl) {
+  const urls = new Set();
+  doc.querySelectorAll('img').forEach(img => {
+    const src = img.dataset.src || img.dataset.lazySrc || img.getAttribute('data-original') || img.src || '';
+    if (!src || src.startsWith('data:') || src.length < 10) return;
+    try {
+      const abs = new URL(src, baseUrl || 'https://www.topgear.com').href;
+      if (abs.startsWith('https://')) urls.add(abs.split('?')[0]);
+    } catch {}
+  });
+  // Also check srcset
+  doc.querySelectorAll('[srcset]').forEach(el => {
+    el.getAttribute('srcset').split(',').forEach(entry => {
+      const urlPart = entry.trim().split(/\s+/)[0];
+      try {
+        const abs = new URL(urlPart, 'https://www.topgear.com').href;
+        if (abs.startsWith('https://')) urls.add(abs.split('?')[0]);
+      } catch {}
+    });
+  });
+  return Array.from(urls).filter(u => /\.(jpg|jpeg|png|webp|gif)/i.test(u));
+}
+
+function scrapeFromDom(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const title =
+    doc.querySelector('h1')?.textContent?.trim() ||
+    doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+  const standfirst =
+    doc.querySelector('[class*="standfirst"]')?.textContent?.trim() ||
+    doc.querySelector('[class*="subtitle"]')?.textContent?.trim() ||
+    doc.querySelector('[class*="intro"]')?.textContent?.trim() ||
+    doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  const author =
+    doc.querySelector('[class*="byline"] a')?.textContent?.trim() ||
+    doc.querySelector('[class*="author"] a')?.textContent?.trim() ||
+    doc.querySelector('[rel="author"]')?.textContent?.trim() ||
+    doc.querySelector('meta[name="author"]')?.getAttribute('content') || '';
+  const bodyEl =
+    doc.querySelector('[class*="article-body"]') ||
+    doc.querySelector('[class*="article__body"]') ||
+    doc.querySelector('article') ||
+    doc.querySelector('main') || null;
+  const images = extractImagesFromDoc(doc, 'https://www.topgear.com');
+  return { title, standfirst, author, bodyEl, images };
+}
+
+// Nothing is ever discarded: every paragraph either becomes an entry heading or
+// is pushed as a body part at the position it occurred. Paragraphs that read as
+// editor instructions are still included, but recorded in `flagged` for review.
+function parseNumberedFromHtml(htmlString) {
+  const ENTRY_RE = /^(\d+)[.:\s]\s*(.+)$/;
+  const entries = [];
+  const leadParts = [];
+  const flagged = [];
+  let pending = null;
+
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+
+    const heading = /^H[1-6]$/.test(p.tagName) ? p.textContent.trim() : null;
+    const m = (heading || text).match(ENTRY_RE);
+    if (m) {
+      if (pending) entries.push(pending);
+      pending = {
+        number: parseInt(m[1], 10),
+        name: m[2].trim(),
+        nameDeltas: entryNameDeltas(p),
+        bodyParts: [],
+      };
+      continue;
+    }
+
+    if (shouldFlag(text)) flagged.push(text);
+    if (pending) pending.bodyParts.push(deltas);
+    else leadParts.push(deltas);
+  }
+  if (pending) entries.push(pending);
+  return { entries, leadParts, flagged };
+}
+
+function parseCrossheadFromHtml(htmlString) {
+  const entries = [];
+  const introParts = [];
+  const flagged = [];
+  let curCrosshead = null;
+  let curCrossheadDeltas = null;
+  let curBodyParts = [];
+  let inContent = false;
+  let score = '';
+
+  const flush = () => {
+    if (curCrosshead !== null) {
+      entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
+    }
+  };
+
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+
+    // Score line (e.g. "SCORE: 7/10") — must run before crosshead detection
+    if (/^score:\s*\d/i.test(text)) { score = text; continue; }
+
+    const crosshead = extractCrosshead(p);
+    if (crosshead) {
+      flush();
+      inContent = true;
+      curCrosshead = crosshead.crosshead;
+      curCrossheadDeltas = crosshead.crossheadDeltas;
+      curBodyParts = crosshead.remainingDeltas.length ? [crosshead.remainingDeltas] : [];
+      continue;
+    }
+
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+    if (shouldFlag(text)) flagged.push(text);
+
+    if (inContent) curBodyParts.push(deltas);
+    else introParts.push(deltas);
+  }
+  flush();
+  return { entries, introParts, flagged, score };
+}
+
+// Straight prose with no crossheads, numbering or bold leads (e.g. garageReview
+// long-term reports). Every paragraph becomes its own body component.
+function parseProseFromHtml(htmlString) {
+  const parts = [];
+  const flagged = [];
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+    if (shouldFlag(text)) flagged.push(text);
+    parts.push(deltas);
+  }
+  if (!parts.length) return { entries: [], flagged };
+  return { entries: [{ crosshead: '', crossheadDeltas: [], number: 1, name: '', nameDeltas: [], bodyParts: parts }], flagged };
+}
+
+// Runs the parser for the chosen type, falling back to prose when the article
+// has no crossheads or numbering. Text is never discarded by any branch.
+function parseBody(bodyHtml, type) {
+  if (!bodyHtml) return { entries: [], flagged: [] };
+  const parsed = type === 'crosshead'
+    ? parseCrossheadFromHtml(bodyHtml)
+    : parseNumberedFromHtml(bodyHtml);
+
+  if (parsed.entries.length) return parsed;
+
+  // No entries matched. Anything the parser gathered as intro/lead is real copy,
+  // so re-run as prose rather than emitting an article with no body.
+  const prose = parseProseFromHtml(bodyHtml);
+  prose.proseFallback = prose.entries.length > 0;
+  return prose;
+}
+
+// Copies parser output onto meta and records what happened for the debug box
+function applyParsed(meta, parsed, debugInfo) {
+  meta.introParts = parsed.introParts || [];
+  meta.leadParts  = parsed.leadParts || [];
+  meta.flagged    = parsed.flagged || [];
+  if (parsed.score) meta.score = parsed.score;
+  if (meta.introParts.length && !meta.intro) {
+    meta.intro = meta.introParts.map(deltasToText).join('\n\n');
+  }
+  if (parsed.proseFallback) debugInfo.proseFallback = true;
+  debugInfo.flaggedCount = meta.flagged.length;
+}
+
+function proxyUrl(targetUrl) {
+  return String(window.PROXY_BASE).replace(/\/$/, '') + '/proxy?url=' + encodeURIComponent(targetUrl);
+}
+
+async function fetchWithProxy(targetUrl) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 25000);
+  try {
+    const resp = await fetch(proxyUrl(targetUrl), { signal: controller.signal });
+    clearTimeout(tid);
+    if (resp.ok) return await resp.text();
+    throw new Error('Server returned HTTP ' + resp.status);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === 'AbortError') throw new Error('Request timed out after 25 seconds.');
+    throw new Error('Could not fetch the article: ' + e.message + '. Make sure server.js is running (node server.js) and you opened http://localhost:3456');
+  }
+}
+
+// ─── Image ZIP download ────────────────────────────────────────────────────
+async function downloadImagesAsZip(imageUrls, slug) {
+  const zipStatusEl = document.getElementById('zipStatus');
+  const downloadImagesBtn = document.getElementById('downloadImagesBtn');
+  downloadImagesBtn.disabled = true;
+
+  zipStatusEl.classList.remove('hidden');
+  zipStatusEl.textContent = 'Starting download…';
+
+  const zip = new JSZip();
+  const folder = zip.folder('images');
+  let done = 0;
+  let failed = 0;
+
+  for (const [i, url] of imageUrls.entries()) {
+    try {
+      const proxied = proxyUrl(url);
+      const resp = await fetch(proxied, { signal: AbortSignal.timeout(25000) });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const buf = await resp.arrayBuffer();
+      const ext = url.split('.').pop().split('?')[0].toLowerCase() || 'jpg';
+      folder.file('image-' + String(i + 1).padStart(2, '0') + '.' + ext, buf);
+      done++;
+    } catch {
+      failed++;
+    }
+    zipStatusEl.textContent = 'Downloading ' + (done + failed) + ' / ' + imageUrls.length + ' images…';
+  }
+
+  zipStatusEl.textContent = 'Building ZIP…';
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slug + '-images.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  zipStatusEl.textContent = done + ' image' + (done !== 1 ? 's' : '') + ' downloaded'
+    + (failed > 0 ? ' (' + failed + ' failed).' : '.');
+  downloadImagesBtn.disabled = false;
+}
+
+function slugFromUrl(url) {
+  try {
+    const parts = new URL(url).pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1] || 'topgear-article';
+  } catch { return 'topgear-article'; }
+}
+
+// Unified entry point for the URL source. Returns the same { meta, entries }
+// shape as parseNumbered/parseCrosshead, plus imageUrls which only the web
+// source can supply, so the builders and UI stay source-agnostic.
+async function parseFromUrl(articleUrl, type) {
+  const html = await fetchWithProxy(articleUrl);
+  const debug = {};
+
+  const nextData = extractNextData(html);
+  const article  = nextData ? findArticleInNextData(nextData) : null;
+  debug.nextDataFound = !!nextData;
+  debug.articleFound  = !!article;
+
+  let meta, entries, imageUrls;
+
+  if (article) {
+    meta = extractMetaFromNextData(article);
+    imageUrls = extractArticleImages(article);
+    debug.contentType = article.contentType || '';
+
+    if (isListicle(article)) {
+      const parsed = parseListicleItems(article);
+      entries = parsed.entries;
+      applyParsed(meta, parsed, debug);
+      debug.listicle = true;
+    } else {
+      const bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
+      debug.bodyHtmlLength = bodyHtml.length;
+      const parsed = parseBody(bodyHtml, type);
+      entries = parsed.entries;
+      applyParsed(meta, parsed, debug);
+    }
+  } else {
+    debug.fallback = true;
+    const scraped = scrapeFromDom(html);
+    meta = { feedHeadline: '', title: scraped.title, subtitle: scraped.standfirst,
+             author: scraped.author, intro: '', score: '', deltas: {},
+             flagged: [], introParts: [], leadParts: [] };
+    const bodyHtml = scraped.bodyEl ? scraped.bodyEl.innerHTML : '';
+    const parsed = parseBody(bodyHtml, type);
+    entries = parsed.entries;
+    applyParsed(meta, parsed, debug);
+    imageUrls = scraped.images;
+  }
+
+  debug.entriesFound = entries.length;
+  debug.imagesFound  = imageUrls.length;
+  return { meta, entries, imageUrls, debug };
 }
 
 // ─── Template building ───────────────────────────────────────────────────
@@ -368,6 +860,12 @@ function buildNumbered(template, meta, entries, type) {
   entries.sort((a, b) => type === 'countdown' ? b.number - a.number : a.number - b.number);
 
   const result = [...header];
+
+  // Copy that appeared before the first numbered entry is kept in place, as
+  // plain body components between the header and entry 1 — never dropped.
+  (meta.leadParts || []).forEach(deltas => {
+    result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+  });
 
   entries.forEach((entry, i) => {
     const group = deepClone(canonical);
@@ -802,8 +1300,19 @@ function buildCrosshead(template, meta, entries) {
       '      </select>' +
       '    </div>' +
       '    <div class="wdab-row">' +
+      '      <label for="' + p + '-source">Source</label>' +
+      '      <select id="' + p + '-source">' +
+      '        <option value="docx">Word document (.docx)</option>' +
+      '        <option value="url">TopGear article URL</option>' +
+      '      </select>' +
+      '    </div>' +
+      '    <div class="wdab-row" id="' + p + '-docx-row">' +
       '      <label for="' + p + '-file">Word document (.docx)</label>' +
       '      <input type="file" id="' + p + '-file" accept=".docx">' +
+      '    </div>' +
+      '    <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
+      '      <label for="' + p + '-url">TopGear article URL</label>' +
+      '      <input type="url" id="' + p + '-url" placeholder="https://www.topgear.com/…">' +
       '    </div>' +
       '    <button class="wdab-btn" id="' + p + '-parse" disabled>Parse Document</button>' +
       '    <p class="wdab-error" id="' + p + '-parse-error"></p>' +
@@ -846,20 +1355,51 @@ function buildCrosshead(template, meta, entries) {
       $('parse-error').style.display = 'none';
     });
 
+    $('source').addEventListener('change', function () {
+      var isDocx = $('source').value === 'docx';
+      $('docx-row').classList.toggle('wdab-hidden', !isDocx);
+      $('url-row').classList.toggle('wdab-hidden', isDocx);
+      refreshParse();
+    });
+    $('url').addEventListener('input', refreshParse);
+
+    function refreshParse() {
+      var isDocx = $('source').value === 'docx';
+      $('parse').disabled = isDocx ? !$('file').files.length : !$('url').value.trim();
+      $('parse').textContent = isDocx ? 'Parse Document' : 'Fetch & Parse Article';
+    }
+
     $('parse').addEventListener('click', function () {
+      var source = $('source').value;
       var file = $('file').files[0];
-      if (!file) return;
+      if (source === 'docx' && !file) return;
+      if (source === 'url' && !$('url').value.trim()) return;
       var type = $('type').value;
       $('parse').disabled = true;
-      $('parse').textContent = 'Parsing…';
+      $('parse').textContent = source === 'docx' ? 'Parsing…' : 'Fetching…';
       $('parse-error').style.display = 'none';
 
-      loadMammoth()
-        .then(function (mammoth) { return file.arrayBuffer().then(function (buf) { return mammoth.convertToHtml({ arrayBuffer: buf }); }); })
-        .then(function (result) {
-          var parsed = type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value);
+      var pipeline;
+      if (source === 'url') {
+        var articleUrl = $('url').value.trim();
+        pipeline = parseFromUrl(articleUrl, type).then(function (r) {
+          state.imageUrls = r.imageUrls || [];
+          state.uploadedFilename = slugFromUrl(articleUrl);
+          return { meta: r.meta, entries: r.entries };
+        });
+      } else {
+        pipeline = loadMammoth()
+          .then(function (mammoth) { return file.arrayBuffer().then(function (buf) { return mammoth.convertToHtml({ arrayBuffer: buf }); }); })
+          .then(function (result) {
+            state.imageUrls = [];
+            state.uploadedFilename = file.name.replace(/\.docx$/i, '');
+            return type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value, type);
+          });
+      }
+
+      pipeline
+        .then(function (parsed) {
           state.parsedData = { meta: parsed.meta, entries: parsed.entries, type: type };
-          state.uploadedFilename = file.name.replace(/\.docx$/i, '');
 
           $('feed').value = parsed.meta.feedHeadline;
           $('feed-row').classList.toggle('wdab-hidden', !parsed.meta.feedHeadline);
@@ -867,8 +1407,8 @@ function buildCrosshead(template, meta, entries) {
           $('subtitle').value = parsed.meta.subtitle;
           $('author').value = parsed.meta.author;
 
-          if (parsed.meta.unrecognized && parsed.meta.unrecognized.length) {
-            $('warn-list').innerHTML = parsed.meta.unrecognized.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+          if (parsed.meta.flagged && parsed.meta.flagged.length) {
+            $('warn-list').innerHTML = parsed.meta.flagged.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
             $('warn').style.display = 'block';
           } else {
             $('warn').style.display = 'none';
@@ -889,7 +1429,7 @@ function buildCrosshead(template, meta, entries) {
         })
         .then(function () {
           $('parse').disabled = false;
-          $('parse').textContent = 'Parse Document';
+          refreshParse();
         });
     });
 
@@ -911,6 +1451,7 @@ function buildCrosshead(template, meta, entries) {
           score: pm.score,
           intro: pm.intro,
           introParts: pm.introParts,
+          leadParts: pm.leadParts,
           titleDeltas: $('title').value === pm.title ? pd.title : null,
           subtitleDeltas: $('subtitle').value === pm.subtitle ? pd.subtitle : null,
         };

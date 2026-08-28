@@ -25,6 +25,10 @@
   }
 
   // ─── Conversion engine (generated from index.html) ────────────────────────
+  // The plug-in runs on Studio's origin, so /proxy must be absolute.
+  // Set this to your deployed Fly app before shipping.
+  window.PROXY_BASE = window.PROXY_BASE || 'https://topgear-web-word-digital.fly.dev';
+
   /*__ENGINE__*/
   // ─── End conversion engine ────────────────────────────────────────────────
 
@@ -323,8 +327,19 @@
       '      </select>' +
       '    </div>' +
       '    <div class="wdab-row">' +
+      '      <label for="' + p + '-source">Source</label>' +
+      '      <select id="' + p + '-source">' +
+      '        <option value="docx">Word document (.docx)</option>' +
+      '        <option value="url">TopGear article URL</option>' +
+      '      </select>' +
+      '    </div>' +
+      '    <div class="wdab-row" id="' + p + '-docx-row">' +
       '      <label for="' + p + '-file">Word document (.docx)</label>' +
       '      <input type="file" id="' + p + '-file" accept=".docx">' +
+      '    </div>' +
+      '    <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
+      '      <label for="' + p + '-url">TopGear article URL</label>' +
+      '      <input type="url" id="' + p + '-url" placeholder="https://www.topgear.com/…">' +
       '    </div>' +
       '    <button class="wdab-btn" id="' + p + '-parse" disabled>Parse Document</button>' +
       '    <p class="wdab-error" id="' + p + '-parse-error"></p>' +
@@ -367,20 +382,51 @@
       $('parse-error').style.display = 'none';
     });
 
+    $('source').addEventListener('change', function () {
+      var isDocx = $('source').value === 'docx';
+      $('docx-row').classList.toggle('wdab-hidden', !isDocx);
+      $('url-row').classList.toggle('wdab-hidden', isDocx);
+      refreshParse();
+    });
+    $('url').addEventListener('input', refreshParse);
+
+    function refreshParse() {
+      var isDocx = $('source').value === 'docx';
+      $('parse').disabled = isDocx ? !$('file').files.length : !$('url').value.trim();
+      $('parse').textContent = isDocx ? 'Parse Document' : 'Fetch & Parse Article';
+    }
+
     $('parse').addEventListener('click', function () {
+      var source = $('source').value;
       var file = $('file').files[0];
-      if (!file) return;
+      if (source === 'docx' && !file) return;
+      if (source === 'url' && !$('url').value.trim()) return;
       var type = $('type').value;
       $('parse').disabled = true;
-      $('parse').textContent = 'Parsing…';
+      $('parse').textContent = source === 'docx' ? 'Parsing…' : 'Fetching…';
       $('parse-error').style.display = 'none';
 
-      loadMammoth()
-        .then(function (mammoth) { return file.arrayBuffer().then(function (buf) { return mammoth.convertToHtml({ arrayBuffer: buf }); }); })
-        .then(function (result) {
-          var parsed = type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value);
+      var pipeline;
+      if (source === 'url') {
+        var articleUrl = $('url').value.trim();
+        pipeline = parseFromUrl(articleUrl, type).then(function (r) {
+          state.imageUrls = r.imageUrls || [];
+          state.uploadedFilename = slugFromUrl(articleUrl);
+          return { meta: r.meta, entries: r.entries };
+        });
+      } else {
+        pipeline = loadMammoth()
+          .then(function (mammoth) { return file.arrayBuffer().then(function (buf) { return mammoth.convertToHtml({ arrayBuffer: buf }); }); })
+          .then(function (result) {
+            state.imageUrls = [];
+            state.uploadedFilename = file.name.replace(/\.docx$/i, '');
+            return type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value, type);
+          });
+      }
+
+      pipeline
+        .then(function (parsed) {
           state.parsedData = { meta: parsed.meta, entries: parsed.entries, type: type };
-          state.uploadedFilename = file.name.replace(/\.docx$/i, '');
 
           $('feed').value = parsed.meta.feedHeadline;
           $('feed-row').classList.toggle('wdab-hidden', !parsed.meta.feedHeadline);
@@ -388,8 +434,8 @@
           $('subtitle').value = parsed.meta.subtitle;
           $('author').value = parsed.meta.author;
 
-          if (parsed.meta.unrecognized && parsed.meta.unrecognized.length) {
-            $('warn-list').innerHTML = parsed.meta.unrecognized.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+          if (parsed.meta.flagged && parsed.meta.flagged.length) {
+            $('warn-list').innerHTML = parsed.meta.flagged.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
             $('warn').style.display = 'block';
           } else {
             $('warn').style.display = 'none';
@@ -410,7 +456,7 @@
         })
         .then(function () {
           $('parse').disabled = false;
-          $('parse').textContent = 'Parse Document';
+          refreshParse();
         });
     });
 
@@ -432,6 +478,7 @@
           score: pm.score,
           intro: pm.intro,
           introParts: pm.introParts,
+          leadParts: pm.leadParts,
           titleDeltas: $('title').value === pm.title ? pd.title : null,
           subtitleDeltas: $('subtitle').value === pm.subtitle ? pd.subtitle : null,
         };

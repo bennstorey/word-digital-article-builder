@@ -1,8 +1,31 @@
-# Word → Digital Article Builder
+# Word / Web → Digital Article Builder
 
-Converts TG AN+ Word documents (.docx) into WoodWing Studio digital articles (.digital).
+Converts TG AN+ Word documents (.docx) **or live topgear.com article URLs** into
+WoodWing Studio digital articles (.digital).
 
-Runs entirely in the browser — no backend. Word parsing via [mammoth.js](https://github.com/mwilliamson/mammoth.js) (CDN). The Studio plug-in creates the digital article directly in the current Dossier via the workflow API.
+Word parsing via [mammoth.js](https://github.com/mwilliamson/mammoth.js) (CDN).
+The Studio plug-in creates the digital article directly in the current Dossier via
+the workflow API.
+
+## Sources
+
+| Source | Needs | Notes |
+|--------|-------|-------|
+| `.docx` | nothing — runs fully in the browser | Original path, unchanged |
+| topgear.com URL | the proxy in `../server.js` | topgear.com sends no CORS headers, and its Akamai edge 403s non-browser user agents, so the fetch must be server-side |
+
+Both sources feed the **same** parsers and builders and produce the same
+`{ meta, entries }` shape — `parseFromUrl()` is the URL-side adapter. Article
+images (hero + carousel + listicle items + inline) are collected on the URL path
+and downloadable as a ZIP.
+
+### Proxy
+
+The URL source needs `server.js` running (locally) or deployed (Fly.io — see
+`fly.toml`). The standalone page defaults to same-origin `/proxy`; the Studio
+plug-in sets `window.PROXY_BASE` to the deployed proxy because it runs on
+Studio's origin. **Set `PROXY_BASE` in `plugin-shell.js` to your real Fly
+hostname before shipping.**
 
 ## Supported article types
 
@@ -12,7 +35,17 @@ Runs entirely in the browser — no backend. Word parsing via [mammoth.js](https
 | 2 — Ascending | Numbered 1 → 50 | Entries as `1. Name` … `50. Name` |
 | 3 — Crosshead / generic article | Review Q&A or plain prose | Crossheads as bold paragraphs or Word headings; a doc with no crossheads (e.g. "First Look" pieces) becomes one body component per paragraph |
 
-Metadata is picked up from `Feed headline:`, `Article headline:`, `Article subhead:` and `Words:` lines. Bold in body text and italics everywhere are preserved. Lines starting with `pics:`, `web gallery`, `embed`/`imbed`, `embargo` and bare URLs are treated as editorial instructions and skipped.
+Metadata is picked up from `Feed headline:`, `Article headline:`, `Article subhead:` and `Words:` lines. Bold, italics and links are preserved everywhere, and **each paragraph becomes its own body component**.
+
+**Nothing is ever dropped.** Lines starting with `pics:`, `web gallery`,
+`embed`/`imbed`, `embargo` and bare URLs are treated as editorial instructions:
+they are listed in the review box *and still placed inline as body text where they
+appeared*, so copy can't vanish silently. (Before Aug 2026 these were discarded.)
+They are deliberately not read as crossheads even when bold, so an instruction
+can't open a spurious section.
+
+Type 1/2 docs written with **bold entry names and no `1. ` prefix** are detected
+and auto-numbered by position rather than parsing to nothing.
 
 ## Files
 
