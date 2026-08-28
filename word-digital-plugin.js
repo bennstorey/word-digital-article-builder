@@ -427,6 +427,9 @@ function buildCrosshead(template, meta, entries) {
   // Multi-paragraph intros (including whole articles without any crossheads, e.g.
   // "First Look" prose pieces) become one component per paragraph: the first keeps
   // the template's intro styling, the rest are plain body components.
+  const channelFollow = deepClone(c[8]);
+  channelFollow.id = genId();
+
   const introComps = [];
   if (meta.intro) {
     const parts = meta.introParts && meta.introParts.length
@@ -444,8 +447,14 @@ function buildCrosshead(template, meta, entries) {
     });
   }
 
-  const channelFollow = deepClone(c[8]);
-  channelFollow.id = genId();
+  // The channel FOLLOW block goes directly after the article's first paragraph:
+  // after the first intro paragraph when there is an intro, otherwise after the
+  // first crosshead section (matching the reference articles).
+  let followPlaced = false;
+  if (introComps.length) {
+    introComps.splice(1, 0, deepClone(channelFollow));
+    followPlaced = true;
+  }
 
   // Canonical section = indices 9–11: [title, crosshead, body]
   const canonical = deepClone(c.slice(9, 12));
@@ -482,7 +491,7 @@ function buildCrosshead(template, meta, entries) {
 
     result.push(...group, ...extraBodies);
 
-    if (i === 0) result.push(deepClone(channelFollow));
+    if (i === 0 && !followPlaced) result.push(deepClone(channelFollow));
   });
 
   if (meta.score) scoreTitle.content = { text: [{ insert: meta.score }] };
