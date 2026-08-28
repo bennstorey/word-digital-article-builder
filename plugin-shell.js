@@ -2,14 +2,13 @@
  * Word → Digital Article Builder — WoodWing Studio plug-in
  *
  * Content Station SDK plug-in that converts Top Gear AN+ Word documents
- * (.docx) into digital articles (.digital). Two entry points:
- *
- *  - A button in the Dossier toolbar (the happy path): parse a Word doc and
- *    create the digital article directly inside the current Dossier via the
- *    workflow API (upload through the Transfer Server, CreateObjects with a
- *    'Contained' relation, C_HEADLINE set from the feed headline).
- *  - A Custom App in the Apps menu: same converter with a .digital file
- *    download, for when no Dossier context is wanted.
+ * (.docx) into digital articles (.digital). Single entry point: a button in
+ * the Dossier toolbar that parses a Word doc and creates the digital article
+ * directly inside the current Dossier via the workflow API (upload through
+ * the Transfer Server, CreateObjects with a 'Contained' relation, C_HEADLINE
+ * set from the feed headline, component set / Look and Feel / Twixl id from
+ * BRAND_DEFAULTS). The standalone web version — index.html on GitHub Pages —
+ * offers a .digital file download when no Dossier context is wanted.
  *
  * GENERATED FILE — do not edit directly. The conversion engine is extracted
  * from index.html by build-plugin.js; edit there and rebuild.
@@ -320,7 +319,7 @@
       '      <select id="' + p + '-type">' +
       '        <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
       '        <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
-      '        <option value="crosshead">Type 3 — Crosshead + text (reviews)</option>' +
+      '        <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
       '      </select>' +
       '    </div>' +
       '    <div class="wdab-row">' +
@@ -446,31 +445,10 @@
     return controller;
   }
 
-  // ─── Apps menu: standalone converter with .digital download ───────────────
-  ContentStationSdk.registerCustomApp({
-    name: 'word-digital-article-builder',
-    title: 'Word → Digital Article',
-    content: '<div class="wdab-scroll">' + formHtml('wdab', 'Download .digital file') + '</div>',
-    onInit: function () {
-      injectCss();
-      var form = wireForm('wdab', function (ctl) {
-        var result = ctl.getResult();
-        if (!result) return;
-        var blob = new Blob([JSON.stringify(result.digital)], { type: 'application/json' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = result.filename + '.digital';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-      form.$('feed-note').textContent = 'Copy manually to Studio → C_HEADLINE';
-    },
-  });
-
   // ─── Dossier toolbar: convert and create directly in this Dossier ─────────
+  // (The Apps-menu custom app was removed on request — the Dossier button is
+  // the only trigger. The standalone web version on GitHub Pages still offers
+  // a .digital download when one is needed.)
   ContentStationSdk.addDossierToolbarButton({
     label: 'Word → Digital Article',
     onAction: function (config, selection, dossier) {
@@ -514,7 +492,7 @@
             if (dialogId !== null) ContentStationSdk.closeModalDialog(dialogId);
           })
           .catch(function (err) {
-            errEl.textContent = err.message + '\nNothing was created. You can fix the issue and try again, or use the Apps-menu version to download the file instead.';
+            errEl.textContent = err.message + '\nNothing was created. You can fix the issue and try again.';
             errEl.style.display = 'block';
           })
           .then(function () {

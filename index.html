@@ -26,7 +26,7 @@
       <select id="articleType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
         <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>
         <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>
-        <option value="crosshead">Type 3 — Crosshead + text</option>
+        <option value="crosshead">Type 3 — Crosshead / generic article</option>
       </select>
     </div>
 
@@ -507,15 +507,25 @@ function buildCrosshead(template, meta, entries) {
   setAuthor(header, meta.author);
   header.forEach(comp => { comp.id = genId(); });
 
-  // Articles that open straight on a crosshead have no intro — drop the component
-  const introBody = meta.intro ? deepClone(c[4]) : null;
-  if (introBody) {
-    introBody.id = genId();
-    introBody.content = {
-      text: meta.introParts && meta.introParts.length
-        ? joinDeltas(meta.introParts)
-        : [{ insert: meta.intro }]
-    };
+  // Articles that open straight on a crosshead have no intro — drop the component.
+  // Multi-paragraph intros (including whole articles without any crossheads, e.g.
+  // "First Look" prose pieces) become one component per paragraph: the first keeps
+  // the template's intro styling, the rest are plain body components.
+  const introComps = [];
+  if (meta.intro) {
+    const parts = meta.introParts && meta.introParts.length
+      ? meta.introParts
+      : [[{ insert: meta.intro }]];
+    parts.forEach((deltas, i) => {
+      if (i === 0) {
+        const introBody = deepClone(c[4]);
+        introBody.id = genId();
+        introBody.content = { text: deltas };
+        introComps.push(introBody);
+      } else {
+        introComps.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+      }
+    });
   }
 
   const channelFollow = deepClone(c[8]);
@@ -530,7 +540,7 @@ function buildCrosshead(template, meta, entries) {
   const reviewImage = deepClone(c[17]);
   const footerComps = deepClone(c.slice(18));
 
-  const result = introBody ? [...header, introBody] : [...header];
+  const result = [...header, ...introComps];
 
   entries.forEach((entry, i) => {
     // Filter out the crosshead component — questions go in title(_option2) per reference structure

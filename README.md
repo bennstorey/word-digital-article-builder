@@ -10,7 +10,7 @@ Runs entirely in the browser — no backend. Word parsing via [mammoth.js](https
 |------|--------|---------------------|
 | 1 — Countdown | Numbered 50 → 1 | Entries as `50. Name` … `1. Name` |
 | 2 — Ascending | Numbered 1 → 50 | Entries as `1. Name` … `50. Name` |
-| 3 — Crosshead | Review Q&A | Crossheads as bold paragraphs or Word headings |
+| 3 — Crosshead / generic article | Review Q&A or plain prose | Crossheads as bold paragraphs or Word headings; a doc with no crossheads (e.g. "First Look" pieces) becomes one body component per paragraph |
 
 Metadata is picked up from `Feed headline:`, `Article headline:`, `Article subhead:` and `Words:` lines. Bold in body text and italics everywhere are preserved. Lines starting with `pics:`, `web gallery`, `embed`/`imbed`, `embargo` and bare URLs are treated as editorial instructions and skipped.
 
@@ -50,7 +50,7 @@ Note: `{SESSION_ID}` URL-app wildcards are deprecated since Studio 10.40 / Enter
 - `C_HEADLINE` set from the feed headline (no manual copy needed)
 - component set, Look and Feel and Twixl Collection ID from `BRAND_DEFAULTS` in `plugin-shell.js` (Top Gear: Default set, "TG-custom-styles-ISSUE-APPLE 2026", Twixl `102069`), plus `C_CS_FILEFORMATVERSION` / `C_CS_DE_COMPONENT_NAMES`
 
-**Fallback (Apps menu):** same converter with a `.digital` file download instead of direct creation; feed headline must be copied to C_HEADLINE manually.
+**Fallback (standalone web version):** `index.html` on GitHub Pages offers the same converter with a `.digital` file download instead of direct creation; feed headline must be copied to C_HEADLINE manually. (The plug-in's Apps-menu entry was removed by request — the Dossier button is the only trigger inside Studio.)
 
 ## Studio Server integration notes (hard-won)
 
