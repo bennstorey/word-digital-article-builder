@@ -554,9 +554,12 @@ function extractMetaFromNextData(article) {
   const author = typeof authorRaw === 'string'
     ? authorRaw
     : (authorRaw?.title || authorRaw?.name || (article.authors && article.authors[0]?.name) || article.byline || '');
+  const title = article.title || article.headline || '';
   return {
-    feedHeadline: '',
-    title:    article.title    || article.headline    || '',
+    // Web articles carry a single headline, so C_HEADLINE takes the same text
+    // (docx articles get theirs from an explicit "Feed headline:" line).
+    feedHeadline: title,
+    title:    title,
     subtitle: article.standfirst || article.subtitle || article.subTitle
               || article.headline || article.teaser || article.kicker || '',
     author,
@@ -919,7 +922,7 @@ async function parseFromUrl(articleUrl, type) {
   } else {
     debug.fallback = true;
     const scraped = scrapeFromDom(html);
-    meta = { feedHeadline: '', title: scraped.title, subtitle: scraped.standfirst,
+    meta = { feedHeadline: scraped.title, title: scraped.title, subtitle: scraped.standfirst,
              author: scraped.author, intro: '', score: '', deltas: {},
              flagged: [], introParts: [], leadParts: [] };
     const bodyHtml = scraped.bodyEl ? scraped.bodyEl.innerHTML : '';
