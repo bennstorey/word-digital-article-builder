@@ -1003,8 +1003,14 @@ function buildCrosshead(template, meta, entries) {
     if (i === 0 && !followPlaced) result.push(deepClone(channelFollow));
   });
 
+  // The template ships a placeholder "SCORE: X/10". Only keep the component when
+  // the document actually carried a score — otherwise drop it, rather than
+  // leaving the placeholder for someone to notice and delete by hand.
+  const tail = meta.score
+    ? [spacer, scoreTitle, reviewImage]
+    : [spacer, reviewImage];
   if (meta.score) scoreTitle.content = { text: [{ insert: meta.score }] };
-  [spacer, scoreTitle, reviewImage].forEach(comp => {
+  tail.forEach(comp => {
     comp.id = genId();
     result.push(comp);
   });
@@ -1338,7 +1344,7 @@ function buildCrosshead(template, meta, entries) {
       '      <div class="wdab-row"><label>Article title</label><input type="text" id="' + p + '-title"></div>' +
       '      <div class="wdab-row"><label>Subtitle</label><input type="text" id="' + p + '-subtitle"></div>' +
       '      <div class="wdab-row"><label>Author name</label><input type="text" id="' + p + '-author"></div>' +
-      '      <div class="wdab-warn" id="' + p + '-warn"><strong>Unrecognised lines (not included in output):</strong><ul id="' + p + '-warn-list"></ul></div>' +
+      '      <div class="wdab-warn" id="' + p + '-warn"><strong>Flagged for review — kept in the article:</strong> these look like editor instructions rather than copy. Each stays in place as plain body text; delete any that shouldn\'t ship.<ul id="' + p + '-warn-list"></ul></div>' +
       '    </div>' +
       '    <div class="wdab-card">' +
       '      <h2>3 — Entries (<span id="' + p + '-count">0</span>)</h2>' +

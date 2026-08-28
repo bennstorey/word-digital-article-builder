@@ -1103,8 +1103,14 @@ function buildCrosshead(template, meta, entries) {
     if (i === 0 && !followPlaced) result.push(deepClone(channelFollow));
   });
 
+  // The template ships a placeholder "SCORE: X/10". Only keep the component when
+  // the document actually carried a score — otherwise drop it, rather than
+  // leaving the placeholder for someone to notice and delete by hand.
+  const tail = meta.score
+    ? [spacer, scoreTitle, reviewImage]
+    : [spacer, reviewImage];
   if (meta.score) scoreTitle.content = { text: [{ insert: meta.score }] };
-  [spacer, scoreTitle, reviewImage].forEach(comp => {
+  tail.forEach(comp => {
     comp.id = genId();
     result.push(comp);
   });
