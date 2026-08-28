@@ -1,5 +1,5 @@
 /**
- * Word → Digital Article Builder — WoodWing Studio plug-in
+ * Word & Web → Digital — WoodWing Studio plug-in
  *
  * Content Station SDK plug-in that converts Top Gear AN+ Word documents
  * (.docx) into digital articles (.digital). Single entry point: a button in
@@ -96,6 +96,12 @@ function absoluteHref(href) {
 }
 
 const deltasToText = ops => (ops || []).map(o => o.insert).join('');
+
+// Intro/lead paragraphs are carried as { ops, flagged } so the builders can tell
+// editor instructions from real copy. Bare delta runs are still accepted.
+const partOps     = part => (part && part.ops) ? part.ops : (part || []);
+const partFlagged = part => !!(part && part.flagged);
+const mkPart      = (ops, flagged) => ({ ops: ops, flagged: !!flagged });
 
 function paraToDeltas(para, opts) {
   return nodesToDeltas(para.childNodes, opts);
@@ -258,9 +264,10 @@ function parseNumbered(html, type) {
         // Not metadata and not an entry heading. Never dropped: kept as body
         // copy at the point it appeared, and flagged if it reads like an
         // editor instruction so it can be reviewed before publishing.
-        if (shouldFlag(text)) meta.flagged.push(text);
+        var isInstr = shouldFlag(text);
+        if (isInstr) meta.flagged.push(text);
         const deltas = trimDeltas(paraToDeltas(p));
-        if (deltas.length) meta.leadParts.push(deltas);
+        if (deltas.length) meta.leadParts.push(mkPart(deltas, isInstr));
       }
     } else {
       const m = text.match(ENTRY_RE);
@@ -394,7 +401,7 @@ function parseCrosshead(html) {
         }
       } else {
         meta.intro = meta.intro ? meta.intro + '\n\n' + text : text;
-        meta.introParts.push(trimDeltas(paraToDeltas(p)));
+        meta.introParts.push(mkPart(trimDeltas(paraToDeltas(p)), isInstruction));
       }
     }
   }
@@ -610,7 +617,7 @@ function parseNumberedFromHtml(htmlString) {
 
     if (shouldFlag(text)) flagged.push(text);
     if (pending) pending.bodyParts.push(deltas);
-    else leadParts.push(deltas);
+    else leadParts.push(mkPart(deltas, shouldFlag(text)));
   }
   if (pending) entries.push(pending);
   return { entries, leadParts, flagged };
@@ -654,7 +661,7 @@ function parseCrossheadFromHtml(htmlString) {
     if (shouldFlag(text)) flagged.push(text);
 
     if (inContent) curBodyParts.push(deltas);
-    else introParts.push(deltas);
+    else introParts.push(mkPart(deltas, shouldFlag(text)));
   }
   flush();
   return { entries, introParts, flagged, score };
@@ -701,7 +708,7 @@ function applyParsed(meta, parsed, debugInfo) {
   meta.flagged    = parsed.flagged || [];
   if (parsed.score) meta.score = parsed.score;
   if (meta.introParts.length && !meta.intro) {
-    meta.intro = meta.introParts.map(deltasToText).join('\n\n');
+    meta.intro = meta.introParts.map(function (x) { return deltasToText(partOps(x)); }).join('\n\n');
   }
   if (parsed.proseFallback) debugInfo.proseFallback = true;
   debugInfo.flaggedCount = meta.flagged.length;
@@ -863,8 +870,8 @@ function buildNumbered(template, meta, entries, type) {
 
   // Copy that appeared before the first numbered entry is kept in place, as
   // plain body components between the header and entry 1 — never dropped.
-  (meta.leadParts || []).forEach(deltas => {
-    result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+  (meta.leadParts || []).forEach(part => {
+    result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
   });
 
   entries.forEach((entry, i) => {
@@ -932,15 +939,19 @@ function buildCrosshead(template, meta, entries) {
   if (meta.intro) {
     const parts = meta.introParts && meta.introParts.length
       ? meta.introParts
-      : [[{ insert: meta.intro }]];
-    parts.forEach((deltas, i) => {
-      if (i === 0) {
+      : [mkPart([{ insert: meta.intro }], false)];
+    // The template's intro component is styled (drop cap / lead-in), so it must
+    // hold the article's real opening paragraph. Editor instructions keep their
+    // position but render as plain body components, never as the styled lead.
+    const firstRealIdx = parts.findIndex(part => !partFlagged(part));
+    parts.forEach((part, i) => {
+      if (i === firstRealIdx) {
         const introBody = deepClone(c[4]);
         introBody.id = genId();
-        introBody.content = { text: deltas };
+        introBody.content = { text: partOps(part) };
         introComps.push(introBody);
       } else {
-        introComps.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+        introComps.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
       }
     });
   }
@@ -1470,7 +1481,7 @@ function buildCrosshead(template, meta, entries) {
   // the only trigger. The standalone web version on GitHub Pages still offers
   // a .digital download when one is needed.)
   ContentStationSdk.addDossierToolbarButton({
-    label: 'Word → Digital Article',
+    label: 'Word & Web → Digital',
     onAction: function (config, selection, dossier) {
       injectCss();
       var dialogId = null;
@@ -1479,7 +1490,7 @@ function buildCrosshead(template, meta, entries) {
       var content = '<div class="wdab-modal">' + formHtml('wdabm', 'Create Digital Article in this Dossier') + '</div>';
 
       dialogId = ContentStationSdk.openModalDialog({
-        title: 'Word → Digital Article',
+        title: 'Word & Web → Digital',
         subtitle: 'Creates the digital article in Dossier “' + esc(dossier.Name || '') + '”',
         content: content,
         width: 640,

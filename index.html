@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Word → Digital Article Builder</title>
+  <title>Word &amp; Web → Digital</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -14,7 +14,7 @@
 
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-2xl font-bold text-slate-900">Word → Digital Article Builder</h1>
+    <h1 class="text-2xl font-bold text-slate-900">Word &amp; Web → Digital</h1>
     <p class="text-slate-500 mt-1">Convert a Word document into a WoodWing Studio .digital file.</p>
   </div>
 
@@ -197,6 +197,12 @@ function absoluteHref(href) {
 
 const deltasToText = ops => (ops || []).map(o => o.insert).join('');
 
+// Intro/lead paragraphs are carried as { ops, flagged } so the builders can tell
+// editor instructions from real copy. Bare delta runs are still accepted.
+const partOps     = part => (part && part.ops) ? part.ops : (part || []);
+const partFlagged = part => !!(part && part.flagged);
+const mkPart      = (ops, flagged) => ({ ops: ops, flagged: !!flagged });
+
 function paraToDeltas(para, opts) {
   return nodesToDeltas(para.childNodes, opts);
 }
@@ -358,9 +364,10 @@ function parseNumbered(html, type) {
         // Not metadata and not an entry heading. Never dropped: kept as body
         // copy at the point it appeared, and flagged if it reads like an
         // editor instruction so it can be reviewed before publishing.
-        if (shouldFlag(text)) meta.flagged.push(text);
+        var isInstr = shouldFlag(text);
+        if (isInstr) meta.flagged.push(text);
         const deltas = trimDeltas(paraToDeltas(p));
-        if (deltas.length) meta.leadParts.push(deltas);
+        if (deltas.length) meta.leadParts.push(mkPart(deltas, isInstr));
       }
     } else {
       const m = text.match(ENTRY_RE);
@@ -494,7 +501,7 @@ function parseCrosshead(html) {
         }
       } else {
         meta.intro = meta.intro ? meta.intro + '\n\n' + text : text;
-        meta.introParts.push(trimDeltas(paraToDeltas(p)));
+        meta.introParts.push(mkPart(trimDeltas(paraToDeltas(p)), isInstruction));
       }
     }
   }
@@ -710,7 +717,7 @@ function parseNumberedFromHtml(htmlString) {
 
     if (shouldFlag(text)) flagged.push(text);
     if (pending) pending.bodyParts.push(deltas);
-    else leadParts.push(deltas);
+    else leadParts.push(mkPart(deltas, shouldFlag(text)));
   }
   if (pending) entries.push(pending);
   return { entries, leadParts, flagged };
@@ -754,7 +761,7 @@ function parseCrossheadFromHtml(htmlString) {
     if (shouldFlag(text)) flagged.push(text);
 
     if (inContent) curBodyParts.push(deltas);
-    else introParts.push(deltas);
+    else introParts.push(mkPart(deltas, shouldFlag(text)));
   }
   flush();
   return { entries, introParts, flagged, score };
@@ -801,7 +808,7 @@ function applyParsed(meta, parsed, debugInfo) {
   meta.flagged    = parsed.flagged || [];
   if (parsed.score) meta.score = parsed.score;
   if (meta.introParts.length && !meta.intro) {
-    meta.intro = meta.introParts.map(deltasToText).join('\n\n');
+    meta.intro = meta.introParts.map(function (x) { return deltasToText(partOps(x)); }).join('\n\n');
   }
   if (parsed.proseFallback) debugInfo.proseFallback = true;
   debugInfo.flaggedCount = meta.flagged.length;
@@ -963,8 +970,8 @@ function buildNumbered(template, meta, entries, type) {
 
   // Copy that appeared before the first numbered entry is kept in place, as
   // plain body components between the header and entry 1 — never dropped.
-  (meta.leadParts || []).forEach(deltas => {
-    result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+  (meta.leadParts || []).forEach(part => {
+    result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
   });
 
   entries.forEach((entry, i) => {
@@ -1032,15 +1039,19 @@ function buildCrosshead(template, meta, entries) {
   if (meta.intro) {
     const parts = meta.introParts && meta.introParts.length
       ? meta.introParts
-      : [[{ insert: meta.intro }]];
-    parts.forEach((deltas, i) => {
-      if (i === 0) {
+      : [mkPart([{ insert: meta.intro }], false)];
+    // The template's intro component is styled (drop cap / lead-in), so it must
+    // hold the article's real opening paragraph. Editor instructions keep their
+    // position but render as plain body components, never as the styled lead.
+    const firstRealIdx = parts.findIndex(part => !partFlagged(part));
+    parts.forEach((part, i) => {
+      if (i === firstRealIdx) {
         const introBody = deepClone(c[4]);
         introBody.id = genId();
-        introBody.content = { text: deltas };
+        introBody.content = { text: partOps(part) };
         introComps.push(introBody);
       } else {
-        introComps.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+        introComps.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
       }
     });
   }

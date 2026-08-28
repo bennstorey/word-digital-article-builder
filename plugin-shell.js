@@ -1,5 +1,5 @@
 /**
- * Word → Digital Article Builder — WoodWing Studio plug-in
+ * Word & Web → Digital — WoodWing Studio plug-in
  *
  * Content Station SDK plug-in that converts Top Gear AN+ Word documents
  * (.docx) into digital articles (.digital). Single entry point: a button in
@@ -497,7 +497,7 @@
   // the only trigger. The standalone web version on GitHub Pages still offers
   // a .digital download when one is needed.)
   ContentStationSdk.addDossierToolbarButton({
-    label: 'Word → Digital Article',
+    label: 'Word & Web → Digital',
     onAction: function (config, selection, dossier) {
       injectCss();
       var dialogId = null;
@@ -506,7 +506,7 @@
       var content = '<div class="wdab-modal">' + formHtml('wdabm', 'Create Digital Article in this Dossier') + '</div>';
 
       dialogId = ContentStationSdk.openModalDialog({
-        title: 'Word → Digital Article',
+        title: 'Word & Web → Digital',
         subtitle: 'Creates the digital article in Dossier “' + esc(dossier.Name || '') + '”',
         content: content,
         width: 640,
