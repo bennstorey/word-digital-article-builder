@@ -477,6 +477,14 @@
   ].join('\n');
 
   var cssInjected = false;
+  // Build id, replaced by build-plugin.js. Check it in Studio's console with
+  // __wdVersion to confirm which build the browser actually loaded.
+  var PLUGIN_BUILD = '__BUILD_ID__';
+  try {
+    window.__wdVersion = PLUGIN_BUILD;
+    console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
+  } catch (e) { /* non-fatal */ }
+
   function injectCss() {
     if (cssInjected) return;
     var style = document.createElement('style');
