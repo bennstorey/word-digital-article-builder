@@ -46,75 +46,56 @@ Studio for `Name contains "tg-follow"` returns **983 objects**, named
 dossier and created by the `WoodWing Production` user. Every article gets its own
 copy.
 
-Of the 13 image IDs baked into our three templates, `GetObjects` returns only 4:
+The `apple-news-follow` components in our templates carry hard-coded object IDs:
 
-| ID | Exists | Belongs to |
-|----|--------|-----------|
-| 72514, 72515 | yes | an old article (countdown newsletter pair) |
-| 72517, 72520 | yes | an old article (ascending newsletter pair) |
+| Template  | Follow image / dark | Newsletter image / dark |
+|-----------|---------------------|-------------------------|
+| crosshead | 72512 / 72509       | 72510 / 72511           |
+| countdown | 72516 / 72513       | 72514 / 72515           |
+| ascending | 72519 / 72518       | 72517 / 72520           |
+
+Of those 13 IDs, `GetObjects` returns only **four**:
+
+| IDs | Exists | Note |
+|-----|--------|------|
+| 72514, 72515, 72517, 72520 | yes | newsletter pairs belonging to old articles |
 | 72509, 72510, 72511, 72512 | **no** | crosshead's set — gone |
 | 72513, 72516, 72518, 72519 | **no** | gone |
 | 48816 | **no** | gone |
 
-So the template IDs point at furniture belonging to other, older articles — some
-since deleted. Nothing in the create flow makes new copies, which is exactly why
-the images are "not linked or present in the dossier".
+So the template IDs point at furniture belonging to other, older articles, most of
+which have since been deleted. Nothing in the create flow makes new copies, which
+is exactly why the images are "not linked or present in the dossier".
 
 This was always going to rot: object IDs are per-article and per-environment, so
 hard-coding them into a template cannot work for long.
 
+### Superseded reading
+
+An earlier note here guessed that only the countdown/ascending IDs were wrong and
+crosshead's were good, because a known-good exported article used `72512/72509`
+and `72510/72511` and its bundle contained those PNGs. Studio says those four no
+longer exist — that article referenced furniture deleted since. **Do not "fix"
+this by copying crosshead's IDs onto the other templates.**
+
 ### Fix options (needs a decision)
 
-1. **Copy from a recent article.** Use the workflow API's copy operation to
-   duplicate a known-good furniture pair into the new dossier and reference the
-   new IDs. Keeps a single source of truth in Studio, but depends on a "known
-   good" article existing.
-2. **Ship the PNGs in the plug-in.** Embed the four images as base64 and create
-   them per dossier using the image-upload path that already exists. Self
-   contained, no dependency on other articles; adds roughly 200KB to the plug-in.
-3. **Source them from the brand**, alongside the templates — the cleanest, and
-   already on the roadmap, but the largest change.
+1. **Copy from a recent article.** Duplicate a known-good furniture pair into the
+   new dossier via the workflow API and reference the new IDs. Single source of
+   truth in Studio, but depends on a "known good" article existing.
+2. **Ship the PNGs in the plug-in.** Embed the images as base64 and create them
+   per dossier using the image-upload path that already exists. Self-contained,
+   no dependency on other articles; adds roughly 200KB to the plug-in.
+3. **Source them from the brand**, alongside the templates — cleanest, already on
+   the roadmap, largest change.
 
 Whichever is chosen, the `apple-news-follow` components must be rewritten with the
 newly created IDs at build time rather than carrying literals.
 
-### Superseded
-
-An earlier reading of this issue guessed that only the countdown/ascending IDs
-were wrong and that crosshead's were good, based on a known-good exported article
-using `72512/72509` and `72510/72511`. Studio says those four no longer exist —
-that article referenced furniture that has since been deleted. Do not "fix" this
-by copying crosshead's IDs to the other templates.
-
-The `apple-news-follow` components carry hard-coded Studio **object IDs** for their
-branded images, and those IDs differ per template:
-
-| Template  | Follow image / dark | Newsletter image / dark |
-|-----------|---------------------|-------------------------|
-| crosshead | **72512 / 72509**   | **72510 / 72511**       |
-| countdown | 72516 / 72513       | 72514 / 72515           |
-| ascending | 72519 / 72518       | 72517 / 72520           |
-
-A known-good article exported from Studio (`Want money off a new EV.digital`, built
-from the **crosshead** template) uses `72512 / 72509` and `72510 / 72511`, and its
-export bundle contains exactly `48816, 72509, 72510, 72511, 72512` — nothing in the
-`72513–72520` range.
-
-So the crosshead template's IDs resolve, and the countdown/ascending ones appear
-not to. That matches the report: the furniture broke on an article converted with a
-numbered layout.
-
-**Caveat:** an export bundle only contains images that article actually used, so the
-absence of `72513–72520` is strong evidence but not proof they don't exist. Confirm
-by searching Studio for object IDs 72516 and 72513 before changing anything.
-
-Proposed fix: point the countdown and ascending `apple-news-follow` components at
-the crosshead template's IDs (`72512 / 72509`, `72510 / 72511`). Leave crosshead
-alone — it works.
-
-Longer term these IDs are environment-specific and should not be baked into the
-templates at all; sourcing templates from the brand (already on the roadmap) would
-remove the problem.
+Open question: only `tg-follow-newsletter-signup-*` objects were found by name.
+The "For more content follow this channel" image uses a different naming
+convention that has not been identified yet — `Name contains "follow-channel"`
+returns nothing.
 
 ---
 
