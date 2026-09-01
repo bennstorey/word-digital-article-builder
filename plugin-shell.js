@@ -448,6 +448,50 @@
     return { digital: digital, filled: filled, slots: slots.length };
   }
 
+  // Studio ingests an uploaded image asynchronously — the object exists as soon
+  // as CreateObjects returns, but its renditions are generated afterwards. If the
+  // article is created and opened before that finishes, the placements look
+  // empty. Wait until every new image reports a rendition before continuing.
+  function waitForImagesReady(ids, onProgress, timeoutMs) {
+    if (!ids || !ids.length) return Promise.resolve({ ready: [], pending: [] });
+    var deadline = Date.now() + (timeoutMs || 60000);
+    var remaining = ids.slice();
+    var ready = [];
+
+    function poll() {
+      return callServer('GetObjects', {
+        IDs: remaining, Lock: false, Rendition: 'thumb',
+        RequestInfo: ['MetaData'], HaveVersions: null, Areas: null, EditionId: null,
+      }).then(function (res) {
+        var objs = (res && res.Objects) || [];
+        var stillPending = [];
+        objs.forEach(function (o) {
+          var bm = (o.MetaData && o.MetaData.BasicMetaData) || {};
+          var hasFile = !!(o.Files && o.Files.length);
+          if (hasFile) ready.push(String(bm.ID));
+          else stillPending.push(String(bm.ID));
+        });
+        // Ids the server did not return at all are still settling
+        var returned = objs.map(function (o) {
+          return String(((o.MetaData || {}).BasicMetaData || {}).ID);
+        });
+        remaining.forEach(function (id) {
+          if (returned.indexOf(String(id)) === -1) stillPending.push(String(id));
+        });
+        remaining = stillPending;
+
+        if (onProgress) onProgress(ready.length, ids.length);
+        if (!remaining.length) return { ready: ready, pending: [] };
+        if (Date.now() > deadline) return { ready: ready, pending: remaining };
+        return new Promise(function (r) { setTimeout(r, 1500); }).then(poll);
+      }).catch(function () {
+        // A failed poll should never block article creation
+        return { ready: ready, pending: remaining };
+      });
+    }
+    return poll();
+  }
+
   // ─── Shared converter UI ───────────────────────────────────────────────────
   var CSS = [
     '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
@@ -777,6 +821,20 @@
 
         imagesStep
           .then(function (images) {
+            // Don't build the article until Studio has finished ingesting the
+            // images, or opening it straight away shows empty placements.
+            if (!images || !images.created.length) return images;
+            btn.textContent = 'Processing images…';
+            var progEl2 = ctl.$('images-progress');
+            var ids0 = images.created.map(function (c) { return c.id; }).filter(Boolean);
+            return waitForImagesReady(ids0, function (done, total) {
+              if (progEl2) progEl2.textContent = 'Waiting for Studio to process images (' + done + ' of ' + total + ')…';
+            }).then(function (r) {
+              images.pending = r.pending;
+              return images;
+            });
+          })
+          .then(function (images) {
             btn.textContent = 'Creating…';
             var ids = images ? images.created.map(function (c) { return c.id; }) : [];
             var built = result.build(ids);
@@ -800,6 +858,9 @@
                 if (out.placed) msg += ' (' + out.placed + ' of ' + out.slots + ' slots filled)';
                 if (im.failed.length) msg += ', ' + im.failed.length + ' failed';
                 msg += '.';
+                if (im.pending && im.pending.length) {
+                  msg += ' ' + im.pending.length + ' were still processing — give Studio a moment before opening the article.';
+                }
                 if (im.failed.length) console.warn('[word-digital] image failures:', im.failed);
               }
             }
