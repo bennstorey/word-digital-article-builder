@@ -492,6 +492,36 @@
     return poll();
   }
 
+  // ─── Shared furniture images ──────────────────────────────────────────────
+  // The Follow and Newsletter blocks use shared assets that live in the
+  // "general-furniture" dossier (52254), not per-article copies. Studio makes
+  // them show up in an article's dossier by adding a Contained relation from
+  // that dossier to the same object — the object ID never changes. So we
+  // reference the shared IDs in the template and link them into the dossier.
+  //
+  //   91357 tg-logo-tech-blue4x-88                    Follow, light
+  //   91358 tg-logo-white4x-100                       Follow, dark
+  //   91356 tg-follow-newsletter-signup-light-wide-88 Newsletter, light
+  //   91355 tg-follow-newsletter-signup-dark-wide-88  Newsletter, dark
+  var FURNITURE_IMAGE_IDS = ['91357', '91358', '91356', '91355'];
+
+  function linkFurnitureToDossier(dossierId) {
+    var relations = FURNITURE_IMAGE_IDS.map(function (id) {
+      return {
+        __classname__: 'Relation',
+        Parent: String(dossierId), Child: String(id), Type: 'Contained',
+        Placements: null, ParentVersion: null, ChildVersion: null,
+        Geometry: null, Rating: null, Targets: null,
+      };
+    });
+    return callServer('CreateObjectRelations', { Relations: relations })
+      .then(function () { return { linked: FURNITURE_IMAGE_IDS.length, error: null }; })
+      .catch(function (e) {
+        // Already-linked furniture is not an error worth failing the run for
+        return { linked: 0, error: e.message };
+      });
+  }
+
   // ─── Shared converter UI ───────────────────────────────────────────────────
   var CSS = [
     '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
@@ -819,7 +849,12 @@
           });
         }
 
-        imagesStep
+        // The Follow/Newsletter assets are shared objects; link them into this
+        // dossier so the components resolve. Never fatal.
+        var furnitureStep = linkFurnitureToDossier(String(dossier.ID || dossier.Id));
+
+        furnitureStep
+          .then(function () { return imagesStep; })
           .then(function (images) {
             // Don't build the article until Studio has finished ingesting the
             // images, or opening it straight away shows empty placements.

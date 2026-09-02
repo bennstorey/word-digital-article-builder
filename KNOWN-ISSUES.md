@@ -36,7 +36,7 @@ append an image component per entry.
 ## 2. Follow / Newsletter furniture images do not resolve
 
 **Reported:** 2026-08-28
-**Status:** ROOT CAUSE CONFIRMED against the live Studio — fix not yet built
+**Status:** FIXED in build `6cc89e7a`
 
 ### What is actually going on
 
@@ -78,24 +78,35 @@ and `72510/72511` and its bundle contained those PNGs. Studio says those four no
 longer exist — that article referenced furniture deleted since. **Do not "fix"
 this by copying crosshead's IDs onto the other templates.**
 
-### Fix options (needs a decision)
+### The fix
 
-1. **Copy from a recent article.** Duplicate a known-good furniture pair into the
-   new dossier via the workflow API and reference the new IDs. Single source of
-   truth in Studio, but depends on a "known good" article existing.
-2. **Ship the PNGs in the plug-in.** Embed the images as base64 and create them
-   per dossier using the image-upload path that already exists. Self-contained,
-   no dependency on other articles; adds roughly 200KB to the plug-in.
-3. **Source them from the brand**, alongside the templates — cleanest, already on
-   the roadmap, largest change.
+None of the three options above were needed. The furniture is **not** copied per
+article: `GetObjects` on the shared assets shows the *same object ID* related to
+both the `general-furniture` dossier (52254) and to each article's dossier. Studio
+makes an asset appear in an article by adding a `Contained` relation to the
+existing object, not by duplicating it.
 
-Whichever is chosen, the `apple-news-follow` components must be rewritten with the
-newly created IDs at build time rather than carrying literals.
+The canonical assets, all in Brand `Top Gear` / Category `Edit`, targeted at
+Apple News / "Shared Assets":
 
-Open question: only `tg-follow-newsletter-signup-*` objects were found by name.
-The "For more content follow this channel" image uses a different naming
-convention that has not been identified yet — `Name contains "follow-channel"`
-returns nothing.
+| ID | Name | Use |
+|----|------|-----|
+| 91357 | `tg-logo-tech-blue4x-88` | Follow, light |
+| 91358 | `tg-logo-white4x-100` | Follow, dark |
+| 91356 | `tg-follow-newsletter-signup-light-wide-88` | Newsletter, light |
+| 91355 | `tg-follow-newsletter-signup-dark-wide-88` | Newsletter, dark |
+
+So the fix is two parts:
+
+1. All three templates now reference those IDs (previously each template carried
+   its own stale set). The 983 `tg-follow-newsletter-signup-*-wide-<N>` objects
+   are per-issue variants, not something to create per article.
+2. `linkFurnitureToDossier()` adds a `Contained` relation from the new article's
+   dossier to each of the four objects during create, so they are present in the
+   dossier. It runs before the article is built and never fails the run.
+
+Note the "Follow this channel" image is the Top Gear **logo** (`tg-logo-*`), which
+is why searching for `follow-channel` found nothing.
 
 ---
 
