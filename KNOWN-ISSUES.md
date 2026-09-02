@@ -38,15 +38,10 @@ append an image component per entry.
 **Reported:** 2026-08-28
 **Status:** FIXED in build `6cc89e7a`
 
-### What is actually going on
+### What was going on
 
-The furniture images are **per-article objects, not shared assets.** Querying
-Studio for `Name contains "tg-follow"` returns **983 objects**, named
-`tg-follow-newsletter-signup-{light,dark}-wide-<N>`, each one `PlacedOn` its own
-dossier and created by the `WoodWing Production` user. Every article gets its own
-copy.
-
-The `apple-news-follow` components in our templates carry hard-coded object IDs:
+The `apple-news-follow` components in our templates carried hard-coded object IDs,
+a different set in each template:
 
 | Template  | Follow image / dark | Newsletter image / dark |
 |-----------|---------------------|-------------------------|
@@ -63,12 +58,14 @@ Of those 13 IDs, `GetObjects` returns only **four**:
 | 72513, 72516, 72518, 72519 | **no** | gone |
 | 48816 | **no** | gone |
 
-So the template IDs point at furniture belonging to other, older articles, most of
-which have since been deleted. Nothing in the create flow makes new copies, which
-is exactly why the images are "not linked or present in the dossier".
+So the template IDs pointed at objects that mostly no longer exist, and nothing in
+the create flow linked any furniture into the dossier — which is exactly why the
+images were "not linked or present in the dossier".
 
-This was always going to rot: object IDs are per-article and per-environment, so
-hard-coding them into a template cannot work for long.
+A search for `Name contains "tg-follow"` returns 983 objects
+(`tg-follow-newsletter-signup-{light,dark}-wide-<N>`). Those are per-issue
+variants, which initially suggested the furniture was copied per article. It is
+not — see the fix below.
 
 ### Superseded reading
 
@@ -80,8 +77,7 @@ this by copying crosshead's IDs onto the other templates.**
 
 ### The fix
 
-None of the three options above were needed. The furniture is **not** copied per
-article: `GetObjects` on the shared assets shows the *same object ID* related to
+The furniture is **not** copied per article: `GetObjects` on the shared assets shows the *same object ID* related to
 both the `general-furniture` dossier (52254) and to each article's dossier. Studio
 makes an asset appear in an article by adding a `Contained` relation to the
 existing object, not by duplicating it.
