@@ -838,6 +838,35 @@ async function parseFromUrl(articleUrl, type) {
 }
 
 // ─── Template building ───────────────────────────────────────────────────
+// Splits a numbered run into sections wherever the numbering restarts, e.g.
+// "73 EVs on sale" followed by "What else is on the way?" numbered 1-23.
+//
+// The direction is taken from the document's own numbering, not from the
+// template: a Type 1 countdown doc is often written 1..42 and only *displayed*
+// 42..1, so assuming the template's direction would split every entry.
+function sectionizeEntries(entries) {
+  if (!entries || entries.length < 3) return [(entries || []).slice()];
+  let dir = 0;
+  for (let i = 1; i < entries.length && dir === 0; i++) {
+    dir = Math.sign(entries[i].number - entries[i - 1].number);
+  }
+  if (dir === 0) return [entries.slice()];
+
+  const sections = [];
+  let current = [];
+  let prev = null;
+  entries.forEach(function (e) {
+    if (prev !== null && Math.sign(e.number - prev) === -dir && current.length) {
+      sections.push(current);
+      current = [];
+    }
+    current.push(e);
+    prev = e.number;
+  });
+  if (current.length) sections.push(current);
+  return sections;
+}
+
 function buildNumbered(template, meta, entries, type) {
   const c = deepClone(template).data.content;
 
@@ -869,7 +898,14 @@ function buildNumbered(template, meta, entries, type) {
   const appleInsertAt = type === 'countdown' ? 3 : 4;
 
   // Sort entries
-  entries.sort((a, b) => type === 'countdown' ? b.number - a.number : a.number - b.number);
+  // A document may run several numbered sections, each restarting at 1 (e.g.
+  // "73 EVs on sale" followed by "What else is on the way?" numbered 1-23).
+  // Sorting the whole run flat would interleave them and pull the two entry 1s
+  // together, so split at each restart, sort within a section, and keep the
+  // sections in document order.
+  const ordered = [].concat.apply([], sectionizeEntries(entries).map(function (section) {
+    return section.sort((a, b) => type === 'countdown' ? b.number - a.number : a.number - b.number);
+  }));
 
   const result = [...header];
 
@@ -879,7 +915,7 @@ function buildNumbered(template, meta, entries, type) {
     result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
   });
 
-  entries.forEach((entry, i) => {
+  ordered.forEach((entry, i) => {
     const group = deepClone(canonical);
 
     // Update title component (keep the template's coloured number op; NBSP separates number and name)
@@ -1548,7 +1584,7 @@ function buildCrosshead(template, meta, entries) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '7c8ac957';
+  var PLUGIN_BUILD = '45e325d0';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
