@@ -36,7 +36,7 @@ append an image component per entry.
 ## 2. Follow / Newsletter furniture images do not resolve
 
 **Reported:** 2026-08-28
-**Status:** FIXED in build `6cc89e7a`
+**Status:** FIXED in build `7c8ac957`
 
 ### What was going on
 
@@ -97,6 +97,12 @@ So the fix is two parts:
 1. All three templates now reference those IDs (previously each template carried
    its own stale set). The 983 `tg-follow-newsletter-signup-*-wide-<N>` objects
    are per-issue variants, not something to create per article.
+   This includes the **footer block** — the `container` component with
+   `styles.style = "_option14"` ("14: AN Footer"), whose image is nested inside
+   `containers.main` and referenced the long-deleted `48816`. It now uses
+   `91358` (`tg-logo-white4x-100`), the same asset as the Follow dark variant.
+   Note `applyImageIds()` only fills top-level `image`/`header-image`
+   components, so article pictures can never leak into the footer container.
 2. `linkFurnitureToDossier()` adds a `Contained` relation from the new article's
    dossier to each of the four objects during create, so they are present in the
    dossier. It runs before the article is built and never fails the run.
