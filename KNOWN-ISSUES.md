@@ -8,7 +8,7 @@ Open problems with evidence, so they can be picked up without re-deriving them.
 
 **Reported:** 2026-08-28
 **Article:** https://www.topgear.com/car-news/hot-hatch/these-are-12-best-hot-hatches-all-time
-**Status:** understood — behaves as designed, but the design is wrong for listicles
+**Status:** OPEN — fourth "snippet list" template planned for next session (see below)
 
 Images were fetched and added to the dossier correctly; they were not placed into
 the article.
@@ -30,6 +30,40 @@ Proper fix (not done): when `content.contentType === 'listicle'`, select a numbe
 layout automatically instead of leaving it to the dropdown — the parse already
 knows it is a listicle (`debug.listicle`). Alternatively let `buildCrosshead`
 append an image component per entry.
+
+### NEXT SESSION — likely needs a fourth template (decided 2026-09-18, not started)
+
+Reproduced again on the V12 engines article
+(https://www.topgear.com/car-news/supercars/12-greatest-and-strangest-v12-engines-ever-made):
+converted as Type 3, all 13 images uploaded but only 2 were placed (hero ->
+`header-image`, entry 1 -> the single `image`), 11 left loose in the dossier.
+
+These articles are **snippet-style entries**: a list of named items, each with a
+picture and a paragraph, but **no numbers**. Neither existing layout fits:
+Type 1/2 would add numbers that aren't in the source, and Type 3 has no image
+slot per entry.
+
+TopGear already flags the difference in `__NEXT_DATA__` —
+`props.pageProps.content.numberedList`:
+
+| Article | contentType | numberedList | items |
+|---------|-------------|--------------|-------|
+| 30 most tasteless cars | listicle | **true** | 30 |
+| 12 best hot hatches | listicle | **false** | 12 |
+| 12 greatest V12 engines | listicle | **false** | 12 |
+
+So the plan to pick up:
+
+1. A **fourth template, "snippet list"**: per entry an image, the item title
+   (no number), then body — i.e. the numbered group without the coloured
+   number op. Needs a `.digitmpl` built in Studio, or derived from the
+   countdown template by stripping the number from the title component.
+2. **Auto-select from the source**: listicle + `numberedList: true` -> Type 1/2
+   (use `reversedList` for countdown vs ascending); listicle +
+   `numberedList: false` -> snippet list; anything else -> crosshead. Keep the
+   dropdown as an override, and say in the UI why it was chosen.
+3. Decide whether .docx input can hit this case too (bold names, no numbers —
+   today's auto-numbering fallback in `parseNumbered` would wrongly number it).
 
 ---
 
