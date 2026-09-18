@@ -130,3 +130,26 @@ upload and waits until every new image reports a file, before the article is
 built. It shows "Waiting for Studio to process images (n of m)…", times out after
 60s rather than blocking forever, and a failed poll never prevents article
 creation. Anything still pending is named in the completion notification.
+
+---
+
+## 4. Some article images silently fail to create in Studio (FIXED)
+
+**Reported:** 2026-09-18
+**Article:** https://www.topgear.com/car-news/supercars/12-greatest-and-strangest-v12-engines-ever-made
+**Status:** fixed in build `82a517d9`
+
+Only 3 of 13 images reached the dossier (`v12`, `Untitled-1_46`,
+`Untitled-2_24`). All 13 fetched fine, directly and through the proxy.
+
+Cause: 10 of the 13 stored filenames carry a Drupal path parameter, e.g.
+`_V2A0009V2.jpg;jsessionid=null_1.jpg`. `imageNameFromUrl()` only stripped the
+final extension, so the object name became `_V2A0009V2.jpg;jsessionid=null_1`,
+which `CreateObjects` rejects (S1026, invalid characters). Exactly the three
+images without the parameter succeeded.
+
+Fix: the image name is cut at the first `;`, giving `_V2A0009V2` — the same name
+Studio already holds for earlier copies of that photo. If Studio still rejects a
+name, one retry uses a strict `[A-Za-z0-9 _-]` form, falling back to
+`topgear-image-<n>`. The standalone ZIP download was never affected: it names
+files positionally.

@@ -1346,7 +1346,20 @@ function buildCrosshead(template, meta, entries) {
     var base = '';
     try { base = decodeURIComponent(new URL(u).pathname.split('/').pop() || ''); }
     catch (e) { base = String(u).split('/').pop() || ''; }
+    // Drupal sometimes bakes a path parameter into the stored filename, e.g.
+    // "_V2A0009V2.jpg;jsessionid=null_1.jpg". Studio rejects the ';' / '=' in an
+    // object name (S1026), so keep only what precedes the first ';'.
+    base = base.split(';')[0];
     return base || 'image';
+  }
+
+  // Last-resort name when Studio still rejects the cleaned one: letters, digits,
+  // spaces, '-' and '_' only, falling back to a positional name.
+  function safeImageName(u, index) {
+    var n = imageNameFromUrl(u).replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[^A-Za-z0-9 _-]+/g, '_').replace(/_+/g, '_').replace(/^[_ ]+|[_ ]+$/g, '')
+      .slice(0, 40);
+    return n || ('topgear-image-' + (index + 1));
   }
 
   function imageMimeFromUrl(u, blobType) {
@@ -1356,9 +1369,9 @@ function buildCrosshead(template, meta, entries) {
   }
 
   // Creates one Image object. Returns the created object's Id.
-  function createImageObject(blob, url, ctx, state) {
+  function createImageObject(blob, url, ctx, state, nameOverride) {
     var mime = imageMimeFromUrl(url, blob.type);
-    var name = imageNameFromUrl(url).replace(/\.[a-z0-9]+$/i, '');
+    var name = nameOverride || imageNameFromUrl(url).replace(/\.[a-z0-9]+$/i, '');
     return uploadToTransferServer(blob, mime).then(function (fileUrl) {
       return callServer('CreateObjects', {
         Lock: false, Autonaming: true,
@@ -1440,7 +1453,12 @@ function buildCrosshead(template, meta, entries) {
                 if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
                 return r.blob();
               })
-              .then(function (blob) { return createImageObject(blob, u, ctx, state); })
+              .then(function (blob) {
+                return createImageObject(blob, u, ctx, state).catch(function (e) {
+                  if (!/S1026|invalid characters|too long/i.test(e.message || '')) throw e;
+                  return createImageObject(blob, u, ctx, state, safeImageName(u, i));
+                });
+              })
               .then(function (info) { created.push(info); })
               .catch(function (e) { failed.push({ url: u, error: e.message }); });
           });
@@ -1584,7 +1602,7 @@ function buildCrosshead(template, meta, entries) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '45e325d0';
+  var PLUGIN_BUILD = '82a517d9';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
