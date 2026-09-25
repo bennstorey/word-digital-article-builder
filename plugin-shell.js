@@ -611,7 +611,7 @@
     fetchable: 'Dropbox link found, pictures not downloaded yet',
     'flagged-link': 'Picture link needs a person (WeTransfer / press site)',
     waiting: 'No pictures yet',
-    'built-by-hand': 'Built by hand in WhatsApp',
+    'built-by-hand': 'Already drafted — apple.news link posted in the chat',
     'doc-missing': 'Word doc missing from the export',
   };
 
@@ -626,7 +626,7 @@
         '. Loading it re-imports: the pictures are fetched from Dropbox again (so any added since are included) and the AI runs again.');
     } else if (b.builtByHand) {
       var h = b.builtByHand;
-      out.push('Looks built by hand already: ' + esc(h.ts.replace('T', ' ').slice(0, 16)) + ' — “' + esc(h.text.slice(0, 80)) + '” ' +
+      out.push('Already drafted — apple.news link posted in the chat on ' + esc(h.ts.replace('T', ' ').slice(0, 16)) + ' — “' + esc(h.text.slice(0, 80)) + '” ' +
         '<a href="' + esc(h.href) + '" target="_blank" rel="noopener">open draft</a>' +
         (h.rule === 'order' ? ' (matched by timing, not by name — check it’s this article)' : '') + '.');
       if (b.pictureStatus === 'built-by-hand') out.push('Loading it imports it anyway: the pictures are fetched from Dropbox and the AI runs then.');
@@ -991,7 +991,7 @@
           $('wa-bundle').innerHTML =
             '<option value="">' + (waiting.length ? 'Choose an article…' : 'Nothing new from WhatsApp') + '</option>' +
             group('Waiting', waiting) +
-            group('Built by hand in WhatsApp — choose to import anyway', byHand) +
+            group('Already drafted — apple.news link posted in the chat', byHand) +
             group('Already in Studio — choose to re-import', done);
         })
         .catch(function (e) {
