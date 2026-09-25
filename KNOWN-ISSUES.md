@@ -33,6 +33,8 @@ append an image component per entry.
 
 ### NEXT SESSION — likely needs a fourth template (decided 2026-09-18, not started)
 
+> **2026-09-25:** article-type **auto-detect** now exists (`detectArticleType` / `detectTypeFromNumbers` in `index.html`). The snippet-list template should hook in there. Unnumbered bold-heading lists are detected as crosshead today. Word test doc: "50 of the silliest… American cars" in the TG AN+ WhatsApp export (50 bold headings, no numbers).
+
 Reproduced again on the V12 engines article
 (https://www.topgear.com/car-news/supercars/12-greatest-and-strangest-v12-engines-ever-made):
 converted as Type 3, all 13 images uploaded but only 2 were placed (hero ->
@@ -187,3 +189,36 @@ Studio already holds for earlier copies of that photo. If Studio still rejects a
 name, one retry uses a strict `[A-Za-z0-9 _-]` form, falling back to
 `topgear-image-<n>`. The standalone ZIP download was never affected: it names
 files positionally.
+
+## 5. Word-numbered list articles parsed to almost nothing (FIXED)
+
+**Reported:** 2026-09-25 (found while testing auto-detect on the 13 Word docs in the TG AN+ WhatsApp export)
+**Docs:** "51 Worst Cars AN+", "Ugliest F1 cars"
+**Status:** fixed in build `7fd0f596`
+
+The entries were numbered with Word's automatic numbering. mammoth drops the
+numbers and emits each entry heading as its own one-item `<ol><li>` (the body
+copy between them breaks the list), so the `N. Name` rule never matched.
+"51 Worst Cars" parsed to 2 entries and "Ugliest F1 cars" to 0. The docx
+numbering (`word/numbering.xml`) showed a single decimal list starting at 1,
+so the documents read 1 → N.
+
+Fix: `wordListEntries()` treats an `<ol>` item followed by ordinary paragraphs
+as an entry heading, numbered by position. It needs three or more, so a short
+numbered list inside the copy is left alone. The name is taken whole, so
+"1972 Eifelland" keeps its year. Result: 51 and 15 entries. Auto-detect reports
+these as "Word numbered list, 1 → N" (ascending).
+
+## 6. Comment author inside Studio not verified (OPEN)
+
+**Reported:** 2026-09-25
+**Status:** open, low risk
+
+Comments added by the plug-in carry `userId` from
+`ContentStationSdk.getInfo().CurrentUser.UserID` (falling back to `User`,
+`ShortName`, then empty). The shape of `getInfo()` inside Studio hasn't been
+inspected. Comments written with `userId: "benn.storey"` render correctly
+(lab object 93514). If a plug-in-created comment shows no author, log
+`ContentStationSdk.getInfo()` in Studio's console and adjust `currentUserId()`
+in `plugin-shell.js`.
+
