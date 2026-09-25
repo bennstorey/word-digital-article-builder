@@ -1207,8 +1207,10 @@ function placeComment(content, anchor, id) {
       }
     }
   }
-  if (anchor.entry != null) {
-    const re = new RegExp('^\\s*0*' + String(anchor.entry).replace(/\D/g, '') + '(?!\\d)');
+  // The entry may arrive as 15, "15" or "15: F90" — the first number is the entry.
+  const entryNum = anchor.entry != null && (String(anchor.entry).match(/\d+/) || [])[0];
+  if (entryNum) {
+    const re = new RegExp('^\\s*0*' + entryNum + '(?!\\d)');
     const comp = content.find(c => c.identifier === 'title' && textFields(c).some(([, ops]) => re.test(opsText(ops))));
     if (comp && markField(comp, firstTextField(comp), id)) return 'entry';
   }
@@ -1264,7 +1266,7 @@ function emptySlotNotes(digital, missing, prefix) {
     if ((c.identifier !== 'image' && c.identifier !== 'header-image') || (c.content && c.content.image)) return;
     const title = content.slice(i + 1).find(x => x.identifier === 'title');
     const num = title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
-    const why = num && (missing || []).find(m => String(m.entry).replace(/\D/g, '') === num);
+    const why = num && (missing || []).find(m => (String(m.entry).match(/\d+/) || [])[0] === num);
     notes.push({
       anchor: { index: i },
       text: (prefix || '') + (c.identifier === 'header-image'
@@ -2086,7 +2088,7 @@ function flaggedNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '7fd0f596';
+  var PLUGIN_BUILD = '204533e8';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
