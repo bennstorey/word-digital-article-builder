@@ -33,10 +33,12 @@
     <div class="mb-4">
       <label class="block text-sm font-medium text-slate-700 mb-1" for="articleType">Article type</label>
       <select id="articleType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="auto" selected>Auto-detect from the document</option>
         <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>
         <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>
         <option value="crosshead">Type 3 — Crosshead / generic article</option>
       </select>
+      <p id="typeDetected" class="hidden mt-1 text-xs text-slate-500"></p>
     </div>
 
     <div class="mb-5" id="docxRow">
@@ -329,6 +331,24 @@ function entryNameDeltas(p) {
   return m ? deltasAfterText(ops, m[0]) : trimDeltas(ops);
 }
 
+// Word's automatic numbering ("1." typed by Word, not the writer) never reaches
+// the text: mammoth emits each numbered heading as its own <ol><li>, because
+// the body copy between them breaks the list. Seen in "51 Worst Cars" and
+// "Ugliest F1 cars" (a single decimal list starting at 1, so the document
+// reads 1 → N). An <ol> item followed by ordinary paragraphs is an entry
+// heading, numbered by position. Needs three or more, so a short numbered list
+// inside the copy is left alone.
+function wordListEntries(ps) {
+  const heads = ps.filter((p, i) => {
+    if (p.tagName !== 'LI' || !p.parentElement || p.parentElement.tagName !== 'OL') return false;
+    const next = ps.slice(i + 1).find(q => q.textContent.trim());
+    return !next || next.tagName !== 'LI';
+  });
+  const map = new Map();
+  if (heads.length >= 3) heads.forEach((p, i) => map.set(p, i + 1));
+  return map;
+}
+
 function parseNumbered(html, type) {
   const ENTRY_RE = /^(\d+)\.\s+(.+)$/;
   const meta = { feedHeadline: '', title: '', subtitle: '', author: '',
@@ -338,14 +358,26 @@ function parseNumbered(html, type) {
   let pending = null;
   let pendingMetaKey = null;
 
-  for (const p of paras(html)) {
+  const ps = paras(html);
+  const listNumbers = wordListEntries(ps);
+  // An entry heading: typed "18. Name", or a Word-numbered list item. The
+  // Word item has no typed number, so its name is taken whole ("1972 Eifelland"
+  // must keep its year).
+  const entryFrom = (p, text) => {
+    const m = text.match(ENTRY_RE);
+    if (m) return { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
+    if (listNumbers.has(p)) return { number: listNumbers.get(p), name: text, nameDeltas: trimDeltas(paraToDeltas(p, { italicOnly: true })), bodyParts: [] };
+    return null;
+  };
+
+  for (const p of ps) {
     const text = p.textContent.trim();
     if (!text) continue;
 
     if (!inEntries) {
       // Multi-line metadata: previous line was a label with no value
       if (pendingMetaKey) {
-        if (!shouldFlag(text) && !ENTRY_RE.test(text)) {
+        if (!shouldFlag(text) && !entryFrom(p, text)) {
           meta[pendingMetaKey] = text;
           meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
           pendingMetaKey = null;
@@ -354,10 +386,10 @@ function parseNumbered(html, type) {
         pendingMetaKey = null;
       }
 
-      const m = text.match(ENTRY_RE);
-      if (m) {
+      const first = entryFrom(p, text);
+      if (first) {
         inEntries = true;
-        pending = { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
+        pending = first;
         continue;
       }
       const match = matchMetaPrefix(text);
@@ -377,10 +409,10 @@ function parseNumbered(html, type) {
         if (deltas.length) meta.leadParts.push(mkPart(deltas, isInstr));
       }
     } else {
-      const m = text.match(ENTRY_RE);
-      if (m) {
+      const next = entryFrom(p, text);
+      if (next) {
         if (pending) entries.push(pending);
-        pending = { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
+        pending = next;
       } else {
         if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
         if (pending) {
@@ -898,6 +930,46 @@ function slugFromUrl(url) {
 // Unified entry point for the URL source. Returns the same { meta, entries }
 // shape as parseNumbered/parseCrosshead, plus imageUrls which only the web
 // source can supply, so the builders and UI stay source-agnostic.
+// ─── Article type detection ─────────────────────────────────────────────────
+// So nobody has to open the Word doc first to know which template to pick.
+// Three or more "N. Name" lines make it a numbered list; the direction most
+// steps take between them decides countdown (50 → 1) or ascending (1 → 50) —
+// by majority, so an ascending list with a second section restarting at 1
+// still reads as ascending. Anything else is a crosshead article.
+const TYPE_LABELS = {
+  countdown: 'Type 1 — numbered countdown',
+  ascending: 'Type 2 — numbered ascending',
+  crosshead: 'Type 3 — crosshead / generic',
+};
+
+function detectTypeFromNumbers(nums) {
+  if (nums.length < 3) {
+    return { type: 'crosshead', reason: nums.length ? `only ${nums.length} numbered line${nums.length === 1 ? '' : 's'}` : 'no numbered entries' };
+  }
+  let up = 0, down = 0;
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > nums[i - 1]) up++;
+    else if (nums[i] < nums[i - 1]) down++;
+  }
+  const type = down > up ? 'countdown' : 'ascending';
+  return { type, reason: `${nums.length} numbered entries, ${nums[0]} → ${nums[nums.length - 1]}` };
+}
+
+function detectArticleType(html) {
+  const ps = paras(html);
+  const nums = ps
+    .map(p => p.textContent.trim().match(/^(\d+)\.\s+\S/))
+    .filter(Boolean)
+    .map(m => parseInt(m[1], 10));
+  if (nums.length < 3) {
+    // Word's own numbering: one list counting up from 1, so ascending.
+    const listed = wordListEntries(ps).size;
+    if (listed >= 3) return { type: 'ascending', reason: `Word numbered list, 1 → ${listed}` };
+  }
+  return detectTypeFromNumbers(nums);
+}
+
+// type may be 'auto'; the result carries the type actually used and why.
 async function parseFromUrl(articleUrl, type) {
   const html = await fetchWithProxy(articleUrl);
   const debug = {};
@@ -908,6 +980,7 @@ async function parseFromUrl(articleUrl, type) {
   debug.articleFound  = !!article;
 
   let meta, entries, imageUrls;
+  let detected = null;
 
   if (article) {
     meta = extractMetaFromNextData(article);
@@ -919,9 +992,14 @@ async function parseFromUrl(articleUrl, type) {
       entries = parsed.entries;
       applyParsed(meta, parsed, debug);
       debug.listicle = true;
+      if (type === 'auto') {
+        detected = { type: article.reversedList ? 'countdown' : 'ascending',
+                     reason: `topgear.com list of ${entries.length}${article.reversedList ? ', counting down' : ''}` };
+      }
     } else {
       const bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
       debug.bodyHtmlLength = bodyHtml.length;
+      if (type === 'auto') { detected = detectArticleType(bodyHtml); type = detected.type; }
       const parsed = parseBody(bodyHtml, type);
       entries = parsed.entries;
       applyParsed(meta, parsed, debug);
@@ -933,6 +1011,7 @@ async function parseFromUrl(articleUrl, type) {
              author: scraped.author, intro: '', score: '', deltas: {},
              flagged: [], introParts: [], leadParts: [] };
     const bodyHtml = scraped.bodyEl ? scraped.bodyEl.innerHTML : '';
+    if (type === 'auto') { detected = detectArticleType(bodyHtml); type = detected.type; }
     const parsed = parseBody(bodyHtml, type);
     entries = parsed.entries;
     applyParsed(meta, parsed, debug);
@@ -941,7 +1020,7 @@ async function parseFromUrl(articleUrl, type) {
 
   debug.entriesFound = entries.length;
   debug.imagesFound  = imageUrls.length;
-  return { meta, entries, imageUrls, debug };
+  return { meta, entries, imageUrls, debug, detected, type: detected ? detected.type : type };
 }
 
 // ─── Template building ───────────────────────────────────────────────────
@@ -1290,7 +1369,9 @@ function emptySlotNotes(digital, missing, prefix) {
     const why = num && (missing || []).find(m => String(m.entry).replace(/\D/g, '') === num);
     notes.push({
       anchor: { index: i },
-      text: (prefix || '') + (c.identifier === 'header-image' ? 'No opening picture yet.' : 'No picture in this frame yet.') +
+      text: (prefix || '') + (c.identifier === 'header-image'
+        ? 'No opening picture yet. Choose one that tells the story and works both as a centred square crop (Apple News feed) and as landscape — not the picture directly below it.'
+        : 'No picture in this frame yet.') +
         (why ? ' From the chat: ' + why.note : ''),
     });
   });
@@ -1370,7 +1451,9 @@ parseBtn.addEventListener('click', async () => {
   if (source === 'docx' && !file) return;
   if (source === 'url' && !urlInput.value.trim()) return;
 
-  const type = document.getElementById('articleType').value;
+  let type = document.getElementById('articleType').value;
+  const typeNote = document.getElementById('typeDetected');
+  typeNote.classList.add('hidden');
   parseBtn.disabled = true;
   parseBtn.textContent = source === 'docx' ? 'Parsing…' : 'Fetching…';
   parseError.classList.add('hidden');
@@ -1382,13 +1465,24 @@ parseBtn.addEventListener('click', async () => {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.convertToHtml({ arrayBuffer });
       const html = result.value;
+      let detected = null;
+      if (type === 'auto') { detected = detectArticleType(html); type = detected.type; }
       ({ meta, entries } = type === 'crosshead' ? parseCrosshead(html) : parseNumbered(html, type));
       uploadedFilename = file.name.replace(/\.docx$/i, '');
+      showDetected(detected);
     } else {
       const articleUrl = urlInput.value.trim();
       parseBtn.textContent = 'Parsing…';
-      ({ meta, entries, imageUrls } = await parseFromUrl(articleUrl, type));
+      let detected;
+      ({ meta, entries, imageUrls, detected, type } = await parseFromUrl(articleUrl, type));
       uploadedFilename = slugFromUrl(articleUrl);
+      showDetected(detected);
+    }
+
+    function showDetected(d) {
+      if (!d) return;
+      typeNote.textContent = `Detected: ${TYPE_LABELS[d.type]} (${d.reason}). Pick a type above and parse again to override.`;
+      typeNote.classList.remove('hidden');
     }
 
     parsedData = { meta, entries, type, imageUrls, source };

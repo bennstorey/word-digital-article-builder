@@ -194,15 +194,17 @@
     }).then(function (res) {
       var obj = res.Objects && res.Objects[0];
       var targets = [];
+      var pubName = (dossier.Publication && dossier.Publication.Name) || '';
       if (obj) {
         targets = obj.Targets || [];
         var bm = obj.MetaData && obj.MetaData.BasicMetaData;
         if (bm) {
           pubId = pubId || String((bm.Publication && bm.Publication.Id) || '');
           catId = catId || String((bm.Category && bm.Category.Id) || '');
+          pubName = pubName || (bm.Publication && bm.Publication.Name) || '';
         }
       }
-      return { pubId: pubId, catId: catId, dossierId: dossierId, targets: targets };
+      return { pubId: pubId, pubName: pubName, catId: catId, dossierId: dossierId, targets: targets };
     });
   }
 
@@ -618,6 +620,10 @@
       (b.images && b.images.length ? ' — ' + b.images.length + ' image' + (b.images.length === 1 ? '' : 's') : '') +
       ' · sent by ' + esc(b.sender) + ' ' + esc(b.ts.replace('T', ' ')));
     if (b.statusNote) out.push(esc(b.statusNote));
+    if (b.imported) {
+      out.push('Already imported into Studio on ' + esc(String(b.imported.at || '').slice(0, 10)) +
+        '. Loading it re-imports: the pictures are fetched from Dropbox again (so any added since are included) and the AI runs again.');
+    }
     (b.pictures || []).forEach(function (p) {
       if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') {
         out.push('Fetch by hand: <a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.type) + ' link</a>' +
@@ -630,7 +636,9 @@
       out.push('Possibly for this article (AI, ' + Math.round(p.confidence * 100) + '%): <a href="' + esc(p.href) + '" target="_blank" rel="noopener">link</a> — ' + esc(p.reason));
     });
     if (b.selection) {
-      out.push('AI picked the opener: ' + esc(b.selection.hero) + (b.selection.ranked && b.selection.ranked[0] ? ' — ' + esc(b.selection.ranked[0].reason) : ''));
+      out.push(b.selection.hero
+        ? 'AI picked the opener: ' + esc(b.selection.hero) + (b.selection.heroReason ? ' — ' + esc(b.selection.heroReason) : '')
+        : 'AI found no picture that works as the opener' + (b.selection.heroReason ? ': ' + esc(b.selection.heroReason) : '.'));
     }
     var ins = b.instructions;
     if (ins) {
@@ -669,11 +677,7 @@
       });
     });
     var head = [];
-    if (bundle.selection) {
-      head.push('Opening picture chosen: ' + bundle.selection.hero +
-        (bundle.selection.ranked && bundle.selection.ranked[0] ? ' — ' + bundle.selection.ranked[0].reason : '') +
-        '. All ' + (bundle.images || []).length + ' pictures are in the Dossier if you prefer another.');
-    }
+    // (The opener note is written after placement — see openerNote.)
     (bundle.pictures || []).forEach(function (p) {
       if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') head.push('Pictures to fetch by hand (' + p.type + '): ' + p.href);
     });
@@ -723,18 +727,50 @@
 
     var out = slots.map(function () { return null; });
     var used = {};
-    var headerIdx = slots.findIndex(function (s) { return s.header; });
-    if (headerIdx >= 0) {
-      var hero = created.filter(function (c) { return c.url === placement.heroUrl; })[0] ||
-                 created.filter(function (c) { return placement.byUrl[c.url] == null; })[0];
-      if (hero) { out[headerIdx] = hero.id; used[hero.url] = true; }
-    }
     known.forEach(function (c) {
-      if (used[c.url]) return;
       var k = slots.findIndex(function (s, i) { return s.entry === placement.byUrl[c.url] && !out[i]; });
       if (k >= 0) { out[k] = c.id; used[c.url] = true; }
     });
+    // Opener: the AI's pick, which may reuse any entry's picture (the object is
+    // simply placed twice) — but never the picture in the frame directly under
+    // the header, or the same image would sit on top of itself. A picture with
+    // no entry number (e.g. "opener.jpg") is the fallback. Otherwise the header
+    // stays empty and gets a comment.
+    var headerIdx = slots.findIndex(function (s) { return s.header; });
+    if (headerIdx >= 0) {
+      var firstEntryId = out.slice(headerIdx + 1).filter(function (id, i) { return slots[headerIdx + 1 + i].entry != null; })[0];
+      var firstEntrySlot = slots.slice(headerIdx + 1).filter(function (s) { return s.entry != null; })[0];
+      var directlyBelow = function (c) {
+        return (firstEntryId && c.id === firstEntryId) ||
+               (firstEntrySlot && placement.byUrl[c.url] === firstEntrySlot.entry);
+      };
+      var hero = created.filter(function (c) { return c.url === placement.heroUrl && !directlyBelow(c); })[0] ||
+                 created.filter(function (c) { return placement.byUrl[c.url] == null && !used[c.url]; })[0];
+      if (hero) out[headerIdx] = hero.id;
+    }
     return out; // pictures without a matching frame stay in the Dossier only
+  }
+
+  // What actually went in the header, said after placement so the comment can
+  // never contradict the article: the AI's pick and why, or why its pick was
+  // not used. An empty header gets its own note from pictureNotes.
+  function openerNote(digital, created, bundle) {
+    var sel = bundle && bundle.selection;
+    var header = (digital.data.content || []).filter(function (c) { return c.identifier === 'header-image'; })[0];
+    var placedId = header && header.content && header.content.image && header.content.image.id;
+    var nameOf = function (url) { return decodeURIComponent(String(url).split('/').pop()); };
+    var total = bundle ? (bundle.images || []).length : created.length;
+    if (placedId) {
+      var c = created.filter(function (x) { return String(x.id) === String(placedId); })[0];
+      var name = c ? nameOf(c.url) : String(placedId);
+      var why = sel && sel.hero === name && sel.heroReason ? ' — ' + sel.heroReason : '';
+      return { anchor: {}, text: (why ? AI_PREFIX : TOOL_PREFIX) + 'Opening picture: ' + name + why +
+        '. All ' + total + ' pictures are in the Dossier if you prefer another.' };
+    }
+    if (sel && sel.hero) {
+      return { anchor: {}, text: AI_PREFIX + 'Suggested ' + sel.hero + ' as the opener, but it sits directly below the header, so it was not used.' };
+    }
+    return null;
   }
 
   // Frames still empty after placement, with the chat's reason where known;
@@ -815,13 +851,16 @@
     return '<div class="wdab">' +
       '  <div class="wdab-card">' +
       '    <h2>1 — Set up</h2>' +
+      '    <div class="wdab-warn" id="' + p + '-brand-warn"></div>' +
       '    <div class="wdab-row">' +
       '      <label for="' + p + '-type">Article type</label>' +
       '      <select id="' + p + '-type">' +
+      '        <option value="auto" selected>Auto-detect from the document</option>' +
       '        <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
       '        <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
       '        <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
       '      </select>' +
+      '      <p class="wdab-note wdab-hidden" id="' + p + '-type-note"></p>' +
       '    </div>' +
       '    <div class="wdab-row">' +
       '      <label for="' + p + '-source">Source</label>' +
@@ -922,15 +961,21 @@
       $('wa-info').classList.add('wdab-hidden');
       $('wa-bundle').innerHTML = '<option value="">Loading…</option>';
       refreshParse();
-      receiverFetch('/bundles')
+      receiverFetch('/bundles?all=1')
         .then(function (r) { return r.json(); })
         .then(function (j) {
           showParseError('');
           var list = j.bundles || [];
-          $('wa-bundle').innerHTML = '<option value="">' + (list.length ? 'Choose an article…' : 'Nothing waiting from WhatsApp') + '</option>' +
-            list.map(function (b) {
-              return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</option>';
-            }).join('');
+          var waiting = list.filter(function (b) { return !b.imported; });
+          var done = list.filter(function (b) { return b.imported; });
+          var opt = function (b) {
+            return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' +
+              esc(b.imported ? 'imported ' + String(b.imported.at || '').slice(0, 10) : (PICTURE_STATUS[b.pictureStatus] || b.pictureStatus)) + '</option>';
+          };
+          $('wa-bundle').innerHTML =
+            '<option value="">' + (waiting.length ? 'Choose an article…' : 'Nothing new from WhatsApp') + '</option>' +
+            (waiting.length ? '<optgroup label="Waiting">' + waiting.map(opt).join('') + '</optgroup>' : '') +
+            (done.length ? '<optgroup label="Already in Studio — choose to re-import">' + done.map(opt).join('') + '</optgroup>' : '');
         })
         .catch(function (e) {
           $('wa-bundle').innerHTML = '<option value="">—</option>';
@@ -950,7 +995,6 @@
         .then(function (b) {
           if ($('wa-bundle').value !== key) return; // changed while loading
           state.bundle = b;
-          if (b.template && TEMPLATES[b.template]) $('type').value = b.template; // editor can still change it
           $('wa-info').innerHTML = bundleInfoHtml(b);
           $('wa-info').classList.remove('wdab-hidden');
           refreshParse();
@@ -976,7 +1020,8 @@
         : src === 'url' ? !$('url').value.trim()
         : !(state.bundle && state.bundle.docStored);
       $('parse').textContent = src === 'docx' ? 'Parse Document'
-        : src === 'url' ? 'Fetch & Parse Article' : 'Load from WhatsApp';
+        : src === 'url' ? 'Fetch & Parse Article'
+        : state.bundle && state.bundle.imported ? 'Re-import from Dropbox & Load' : 'Load from WhatsApp';
     }
 
     $('parse').addEventListener('click', function () {
@@ -990,23 +1035,54 @@
       state.placement = null;
       var type = $('type').value;
       $('parse').disabled = true;
-      $('parse').textContent = source === 'docx' ? 'Parsing…' : 'Fetching…';
+      $('parse').textContent = source === 'docx' ? 'Parsing…'
+        : source === 'whatsapp' && state.bundle.imported ? 'Re-importing from Dropbox…' : 'Fetching…';
       $('parse-error').style.display = 'none';
+      $('type-note').classList.add('wdab-hidden');
+
+      // 'auto' reads the article type from the document itself, so nobody has
+      // to open the Word file first. The editor can still pick one and re-parse.
+      function showDetected(d) {
+        if (!d) return;
+        $('type-note').textContent = 'Detected: ' + TYPE_LABELS[d.type] + ' (' + d.reason + '). ' +
+          'Pick a type above and parse again to override.';
+        $('type-note').classList.remove('wdab-hidden');
+      }
+      function parseDocHtml(html) {
+        if (type === 'auto') { var d = detectArticleType(html); type = d.type; showDetected(d); }
+        return type === 'crosshead' ? parseCrosshead(html) : parseNumbered(html, type);
+      }
 
       var pipeline;
       if (source === 'url') {
         var articleUrl = $('url').value.trim();
         pipeline = parseFromUrl(articleUrl, type).then(function (r) {
+          type = r.type;
+          showDetected(r.detected);
           state.imageUrls = r.imageUrls || [];
           state.uploadedFilename = slugFromUrl(articleUrl);
           return { meta: r.meta, entries: r.entries };
         });
       } else if (source === 'whatsapp') {
         var bundle = state.bundle;
-        pipeline = Promise.all([
-          loadMammoth(),
-          receiverFetch(bundleFileUrl(bundle, 'doc.docx')).then(function (r) { return r.arrayBuffer(); }),
-        ])
+        // Already in Studio: fetch its pictures again (the missing ones may
+        // have arrived) and re-run the AI before loading it.
+        var ready = bundle.imported
+          ? receiverFetch('/bundles/' + bundle.key + '/reimport', { method: 'POST' })
+              .then(function () { return receiverFetch('/bundles/' + bundle.key); })
+              .then(function (r) { return r.json(); })
+              .then(function (fresh) {
+                bundle = state.bundle = fresh;
+                $('wa-info').innerHTML = bundleInfoHtml(fresh);
+                $('parse').textContent = 'Fetching…';
+              })
+          : Promise.resolve();
+        pipeline = ready.then(function () {
+          return Promise.all([
+            loadMammoth(),
+            receiverFetch(bundleFileUrl(bundle, 'doc.docx')).then(function (r) { return r.arrayBuffer(); }),
+          ]);
+        })
           .then(function (x) { return x[0].convertToHtml({ arrayBuffer: x[1] }); })
           .then(function (result) {
             var ordered = orderedBundleImages(bundle);
@@ -1019,7 +1095,7 @@
             state.fetchImage = fetchFromReceiver;
             state.bundleKey = bundle.key;
             state.uploadedFilename = bundle.name;
-            return type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value, type);
+            return parseDocHtml(result.value);
           });
       } else {
         pipeline = loadMammoth()
@@ -1027,7 +1103,7 @@
           .then(function (result) {
             state.imageUrls = [];
             state.uploadedFilename = file.name.replace(/\.docx$/i, '');
-            return type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value, type);
+            return parseDocHtml(result.value);
           });
       }
 
@@ -1124,8 +1200,10 @@
             // Frame notes only when pictures were expected (WhatsApp or a web
             // article); a plain Word import has its pictures added by hand later.
             var expectPictures = !!bundle || (state.imageUrls || []).length > 0;
+            var opener = expectPictures && created && created.length ? openerNote(placed.digital, created, bundle) : null;
             var notes = flaggedNotes(pm, TOOL_PREFIX)
               .concat(bundle ? bundleNotes(bundle) : [])
+              .concat(opener ? [opener] : [])
               .concat(expectPictures ? pictureNotes(placed.digital, bundle) : []);
             var withComments = addComments(placed.digital, notes, currentUserId());
             placed.digital = withComments.digital;
@@ -1165,6 +1243,18 @@
         width: 640,
         buttons: [{ label: 'Close', class: 'pale' }],
       });
+
+      // Digital styles (component set, Look and Feel, Twixl collection) come
+      // from BRAND_DEFAULTS. A dossier in any other brand gets an article with
+      // no Look and Feel — say so before anything is created.
+      resolveDossierContext(dossier).then(function (ctx) {
+        var el = document.getElementById('wdabm-brand-warn');
+        if (!el || BRAND_DEFAULTS[ctx.pubId]) return;
+        el.innerHTML = '<strong>No digital styles for this brand.</strong> This Dossier is in “' +
+          esc(ctx.pubName || ('brand ' + ctx.pubId)) + '”, which has no Look and Feel set up in this plug-in, ' +
+          'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.';
+        el.style.display = 'block';
+      }).catch(function () { /* the warning is advisory; creation reports its own errors */ });
 
       wireForm('wdabm', function (ctl) {
         if (busy) return;
