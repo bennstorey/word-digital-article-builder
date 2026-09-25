@@ -76,10 +76,12 @@ user id.
 | 1 — Countdown | Numbered 50 → 1 | Entries as `50. Name` … `1. Name` |
 | 2 — Ascending | Numbered 1 → 50 | Entries as `1. Name` … `50. Name` |
 | 3 — Crosshead / generic article | Review Q&A or plain prose | Crossheads as bold paragraphs or Word headings; a doc with no crossheads (e.g. "First Look" pieces) becomes one body component per paragraph |
+| 4 — Snippet list | Unnumbered list: picture → item name → copy, per item | Item names as bold paragraphs, no numbers; the headline gives the count ("The 50 most bonkers American cars"). The Type 2 layout with each title's number removed (name in the title's normal style); document order kept |
 
 **Auto-detect** (the default) reads the type from the document:
 - three or more `N. Name` entries give countdown or ascending, by the direction most steps take;
 - Word's automatic numbering gives ascending;
+- bold item names whose count matches a number in the headline give a snippet list (question-style headings mean an article, not a list); topgear.com's own `numberedList: false` flag does the same for URLs;
 - anything else gives crosshead.
 
 The dialog says what it found ("Detected: Type 2 — 18 numbered entries, 1 → 18"),
@@ -150,7 +152,6 @@ Note: `{SESSION_ID}` URL-app wildcards are deprecated since Studio 10.40 / Enter
 
 ## Roadmap
 
-- **Snippet-list template** for unnumbered lists (bold headings, no numbers, e.g. "50 silliest American cars"), hooked into auto-detect. See KNOWN-ISSUES §1.
 - **Comments in the web version**: the comment functions are in the shared engine, but only the plug-in calls them.
 
 - **Next: use a Word doc already in the Dossier.** In the dossier modal, offer any selected/contained .docx object as the default source (download its native file via the workflow API, parse as usual), with the file picker as the alternative for new uploads. The `onAction(config, selection, dossier)` handler already receives the selection; docx objects have Format `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.

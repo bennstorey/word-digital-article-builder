@@ -724,8 +724,15 @@
       if (c.identifier !== 'image' && c.identifier !== 'header-image') return;
       var title = content.slice(i + 1).filter(function (x) { return x.identifier === 'title'; })[0];
       var num = c.identifier === 'image' && title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
-      slots.push({ header: c.identifier === 'header-image', entry: num ? Number(num) : null });
+      slots.push({ header: c.identifier === 'header-image', entry: num ? Number(num) : null, isEntry: c.identifier === 'image' });
     });
+    // Type 4 snippet lists: titles carry no number, so entry N is the Nth
+    // entry picture frame — filename numbers and the AI's matches still apply.
+    if (!slots.some(function (s) { return s.entry != null; })) {
+      var n = 0;
+      slots.forEach(function (s) { if (s.isEntry) s.entry = ++n; });
+      if (n < 3) slots.forEach(function (s) { s.entry = null; });
+    }
     var ids = created.map(function (c) { return c.id; });
     if (!placement) return ids;
     var known = created.filter(function (c) { return placement.byUrl[c.url] != null; });
@@ -866,6 +873,7 @@
       '        <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
       '        <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
       '        <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
+      '        <option value="snippet">Type 4 — Snippet list (unnumbered items)</option>' +
       '      </select>' +
       '      <p class="wdab-note wdab-hidden" id="' + p + '-type-note"></p>' +
       '    </div>' +

@@ -343,7 +343,7 @@ function parseNumbered(html, type) {
     if (realEntries.length > 1) {
       const total = realEntries.length;
       const numbered = realEntries.map((e, i) => ({
-        number: type === 'ascending' ? i + 1 : total - i,
+        number: type === 'countdown' ? total - i : i + 1,
         name: e.crosshead,
         nameDeltas: e.crossheadDeltas,
         bodyParts: e.bodyParts,
@@ -510,6 +510,16 @@ function extractMetaFromNextData(article) {
 }
 
 // TopGear listicle: items array with { title, body (HTML), media }
+// Type 4 from crosshead-shaped copy: each crosshead is an item, numbered by
+// position (the number is never shown); copy before the first item stays as lead.
+function snippetFromCrossheads(parsed) {
+  return Object.assign({}, parsed, {
+    entries: parsed.entries.map((e, i) => ({ number: i + 1, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: e.bodyParts || [] })),
+    leadParts: (parsed.leadParts || []).concat(parsed.introParts || []),
+    introParts: [],
+  });
+}
+
 function isListicle(article) {
   return Array.isArray(article.items) && article.items.length > 0;
 }
@@ -730,8 +740,8 @@ function parseProseFromHtml(htmlString) {
 // has no crossheads or numbering. Text is never discarded by any branch.
 function parseBody(bodyHtml, type) {
   if (!bodyHtml) return { entries: [], flagged: [] };
-  const parsed = type === 'crosshead'
-    ? parseCrossheadFromHtml(bodyHtml)
+  const parsed = type === 'crosshead' ? parseCrossheadFromHtml(bodyHtml)
+    : type === 'snippet' ? snippetFromCrossheads(parseCrossheadFromHtml(bodyHtml))
     : parseNumberedFromHtml(bodyHtml);
 
   if (parsed.entries.length) return parsed;
@@ -838,7 +848,24 @@ const TYPE_LABELS = {
   countdown: 'Type 1 — numbered countdown',
   ascending: 'Type 2 — numbered ascending',
   crosshead: 'Type 3 — crosshead / generic',
+  snippet: 'Type 4 — snippet list (unnumbered)',
 };
+
+// Type 4 uses the ascending (1 → 50) layout; buildNumbered drops the number
+// from each title and keeps the document's order. No separate template file.
+TEMPLATES.snippet = TEMPLATES.ascending;
+
+// An unnumbered list vs a crosshead article (a review's "What's this?"
+// sections look the same): the headline gives the count — "The 50 most
+// bonkers American cars" over ~50 bold items is a list; "First Drive: Geely
+// Starray" is an article. Question-style crossheads also mean an article.
+function looksLikeSnippetList(itemNames, title) {
+  const n = parseInt(((title || '').match(/\b(\d{1,3})\b/) || [])[1], 10);
+  if (!(n >= 3) || itemNames.length < 3) return null;
+  const questions = itemNames.filter(t => /\?\s*$/.test(t)).length;
+  if (questions > itemNames.length / 3) return null;
+  return Math.abs(itemNames.length - n) <= 1 ? n : null;
+}
 
 function detectTypeFromNumbers(nums) {
   if (nums.length < 3) {
@@ -853,7 +880,8 @@ function detectTypeFromNumbers(nums) {
   return { type, reason: `${nums.length} numbered entries, ${nums[0]} → ${nums[nums.length - 1]}` };
 }
 
-function detectArticleType(html) {
+// hints.title: the headline, when the caller already has it (URL path).
+function detectArticleType(html, hints = {}) {
   const ps = paras(html);
   const nums = ps
     .map(p => p.textContent.trim().match(/^(\d+)\.\s+\S/))
@@ -863,6 +891,11 @@ function detectArticleType(html) {
     // Word's own numbering: one list counting up from 1, so ascending.
     const listed = wordListEntries(ps).size;
     if (listed >= 3) return { type: 'ascending', reason: `Word numbered list, 1 → ${listed}` };
+    // Unnumbered list: bold item names, with the headline giving the count.
+    const byBold = parseCrosshead(html);
+    const items = byBold.entries.map(e => e.crosshead || '').filter(t => t && !shouldFlag(t));
+    const n = looksLikeSnippetList(items, hints.title || byBold.meta.title || byBold.meta.feedHeadline);
+    if (n) return { type: 'snippet', reason: `${items.length} unnumbered items; the headline says ${n}` };
   }
   return detectTypeFromNumbers(nums);
 }
@@ -891,13 +924,15 @@ async function parseFromUrl(articleUrl, type) {
       applyParsed(meta, parsed, debug);
       debug.listicle = true;
       if (type === 'auto') {
-        detected = { type: article.reversedList ? 'countdown' : 'ascending',
-                     reason: `topgear.com list of ${entries.length}${article.reversedList ? ', counting down' : ''}` };
+        detected = article.numberedList === false
+          ? { type: 'snippet', reason: `topgear.com list of ${entries.length}, not numbered` }
+          : { type: article.reversedList ? 'countdown' : 'ascending',
+              reason: `topgear.com list of ${entries.length}${article.reversedList ? ', counting down' : ''}` };
       }
     } else {
       const bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
       debug.bodyHtmlLength = bodyHtml.length;
-      if (type === 'auto') { detected = detectArticleType(bodyHtml); type = detected.type; }
+      if (type === 'auto') { detected = detectArticleType(bodyHtml, { title: meta.title || meta.feedHeadline }); type = detected.type; }
       const parsed = parseBody(bodyHtml, type);
       entries = parsed.entries;
       applyParsed(meta, parsed, debug);
@@ -978,7 +1013,7 @@ function buildNumbered(template, meta, entries, type) {
   // canonical = [image, title, body(_option1), body(spacer), separator]
 
   // For type 1 countdown: apple goes after body (index 2 in canonical), splice at 3
-  // For type 2 ascending: apple goes after spacer (index 3 in canonical), splice at 4
+  // For type 2 ascending and type 4 snippet: after spacer (index 3), splice at 4
   const appleInsertAt = type === 'countdown' ? 3 : 4;
 
   // Sort entries
@@ -987,7 +1022,8 @@ function buildNumbered(template, meta, entries, type) {
   // Sorting the whole run flat would interleave them and pull the two entry 1s
   // together, so split at each restart, sort within a section, and keep the
   // sections in document order.
-  const ordered = [].concat.apply([], sectionizeEntries(entries).map(function (section) {
+  // Type 4 snippet lists have no real numbers: keep the document's order.
+  const ordered = type === 'snippet' ? entries.slice() : [].concat.apply([], sectionizeEntries(entries).map(function (section) {
     return section.sort((a, b) => type === 'countdown' ? b.number - a.number : a.number - b.number);
   }));
 
@@ -1004,7 +1040,11 @@ function buildNumbered(template, meta, entries, type) {
 
     // Update title component (keep the template's coloured number op; NBSP separates number and name)
     const titleComp = group.find(comp => comp.identifier === 'title');
-    if (titleComp && titleComp.content && titleComp.content.text && titleComp.content.text.length >= 2) {
+    if (type === 'snippet' && titleComp) {
+      // Type 4: the item name alone, in the title's normal style — the
+      // ascending template's title minus its coloured number and the space.
+      titleComp.content = { text: entry.nameDeltas && entry.nameDeltas.length ? deepClone(entry.nameDeltas) : [{ insert: entry.name }] };
+    } else if (titleComp && titleComp.content && titleComp.content.text && titleComp.content.text.length >= 2) {
       const numberOp = titleComp.content.text[0];
       numberOp.insert = type === 'ascending'
         ? String(entry.number).padStart(2, '0')
@@ -1185,6 +1225,11 @@ function markField(comp, field, id) {
   return true;
 }
 
+// The title directly after each entry picture, in order: entry N's title.
+function entryTitles(content) {
+  return content.map((c, i) => (c.identifier === 'image' && content[i + 1] && content[i + 1].identifier === 'title') ? content[i + 1] : null).filter(Boolean);
+}
+
 function firstTextField(comp) {
   const f = textFields(comp).find(([, ops]) => opsText(ops).trim());
   return f ? f[0] : null;
@@ -1211,7 +1256,10 @@ function placeComment(content, anchor, id) {
   const entryNum = anchor.entry != null && (String(anchor.entry).match(/\d+/) || [])[0];
   if (entryNum) {
     const re = new RegExp('^\\s*0*' + entryNum + '(?!\\d)');
-    const comp = content.find(c => c.identifier === 'title' && textFields(c).some(([, ops]) => re.test(opsText(ops))));
+    // Numbered titles carry the number; a Type 4 snippet list's don't, so
+    // there "entry 15" is the 15th item title (the title after each picture).
+    const comp = content.find(c => c.identifier === 'title' && textFields(c).some(([, ops]) => re.test(opsText(ops)))) ||
+      entryTitles(content)[Number(entryNum) - 1];
     if (comp && markField(comp, firstTextField(comp), id)) return 'entry';
   }
   if (anchor.crosshead) {
@@ -1265,7 +1313,10 @@ function emptySlotNotes(digital, missing, prefix) {
   content.forEach((c, i) => {
     if ((c.identifier !== 'image' && c.identifier !== 'header-image') || (c.content && c.content.image)) return;
     const title = content.slice(i + 1).find(x => x.identifier === 'title');
-    const num = title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
+    // Numbered titles carry their number; snippet titles don't, so use the
+    // frame's position among entry pictures instead.
+    const typed = title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
+    const num = typed || (c.identifier === 'image' ? String(content.slice(0, i + 1).filter(x => x.identifier === 'image').length) : null);
     const why = num && (missing || []).find(m => (String(m.entry).match(/\d+/) || [])[0] === num);
     notes.push({
       anchor: { index: i },
@@ -1983,8 +2034,15 @@ function flaggedNotes(meta, prefix) {
       if (c.identifier !== 'image' && c.identifier !== 'header-image') return;
       var title = content.slice(i + 1).filter(function (x) { return x.identifier === 'title'; })[0];
       var num = c.identifier === 'image' && title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
-      slots.push({ header: c.identifier === 'header-image', entry: num ? Number(num) : null });
+      slots.push({ header: c.identifier === 'header-image', entry: num ? Number(num) : null, isEntry: c.identifier === 'image' });
     });
+    // Type 4 snippet lists: titles carry no number, so entry N is the Nth
+    // entry picture frame — filename numbers and the AI's matches still apply.
+    if (!slots.some(function (s) { return s.entry != null; })) {
+      var n = 0;
+      slots.forEach(function (s) { if (s.isEntry) s.entry = ++n; });
+      if (n < 3) slots.forEach(function (s) { s.entry = null; });
+    }
     var ids = created.map(function (c) { return c.id; });
     if (!placement) return ids;
     var known = created.filter(function (c) { return placement.byUrl[c.url] != null; });
@@ -2095,7 +2153,7 @@ function flaggedNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '253889cc';
+  var PLUGIN_BUILD = '8c13b13a';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2125,6 +2183,7 @@ function flaggedNotes(meta, prefix) {
       '        <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
       '        <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
       '        <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
+      '        <option value="snippet">Type 4 — Snippet list (unnumbered items)</option>' +
       '      </select>' +
       '      <p class="wdab-note wdab-hidden" id="' + p + '-type-note"></p>' +
       '    </div>' +

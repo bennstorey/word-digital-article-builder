@@ -8,7 +8,7 @@ Open problems with evidence, so they can be picked up without re-deriving them.
 
 **Reported:** 2026-08-28
 **Article:** https://www.topgear.com/car-news/hot-hatch/these-are-12-best-hot-hatches-all-time
-**Status:** OPEN — fourth "snippet list" template planned for next session (see below)
+**Status:** FIXED 2026-09-25 — Type 4 "snippet list" (see the note under NEXT SESSION below)
 
 Images were fetched and added to the dossier correctly; they were not placed into
 the article.
@@ -33,7 +33,12 @@ append an image component per entry.
 
 ### NEXT SESSION — likely needs a fourth template (decided 2026-09-18, not started)
 
-> **2026-09-25:** article-type **auto-detect** now exists (`detectArticleType` / `detectTypeFromNumbers` in `index.html`). The snippet-list template should hook in there. Unnumbered bold-heading lists are detected as crosshead today. Word test doc: "50 of the silliest… American cars" in the TG AN+ WhatsApp export (50 bold headings, no numbers).
+> **Done 2026-09-25: Type 4 — Snippet list.** It is the ascending template with each title's number and space removed (Benn: name alone, in the title's normal style), keeping document order.
+> - **Auto-selected:** from topgear.com's `numberedList: false`, and for Word docs whose bold item names match a count in the headline.
+> - **Results:** both articles above now give 12 entries with 13 frames for 13 images, where only 2 were placed before. "50 silliest American cars" gives 50 items and 51 frames.
+> - **Placement:** pictures are placed by item position, or by filename number such as "7 - x.jpg".
+>
+> Earlier note: **2026-09-25:** article-type **auto-detect** now exists (`detectArticleType` / `detectTypeFromNumbers` in `index.html`). The snippet-list template should hook in there. Unnumbered bold-heading lists are detected as crosshead today. Word test doc: "50 of the silliest… American cars" in the TG AN+ WhatsApp export (50 bold headings, no numbers).
 
 Reproduced again on the V12 engines article
 (https://www.topgear.com/car-news/supercars/12-greatest-and-strangest-v12-engines-ever-made):
