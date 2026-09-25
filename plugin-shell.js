@@ -611,6 +611,7 @@
     fetchable: 'Dropbox link found, pictures not downloaded yet',
     'flagged-link': 'Picture link needs a person (WeTransfer / press site)',
     waiting: 'No pictures yet',
+    'built-by-hand': 'Built by hand in WhatsApp',
     'doc-missing': 'Word doc missing from the export',
   };
 
@@ -623,6 +624,12 @@
     if (b.imported) {
       out.push('Already imported into Studio on ' + esc(String(b.imported.at || '').slice(0, 10)) +
         '. Loading it re-imports: the pictures are fetched from Dropbox again (so any added since are included) and the AI runs again.');
+    } else if (b.builtByHand) {
+      var h = b.builtByHand;
+      out.push('Looks built by hand already: ' + esc(h.ts.replace('T', ' ').slice(0, 16)) + ' — “' + esc(h.text.slice(0, 80)) + '” ' +
+        '<a href="' + esc(h.href) + '" target="_blank" rel="noopener">open draft</a>' +
+        (h.rule === 'order' ? ' (matched by timing, not by name — check it’s this article)' : '') + '.');
+      if (b.pictureStatus === 'built-by-hand') out.push('Loading it imports it anyway: the pictures are fetched from Dropbox and the AI runs then.');
     }
     (b.pictures || []).forEach(function (p) {
       if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') {
@@ -966,16 +973,26 @@
         .then(function (j) {
           showParseError('');
           var list = j.bundles || [];
-          var waiting = list.filter(function (b) { return !b.imported; });
+          // New first; then docs the chat shows were already built by hand
+          // (BRS replied with an apple.news draft); then ones imported here.
+          var waiting = list.filter(function (b) { return !b.imported && !b.builtByHand; });
+          var byHand = list.filter(function (b) { return !b.imported && b.builtByHand; });
           var done = list.filter(function (b) { return b.imported; });
+          var day = function (ts) { return String(ts || '').slice(0, 10); };
           var opt = function (b) {
-            return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' +
-              esc(b.imported ? 'imported ' + String(b.imported.at || '').slice(0, 10) : (PICTURE_STATUS[b.pictureStatus] || b.pictureStatus)) + '</option>';
+            var label = b.imported ? 'imported ' + day(b.imported.at)
+              : b.builtByHand ? 'draft posted ' + day(b.builtByHand.ts)
+              : (PICTURE_STATUS[b.pictureStatus] || b.pictureStatus);
+            return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' + esc(label) + '</option>';
+          };
+          var group = function (label, items) {
+            return items.length ? '<optgroup label="' + esc(label) + '">' + items.map(opt).join('') + '</optgroup>' : '';
           };
           $('wa-bundle').innerHTML =
             '<option value="">' + (waiting.length ? 'Choose an article…' : 'Nothing new from WhatsApp') + '</option>' +
-            (waiting.length ? '<optgroup label="Waiting">' + waiting.map(opt).join('') + '</optgroup>' : '') +
-            (done.length ? '<optgroup label="Already in Studio — choose to re-import">' + done.map(opt).join('') + '</optgroup>' : '');
+            group('Waiting', waiting) +
+            group('Built by hand in WhatsApp — choose to import anyway', byHand) +
+            group('Already in Studio — choose to re-import', done);
         })
         .catch(function (e) {
           $('wa-bundle').innerHTML = '<option value="">—</option>';
@@ -1021,7 +1038,9 @@
         : !(state.bundle && state.bundle.docStored);
       $('parse').textContent = src === 'docx' ? 'Parse Document'
         : src === 'url' ? 'Fetch & Parse Article'
-        : state.bundle && state.bundle.imported ? 'Re-import from Dropbox & Load' : 'Load from WhatsApp';
+        : state.bundle && state.bundle.imported ? 'Re-import from Dropbox & Load'
+        : state.bundle && state.bundle.pictureStatus === 'built-by-hand' ? 'Import from Dropbox & Load'
+        : 'Load from WhatsApp';
     }
 
     $('parse').addEventListener('click', function () {
@@ -1035,8 +1054,11 @@
       state.placement = null;
       var type = $('type').value;
       $('parse').disabled = true;
+      // Imported before, or held back as built by hand: fetch the pictures and
+      // run the AI now, through the receiver's re-import.
+      var needsImport = source === 'whatsapp' && (state.bundle.imported || state.bundle.pictureStatus === 'built-by-hand');
       $('parse').textContent = source === 'docx' ? 'Parsing…'
-        : source === 'whatsapp' && state.bundle.imported ? 'Re-importing from Dropbox…' : 'Fetching…';
+        : needsImport ? 'Importing from Dropbox…' : 'Fetching…';
       $('parse-error').style.display = 'none';
       $('type-note').classList.add('wdab-hidden');
 
@@ -1067,7 +1089,7 @@
         var bundle = state.bundle;
         // Already in Studio: fetch its pictures again (the missing ones may
         // have arrived) and re-run the AI before loading it.
-        var ready = bundle.imported
+        var ready = needsImport
           ? receiverFetch('/bundles/' + bundle.key + '/reimport', { method: 'POST' })
               .then(function () { return receiverFetch('/bundles/' + bundle.key); })
               .then(function (r) { return r.json(); })
