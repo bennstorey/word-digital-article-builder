@@ -394,9 +394,19 @@
     });
   }
 
+  function fetchViaProxy(u) {
+    return fetch(proxyUrl(u), { credentials: 'omit' }).then(function (r) {
+      if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
+      return r.blob();
+    });
+  }
+
   // Uploads sequentially so a long gallery can't swamp the server, and so a
   // single failure is reported against its own image rather than aborting all.
-  function createImagesInDossier(urls, dossier, onProgress) {
+  // fetchImage(url) → Promise<Blob>; defaults to the topgear.com proxy, the
+  // WhatsApp source passes one that reads from the receiver.
+  function createImagesInDossier(urls, dossier, onProgress, fetchImage) {
+    fetchImage = fetchImage || fetchViaProxy;
     if (!urls || !urls.length) return Promise.resolve({ created: [], failed: [] });
     return resolveDossierContext(dossier).then(function (ctx) {
       return callServer('GetStates', {
@@ -417,11 +427,7 @@
         urls.forEach(function (u, i) {
           chain = chain.then(function () {
             if (onProgress) onProgress(i, urls.length);
-            return fetch(proxyUrl(u), { credentials: 'omit' })
-              .then(function (r) {
-                if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
-                return r.blob();
-              })
+            return fetchImage(u)
               .then(function (blob) {
                 return createImageObject(blob, u, ctx, state).catch(function (e) {
                   if (!/S1026|invalid characters|too long/i.test(e.message || '')) throw e;
@@ -540,6 +546,220 @@
       });
   }
 
+  // ─── WhatsApp receiver (same Fly host as the proxy) ───────────────────────
+  // The receiver turns WhatsApp chat exports into bundles: the Word doc, its
+  // Dropbox pictures, and the AI's reading of picture instructions. The key is
+  // kept in this browser only (demo; see the PROXY_SECRET note in server.js).
+  var RECEIVER_KEY_STORE = 'wdab-receiver-key';
+
+  function receiverKey() {
+    try { return localStorage.getItem(RECEIVER_KEY_STORE) || ''; } catch (e) { return ''; }
+  }
+  function setReceiverKey(k) {
+    try { localStorage.setItem(RECEIVER_KEY_STORE, k); } catch (e) { /* private mode */ }
+  }
+
+  function receiverUrl(path) {
+    return String(window.PROXY_BASE || '').replace(/\/$/, '') + path;
+  }
+
+  function receiverFetch(urlOrPath, opts) {
+    opts = opts || {};
+    var u = /^https?:/.test(urlOrPath) ? urlOrPath : receiverUrl(urlOrPath);
+    return fetch(u, {
+      method: opts.method || 'GET',
+      body: opts.body,
+      credentials: 'omit',
+      headers: Object.assign({ 'X-Proxy-Key': receiverKey() }, opts.headers || {}),
+    }).then(function (r) {
+      if (r.status === 401) throw new Error('The WhatsApp receiver refused the key — check it and try again.');
+      if (!r.ok) throw new Error('WhatsApp receiver: HTTP ' + r.status);
+      return r;
+    });
+  }
+
+  function fetchFromReceiver(u) {
+    return receiverFetch(u).then(function (r) { return r.blob(); });
+  }
+
+  function bundleFileUrl(bundle, rel) {
+    return receiverUrl('/bundles/' + bundle.key + '/files/' + rel.split('/').map(encodeURIComponent).join('/'));
+  }
+
+  // Upload order decides placement (applyImageIds fills slots in order):
+  // the AI's hero and ranking when it made one, else a hero named in the chat
+  // or doc, else the Dropbox filename order.
+  function orderedBundleImages(bundle) {
+    var images = (bundle.images || []).slice();
+    var byName = function (n) { return images.filter(function (im) { return im.name === n; })[0]; };
+    var front = [];
+    if (bundle.selection) {
+      [bundle.selection.hero].concat((bundle.selection.ranked || []).map(function (r) { return r.file; }))
+        .forEach(function (n) { var im = byName(n); if (im && front.indexOf(im) === -1) front.push(im); });
+    } else if (bundle.instructions && bundle.instructions.hero) {
+      var h = String(bundle.instructions.hero).toLowerCase();
+      var hit = images.filter(function (im) { return im.name.toLowerCase().indexOf(h) !== -1; })[0];
+      if (hit) front.push(hit);
+    }
+    return front.concat(images.filter(function (im) { return front.indexOf(im) === -1; }));
+  }
+
+  var PICTURE_STATUS = {
+    ready: 'Pictures downloaded',
+    fetchable: 'Dropbox link found, pictures not downloaded yet',
+    'flagged-link': 'Picture link needs a person (WeTransfer / press site)',
+    waiting: 'No pictures yet',
+    'doc-missing': 'Word doc missing from the export',
+  };
+
+  function bundleInfoHtml(b) {
+    var out = [];
+    out.push('<strong>' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</strong>' +
+      (b.images && b.images.length ? ' — ' + b.images.length + ' image' + (b.images.length === 1 ? '' : 's') : '') +
+      ' · sent by ' + esc(b.sender) + ' ' + esc(b.ts.replace('T', ' ')));
+    if (b.statusNote) out.push(esc(b.statusNote));
+    (b.pictures || []).forEach(function (p) {
+      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') {
+        out.push('Fetch by hand: <a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.type) + ' link</a>' +
+          (p.reason ? ' (' + esc(p.reason) + ')' : ''));
+      } else if (p.from === 'chat') {
+        out.push('Pictures from the chat: ' + esc(p.reason || ''));
+      }
+    });
+    (b.suggestedPictures || []).forEach(function (p) {
+      out.push('Possibly for this article (AI, ' + Math.round(p.confidence * 100) + '%): <a href="' + esc(p.href) + '" target="_blank" rel="noopener">link</a> — ' + esc(p.reason));
+    });
+    if (b.selection) {
+      out.push('AI picked the opener: ' + esc(b.selection.hero) + (b.selection.ranked && b.selection.ranked[0] ? ' — ' + esc(b.selection.ranked[0].reason) : ''));
+    }
+    var ins = b.instructions;
+    if (ins) {
+      (ins.missing || []).forEach(function (m) { out.push('Missing pictures: ' + esc(m.entry) + ' — ' + esc(m.note)); });
+      (ins.embeds || []).forEach(function (e) { out.push('Embed: ' + esc(e.url) + ' (' + esc(e.where) + ')'); });
+      if (ins.embargo) out.push('Embargo: ' + esc(ins.embargo));
+      (ins.otherNotes || []).forEach(function (n) { out.push(esc(n)); });
+    }
+    (b.errors || []).forEach(function (e) { out.push('⚠ ' + esc(e.step) + ': ' + esc(e.message)); });
+    return out.map(function (l) { return '<div>' + l + '</div>'; }).join('');
+  }
+
+  // ─── Comments in the created article ──────────────────────────────────────
+  // Notes become Digital editor comments (see addComments in the engine). They
+  // carry the creating editor's user id; the prefix says who raised them.
+  var AI_PREFIX = 'WhatsApp AI: ';
+  var TOOL_PREFIX = 'Word → Digital: ';
+
+  function currentUserId() {
+    try {
+      var info = ContentStationSdk.getInfo() || {};
+      var u = info.CurrentUser || info.User || {};
+      return u.UserID || u.ShortName || u.Id || info.UserID || '';
+    } catch (e) { return ''; }
+  }
+
+  // Notes from the WhatsApp bundle: AI copy queries, picture decisions, links
+  // someone must fetch, instructions. Empty frames are added after placement.
+  function bundleNotes(bundle) {
+    var notes = [];
+    var review = (bundle.review && bundle.review.queries) || [];
+    review.forEach(function (q) {
+      notes.push({
+        anchor: { quote: q.quote, entry: q.entry },
+        text: AI_PREFIX + q.comment + (q.source && q.source !== 'the copy itself' ? '\n(' + q.source + ')' : ''),
+      });
+    });
+    var head = [];
+    if (bundle.selection) {
+      head.push('Opening picture chosen: ' + bundle.selection.hero +
+        (bundle.selection.ranked && bundle.selection.ranked[0] ? ' — ' + bundle.selection.ranked[0].reason : '') +
+        '. All ' + (bundle.images || []).length + ' pictures are in the Dossier if you prefer another.');
+    }
+    (bundle.pictures || []).forEach(function (p) {
+      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') head.push('Pictures to fetch by hand (' + p.type + '): ' + p.href);
+    });
+    (bundle.suggestedPictures || []).forEach(function (p) {
+      head.push('Possibly this article\'s pictures (' + Math.round(p.confidence * 100) + '% sure): ' + p.href + ' — ' + p.reason);
+    });
+    var ins = bundle.instructions;
+    if (ins) {
+      (ins.embeds || []).forEach(function (e) { head.push('Embed requested: ' + e.url + ' (' + e.where + ')'); });
+      if (ins.embargo) head.push('Embargo: ' + ins.embargo);
+      (ins.otherNotes || []).forEach(function (n) { head.push(n); });
+    }
+    if (head.length) notes.push({ anchor: {}, text: AI_PREFIX + head.join('\n') });
+    return notes;
+  }
+
+  // Which numbered entry a bundle image shows: the AI's match first, then a
+  // filename like "15-F90.jpg" or "15.jpg". Camera names such as
+  // "03.02.2026-Geely…" are not read as entry 3 (digit after the separator).
+  function entryOfImage(im, bundle) {
+    var r = bundle.selection && (bundle.selection.ranked || []).filter(function (x) { return x.file === im.name; })[0];
+    var fromAi = r && r.entry != null && String(r.entry).match(/\d+/);
+    if (fromAi) return Number(fromAi[0]);
+    var m = im.name.match(/^0*(\d{1,3})(?:[\s._-]+(?!\d)|\.[a-z]+$)/i);
+    return m ? Number(m[1]) : null;
+  }
+
+  // Image object ids per frame, in frame order (null = leave empty).
+  // created: [{ id, url }] in upload order; placement: { byUrl: {url: entry}, heroUrl }.
+  // A numbered list whose pictures mostly know their entry is placed by entry,
+  // so a missing picture leaves its own frame empty instead of shifting the
+  // rest; otherwise frames fill in upload order, as before.
+  function assignSlots(digital, created, placement) {
+    var content = digital.data.content || [];
+    var slots = [];
+    content.forEach(function (c, i) {
+      if (c.identifier !== 'image' && c.identifier !== 'header-image') return;
+      var title = content.slice(i + 1).filter(function (x) { return x.identifier === 'title'; })[0];
+      var num = c.identifier === 'image' && title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
+      slots.push({ header: c.identifier === 'header-image', entry: num ? Number(num) : null });
+    });
+    var ids = created.map(function (c) { return c.id; });
+    if (!placement) return ids;
+    var known = created.filter(function (c) { return placement.byUrl[c.url] != null; });
+    var numbered = slots.some(function (s) { return s.entry != null; });
+    if (!numbered || known.length < created.length / 2) return ids;
+
+    var out = slots.map(function () { return null; });
+    var used = {};
+    var headerIdx = slots.findIndex(function (s) { return s.header; });
+    if (headerIdx >= 0) {
+      var hero = created.filter(function (c) { return c.url === placement.heroUrl; })[0] ||
+                 created.filter(function (c) { return placement.byUrl[c.url] == null; })[0];
+      if (hero) { out[headerIdx] = hero.id; used[hero.url] = true; }
+    }
+    known.forEach(function (c) {
+      if (used[c.url]) return;
+      var k = slots.findIndex(function (s, i) { return s.entry === placement.byUrl[c.url] && !out[i]; });
+      if (k >= 0) { out[k] = c.id; used[c.url] = true; }
+    });
+    return out; // pictures without a matching frame stay in the Dossier only
+  }
+
+  // Frames still empty after placement, with the chat's reason where known;
+  // and frames the chat says were missing but that got a picture anyway.
+  function pictureNotes(digital, bundle) {
+    var missing = (bundle && bundle.instructions && bundle.instructions.missing) || [];
+    var notes = emptySlotNotes(digital, missing, TOOL_PREFIX);
+    var frames = (digital.data.content || []).filter(function (c) {
+      return c.identifier === 'image' || c.identifier === 'header-image';
+    }).length;
+    // Nothing placed at all: one note on the headline, not one per frame.
+    if (frames > 2 && notes.length === frames) {
+      var why = bundle && bundle.pictureStatus === 'waiting'
+        ? ' The writer\'s doc says: ' + ((bundle.doc && bundle.doc.picLineText) || 'no picture link given') + '.'
+        : '';
+      notes = [{ anchor: {}, text: TOOL_PREFIX + 'No pictures placed yet — all ' + frames + ' picture frames are empty.' + why }];
+    }
+    var emptyEntries = notes.map(function (n) { return n.text; }).join('\n');
+    missing.forEach(function (m) {
+      if (emptyEntries.indexOf(m.note) !== -1) return; // already said on the empty frame
+      notes.push({ anchor: { entry: m.entry }, text: AI_PREFIX + 'The chat says this picture was missing (' + m.note + '). Check the picture placed here.' });
+    });
+    return notes;
+  }
+
   // ─── Shared converter UI ───────────────────────────────────────────────────
   var CSS = [
     '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
@@ -550,7 +770,9 @@
     '.wdab .wdab-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}',
     '.wdab-modal .wdab .wdab-card{border:0;box-shadow:none;padding:8px 0;margin-bottom:4px}',
     '.wdab label{display:block;font-weight:500;color:#334155;margin:0 0 4px}',
-    '.wdab select,.wdab input[type=text]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
+    '.wdab .wdab-wa-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:#334155}',
+    '.wdab .wdab-wa-info div+div{margin-top:4px}',
+    '.wdab select,.wdab input[type=text],.wdab input[type=password]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
     '.wdab input[type=file]{width:100%;font:inherit}',
     '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle}',
     '.wdab-row label input[type=checkbox]+span{font-weight:400;color:#334155}',
@@ -606,7 +828,15 @@
       '      <select id="' + p + '-source">' +
       '        <option value="docx">Word document (.docx)</option>' +
       '        <option value="url">TopGear article URL</option>' +
+      '        <option value="whatsapp">From WhatsApp</option>' +
       '      </select>' +
+      '    </div>' +
+      '    <div class="wdab-row wdab-hidden" id="' + p + '-wa-row">' +
+      '      <label for="' + p + '-wa-key">Receiver key</label>' +
+      '      <input type="password" id="' + p + '-wa-key" autocomplete="off">' +
+      '      <label for="' + p + '-wa-bundle" style="margin-top:10px">Article from WhatsApp</label>' +
+      '      <select id="' + p + '-wa-bundle"><option value="">—</option></select>' +
+      '      <div class="wdab-wa-info wdab-hidden" id="' + p + '-wa-info"></div>' +
       '    </div>' +
       '    <div class="wdab-row" id="' + p + '-docx-row">' +
       '      <label for="' + p + '-file">Word document (.docx)</label>' +
@@ -632,6 +862,10 @@
       '      <div class="wdab-row wdab-hidden" id="' + p + '-images-row">' +
       '        <label><input type="checkbox" id="' + p + '-images-add" checked> <span id="' + p + '-images-label"></span></label>' +
       '        <p class="wdab-note" id="' + p + '-images-progress"></p>' +
+      '      </div>' +
+      '      <div class="wdab-row">' +
+      '        <label><input type="checkbox" id="' + p + '-comments-add" checked> <span>Add comments to the article for missing pictures and things to check</span></label>' +
+      '        <p class="wdab-note" id="' + p + '-comments-note"></p>' +
       '      </div>' +
       '      <div class="wdab-warn" id="' + p + '-warn"><strong>Flagged for review — kept in the article:</strong> these look like editor instructions rather than copy. Each stays in place as plain body text; delete any that shouldn\'t ship.<ul id="' + p + '-warn-list"></ul></div>' +
       '    </div>' +
@@ -662,12 +896,67 @@
     });
 
     $('source').addEventListener('change', function () {
-      var isDocx = $('source').value === 'docx';
-      $('docx-row').classList.toggle('wdab-hidden', !isDocx);
-      $('url-row').classList.toggle('wdab-hidden', isDocx);
+      var src = $('source').value;
+      $('docx-row').classList.toggle('wdab-hidden', src !== 'docx');
+      $('url-row').classList.toggle('wdab-hidden', src !== 'url');
+      $('wa-row').classList.toggle('wdab-hidden', src !== 'whatsapp');
+      if (src === 'whatsapp') loadBundles();
       refreshParse();
     });
     $('url').addEventListener('input', refreshParse);
+
+    // ── WhatsApp source ──
+    $('wa-key').value = receiverKey();
+    $('wa-key').addEventListener('change', function () {
+      setReceiverKey($('wa-key').value.trim());
+      loadBundles();
+    });
+
+    function showParseError(msg) {
+      $('parse-error').textContent = msg;
+      $('parse-error').style.display = msg ? 'block' : 'none';
+    }
+
+    function loadBundles() {
+      state.bundle = null;
+      $('wa-info').classList.add('wdab-hidden');
+      $('wa-bundle').innerHTML = '<option value="">Loading…</option>';
+      refreshParse();
+      receiverFetch('/bundles')
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          showParseError('');
+          var list = j.bundles || [];
+          $('wa-bundle').innerHTML = '<option value="">' + (list.length ? 'Choose an article…' : 'Nothing waiting from WhatsApp') + '</option>' +
+            list.map(function (b) {
+              return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</option>';
+            }).join('');
+        })
+        .catch(function (e) {
+          $('wa-bundle').innerHTML = '<option value="">—</option>';
+          showParseError(e.message);
+        });
+    }
+
+    $('wa-bundle').addEventListener('change', function () {
+      var key = $('wa-bundle').value;
+      state.bundle = null;
+      $('preview').classList.add('wdab-hidden');
+      $('wa-info').classList.add('wdab-hidden');
+      refreshParse();
+      if (!key) return;
+      receiverFetch('/bundles/' + key)
+        .then(function (r) { return r.json(); })
+        .then(function (b) {
+          if ($('wa-bundle').value !== key) return; // changed while loading
+          state.bundle = b;
+          if (b.template && TEMPLATES[b.template]) $('type').value = b.template; // editor can still change it
+          $('wa-info').innerHTML = bundleInfoHtml(b);
+          $('wa-info').classList.remove('wdab-hidden');
+          refreshParse();
+        })
+        .catch(function (e) { showParseError(e.message); });
+    });
 
     // Slots available in the layout the current article type would produce.
     function ctlSlotCount() {
@@ -682,9 +971,12 @@
     }
 
     function refreshParse() {
-      var isDocx = $('source').value === 'docx';
-      $('parse').disabled = isDocx ? !$('file').files.length : !$('url').value.trim();
-      $('parse').textContent = isDocx ? 'Parse Document' : 'Fetch & Parse Article';
+      var src = $('source').value;
+      $('parse').disabled = src === 'docx' ? !$('file').files.length
+        : src === 'url' ? !$('url').value.trim()
+        : !(state.bundle && state.bundle.docStored);
+      $('parse').textContent = src === 'docx' ? 'Parse Document'
+        : src === 'url' ? 'Fetch & Parse Article' : 'Load from WhatsApp';
     }
 
     $('parse').addEventListener('click', function () {
@@ -692,6 +984,10 @@
       var file = $('file').files[0];
       if (source === 'docx' && !file) return;
       if (source === 'url' && !$('url').value.trim()) return;
+      if (source === 'whatsapp' && !(state.bundle && state.bundle.docStored)) return;
+      state.fetchImage = null;
+      state.bundleKey = null;
+      state.placement = null;
       var type = $('type').value;
       $('parse').disabled = true;
       $('parse').textContent = source === 'docx' ? 'Parsing…' : 'Fetching…';
@@ -705,6 +1001,26 @@
           state.uploadedFilename = slugFromUrl(articleUrl);
           return { meta: r.meta, entries: r.entries };
         });
+      } else if (source === 'whatsapp') {
+        var bundle = state.bundle;
+        pipeline = Promise.all([
+          loadMammoth(),
+          receiverFetch(bundleFileUrl(bundle, 'doc.docx')).then(function (r) { return r.arrayBuffer(); }),
+        ])
+          .then(function (x) { return x[0].convertToHtml({ arrayBuffer: x[1] }); })
+          .then(function (result) {
+            var ordered = orderedBundleImages(bundle);
+            state.imageUrls = ordered.map(function (im) { return bundleFileUrl(bundle, im.file); });
+            state.placement = { byUrl: {}, heroUrl: null };
+            ordered.forEach(function (im, i) {
+              state.placement.byUrl[state.imageUrls[i]] = entryOfImage(im, bundle);
+              if (bundle.selection && bundle.selection.hero === im.name) state.placement.heroUrl = state.imageUrls[i];
+            });
+            state.fetchImage = fetchFromReceiver;
+            state.bundleKey = bundle.key;
+            state.uploadedFilename = bundle.name;
+            return type === 'crosshead' ? parseCrosshead(result.value) : parseNumbered(result.value, type);
+          });
       } else {
         pipeline = loadMammoth()
           .then(function (mammoth) { return file.arrayBuffer().then(function (buf) { return mammoth.convertToHtml({ arrayBuffer: buf }); }); })
@@ -726,7 +1042,12 @@
           $('author').value = parsed.meta.author;
 
           if (parsed.meta.flagged && parsed.meta.flagged.length) {
-            $('warn-list').innerHTML = parsed.meta.flagged.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+            $('warn-list').innerHTML = parsed.meta.flagged.map(function (f) {
+              var links = f.hrefs.filter(function (h) { return f.text.indexOf(h) === -1; }).map(function (h) {
+                return ' → <a href="' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
+              }).join('');
+              return '<li>' + esc(f.text) + links + '</li>';
+            }).join('');
             $('warn').style.display = 'block';
           } else {
             $('warn').style.display = 'none';
@@ -790,16 +1111,33 @@
           titleDeltas: $('title').value === pm.title ? pd.title : null,
           subtitleDeltas: $('subtitle').value === pm.subtitle ? pd.subtitle : null,
         };
-        function build(imageIds) {
+        // created: [{ id, url }] from createImagesInDossier, in upload order.
+        function build(created) {
           var template = deepClone(TEMPLATES[state.parsedData.type]);
           var d = state.parsedData.type === 'crosshead'
             ? buildCrosshead(template, meta, state.parsedData.entries)
             : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
-          return applyImageIds(d, imageIds);
+          var placed = applyImageIds(d, created ? assignSlots(d, created, state.placement) : null);
+          placed.comments = 0;
+          if ($('comments-add') && $('comments-add').checked) {
+            var bundle = state.bundleKey ? state.bundle : null;
+            // Frame notes only when pictures were expected (WhatsApp or a web
+            // article); a plain Word import has its pictures added by hand later.
+            var expectPictures = !!bundle || (state.imageUrls || []).length > 0;
+            var notes = flaggedNotes(pm, TOOL_PREFIX)
+              .concat(bundle ? bundleNotes(bundle) : [])
+              .concat(expectPictures ? pictureNotes(placed.digital, bundle) : []);
+            var withComments = addComments(placed.digital, notes, currentUserId());
+            placed.digital = withComments.digital;
+            placed.comments = withComments.placed.length;
+          }
+          return placed;
         }
         return {
           digital: build().digital, build: build, meta: meta, filename: state.uploadedFilename,
           imageUrls: (state.imageUrls || []),
+          fetchImage: state.fetchImage || null,
+          bundleKey: state.bundleKey || null,
           addImages: !!($('images-add') && $('images-add').checked && (state.imageUrls || []).length),
         };
       },
@@ -862,7 +1200,7 @@
           var progEl = ctl.$('images-progress');
           imagesStep = createImagesInDossier(result.imageUrls, dossier, function (done, total) {
             if (progEl) progEl.textContent = 'Uploading image ' + Math.min(done + 1, total) + ' of ' + total + '…';
-          }).catch(function (e) {
+          }, result.fetchImage).catch(function (e) {
             return { created: [], failed: [], fatal: e.message };
           });
         }
@@ -889,17 +1227,28 @@
           })
           .then(function (images) {
             btn.textContent = 'Creating…';
-            var ids = images ? images.created.map(function (c) { return c.id; }) : [];
-            var built = result.build(ids);
+            var created = images ? images.created.filter(function (c) { return c.id; }) : [];
+            var built = result.build(created);
             return attempt(built.digital, 0).then(function (res) {
-              return { res: res, images: images, placed: built.filled, slots: built.slots };
+              return { res: res, images: images, placed: built.filled, slots: built.slots, comments: built.comments };
             });
           })
           .then(function (r) {
             var created = r.res && r.res.Objects && r.res.Objects[0];
-            var newName = created && created.MetaData && created.MetaData.BasicMetaData
-              ? created.MetaData.BasicMetaData.Name : name;
-            return { newName: newName, images: r.images, placed: r.placed, slots: r.slots };
+            var bmd = created && created.MetaData && created.MetaData.BasicMetaData;
+            var newName = bmd ? bmd.Name : name;
+            var out = { newName: newName, images: r.images, placed: r.placed, slots: r.slots, comments: r.comments };
+            if (!result.bundleKey) return out;
+            // Tell the receiver this bundle is in Studio so a re-export never
+            // offers it again. Never fatal — the article already exists.
+            return receiverFetch('/bundles/' + result.bundleKey + '/imported', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ dossierId: String(dossier.ID || dossier.Id), articleId: bmd ? String(bmd.ID) : null }),
+            }).then(function () { return out; }, function (e) {
+              console.warn('[word-digital] could not mark WhatsApp bundle imported:', e.message);
+              return out;
+            });
           })
           .then(function (out) {
             var msg = 'Digital article “' + esc(out.newName) + '” created in Dossier “' + esc(dossier.Name || '') + '”.';
@@ -917,6 +1266,7 @@
                 if (im.failed.length) console.warn('[word-digital] image failures:', im.failed);
               }
             }
+            if (out.comments) msg += ' ' + out.comments + ' comment' + (out.comments === 1 ? '' : 's') + ' added — see the Comments panel.';
             ContentStationSdk.showNotification({ content: msg, icon: 'check' });
             try { ContentStationSdk.refreshCurrentSearch(); } catch (e) { /* non-fatal */ }
             if (dialogId !== null) ContentStationSdk.closeModalDialog(dialogId);

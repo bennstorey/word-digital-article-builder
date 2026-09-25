@@ -274,6 +274,13 @@ function shouldFlag(text) {
   return FLAG_PREFIXES.some(p => lower.startsWith(p)) || /^https?:\/\/\S+$/.test(text);
 }
 
+// A flagged line as recorded in meta.flagged. The hrefs matter: "Web gallery"
+// is often the visible text of a link whose target is the picture folder.
+function flagEntry(p, text) {
+  const hrefs = Array.from(p.querySelectorAll('a[href]')).map(a => a.getAttribute('href'));
+  return { text, hrefs: hrefs.filter((h, i) => h && hrefs.indexOf(h) === i) };
+}
+
 // Returns { crosshead, remainingBody } if paragraph is (or starts with) bold, else null.
 // Handles:
 //   - Fully bold paragraph  →  crosshead = full text, remainingBody = ''
@@ -365,7 +372,7 @@ function parseNumbered(html, type) {
         // copy at the point it appeared, and flagged if it reads like an
         // editor instruction so it can be reviewed before publishing.
         var isInstr = shouldFlag(text);
-        if (isInstr) meta.flagged.push(text);
+        if (isInstr) meta.flagged.push(flagEntry(p, text));
         const deltas = trimDeltas(paraToDeltas(p));
         if (deltas.length) meta.leadParts.push(mkPart(deltas, isInstr));
       }
@@ -375,7 +382,7 @@ function parseNumbered(html, type) {
         if (pending) entries.push(pending);
         pending = { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
       } else {
-        if (shouldFlag(text)) meta.flagged.push(text);
+        if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
         if (pending) {
           const deltas = trimDeltas(paraToDeltas(p));
           if (deltas.length) pending.bodyParts.push(deltas);
@@ -472,7 +479,7 @@ function parseCrosshead(html) {
     //    They are often bold, so they must not be read as crossheads: an
     //    instruction promoted to a crosshead would open a spurious section.
     const isInstruction = shouldFlag(text);
-    if (isInstruction) meta.flagged.push(text);
+    if (isInstruction) meta.flagged.push(flagEntry(p, text));
 
     // 3.5. Detect score line (e.g. "SCORE: 7/10") — must run before crosshead detection
     if (/^score:\s*\d/i.test(text)) {
@@ -593,7 +600,7 @@ function parseListicleItems(article) {
       if (!text) continue;
       const deltas = trimDeltas(paraToDeltas(p));
       if (!deltas.length) continue;
-      if (shouldFlag(text)) flagged.push(text);
+      if (shouldFlag(text)) flagged.push(flagEntry(p, text));
       bodyParts.push(deltas);
     }
     // Item titles can carry italics (model names), so keep them rich too
@@ -720,7 +727,7 @@ function parseNumberedFromHtml(htmlString) {
       continue;
     }
 
-    if (shouldFlag(text)) flagged.push(text);
+    if (shouldFlag(text)) flagged.push(flagEntry(p, text));
     if (pending) pending.bodyParts.push(deltas);
     else leadParts.push(mkPart(deltas, shouldFlag(text)));
   }
@@ -763,7 +770,7 @@ function parseCrossheadFromHtml(htmlString) {
 
     const deltas = trimDeltas(paraToDeltas(p));
     if (!deltas.length) continue;
-    if (shouldFlag(text)) flagged.push(text);
+    if (shouldFlag(text)) flagged.push(flagEntry(p, text));
 
     if (inContent) curBodyParts.push(deltas);
     else introParts.push(mkPart(deltas, shouldFlag(text)));
@@ -782,7 +789,7 @@ function parseProseFromHtml(htmlString) {
     if (!text) continue;
     const deltas = trimDeltas(paraToDeltas(p));
     if (!deltas.length) continue;
-    if (shouldFlag(text)) flagged.push(text);
+    if (shouldFlag(text)) flagged.push(flagEntry(p, text));
     parts.push(deltas);
   }
   if (!parts.length) return { entries: [], flagged };
@@ -1160,6 +1167,146 @@ function buildCrosshead(template, meta, entries) {
   return { version: template.version, data: { content: result } };
 }
 
+// ─── Comments ─────────────────────────────────────────────────────────────
+// Studio Digital editor comments (format 2.2+): a text run carries
+// attributes.comment = <id>, and the root-level `comments` object holds
+// { id, userId, created, modified, text, replies }. Comments attach to text
+// only — an image component has none — so a note about an image frame goes on
+// the first text after it (an entry's own title, or the headline for the
+// header image). Checked on the lab 2026-09-25: the server keeps both parts
+// through save and re-download.
+
+// Text fields of a component: every content member that is a delta array.
+function textFields(comp) {
+  return Object.entries(comp.content || {}).filter(([, v]) => Array.isArray(v) && v.some(op => typeof op.insert === 'string'));
+}
+const opsText = ops => ops.map(op => typeof op.insert === 'string' ? op.insert : '').join('');
+
+// Marks [start, end) of a delta array with the comment id, splitting runs at the edges.
+function markRange(ops, start, end, id) {
+  const out = [];
+  let pos = 0;
+  for (const op of ops) {
+    if (typeof op.insert !== 'string') { out.push(op); continue; }
+    const a = pos, b = pos + op.insert.length;
+    pos = b;
+    if (b <= start || a >= end) { out.push(op); continue; }
+    const cut = [Math.max(start, a) - a, Math.min(end, b) - a];
+    if (cut[0] > 0) out.push({ ...op, insert: op.insert.slice(0, cut[0]) });
+    out.push({ ...op, insert: op.insert.slice(cut[0], cut[1]), attributes: { ...(op.attributes || {}), comment: id } });
+    if (cut[1] < op.insert.length) out.push({ ...op, insert: op.insert.slice(cut[1]) });
+  }
+  return out;
+}
+
+// Comments one whole text field (trailing/leading whitespace left unmarked).
+function markField(comp, field, id) {
+  const text = opsText(comp.content[field]);
+  const start = text.search(/\S/);
+  if (start < 0) return false;
+  comp.content[field] = markRange(comp.content[field], start, text.trimEnd().length, id);
+  return true;
+}
+
+function firstTextField(comp) {
+  const f = textFields(comp).find(([, ops]) => opsText(ops).trim());
+  return f ? f[0] : null;
+}
+
+// Anchors, tried in order until one lands:
+//   { quote }      exact phrase anywhere in the article (first occurrence)
+//   { entry }      the title of numbered entry N
+//   { crosshead }  a title/crosshead whose text matches
+//   { index }      the first text after component index i (image frames)
+//   headline       always last: the article's first title
+function placeComment(content, anchor, id) {
+  anchor = anchor || {};
+  if (anchor.quote) {
+    const q = anchor.quote.trim();
+    for (const comp of content) {
+      for (const [field, ops] of textFields(comp)) {
+        const k = opsText(ops).indexOf(q);
+        if (k >= 0) { comp.content[field] = markRange(ops, k, k + q.length, id); return 'quote'; }
+      }
+    }
+  }
+  if (anchor.entry != null) {
+    const re = new RegExp('^\\s*0*' + String(anchor.entry).replace(/\D/g, '') + '(?!\\d)');
+    const comp = content.find(c => c.identifier === 'title' && textFields(c).some(([, ops]) => re.test(opsText(ops))));
+    if (comp && markField(comp, firstTextField(comp), id)) return 'entry';
+  }
+  if (anchor.crosshead) {
+    const want = anchor.crosshead.trim().toLowerCase();
+    const comp = content.find(c => (c.identifier === 'title' || c.identifier === 'crosshead') &&
+      textFields(c).some(([, ops]) => opsText(ops).trim().toLowerCase() === want));
+    if (comp && markField(comp, firstTextField(comp), id)) return 'crosshead';
+  }
+  if (anchor.index != null) {
+    const after = content.slice(anchor.index + 1).find(c => c.identifier !== 'apple-news-follow' && firstTextField(c));
+    const before = content.slice(0, anchor.index).reverse().find(c => firstTextField(c));
+    const comp = after || before;
+    if (comp && markField(comp, firstTextField(comp), id)) return 'near-frame';
+  }
+  const head = content.find(c => c.identifier === 'title' && firstTextField(c)) || content.find(c => firstTextField(c));
+  if (head && markField(head, firstTextField(head), id)) return 'headline';
+  return null;
+}
+
+// notes: [{ text, anchor, replies? }]. Returns { digital, placed: [{ id, via }] }.
+// Several notes landing on the same text are merged into one comment, since a
+// run can carry only one comment id.
+function addComments(digital, notes, userId) {
+  if (!notes || !notes.length) return { digital, placed: [] };
+  const content = digital.data.content || [];
+  const now = new Date().toISOString();
+  const comments = Object.assign({}, digital.comments || {});
+  const placed = [];
+  notes.forEach(note => {
+    const id = 'wa-' + genId();
+    const via = placeComment(content, note.anchor, id);
+    if (!via) return;
+    // If the whole range was already commented, markRange replaced that id:
+    // fold the earlier note into this one rather than orphan it.
+    const stillUsed = new Set(JSON.stringify(content).match(/"comment":"[^"]+"/g) || []);
+    let text = note.text;
+    Object.keys(comments).forEach(k => {
+      if (!stillUsed.has('"comment":"' + k + '"') && k.startsWith('wa-')) { text = comments[k].text + '\n\n' + text; delete comments[k]; }
+    });
+    comments[id] = { id, userId: userId || '', created: now, modified: now, text, replies: note.replies || [] };
+    placed.push({ id, via });
+  });
+  return { digital: Object.assign({}, digital, { comments }), placed };
+}
+
+// One note per image/header-image slot left empty after images are placed.
+// `missing` ([{ entry, note }], from the chat) adds the reason where known.
+function emptySlotNotes(digital, missing, prefix) {
+  const content = digital.data.content || [];
+  const notes = [];
+  content.forEach((c, i) => {
+    if ((c.identifier !== 'image' && c.identifier !== 'header-image') || (c.content && c.content.image)) return;
+    const title = content.slice(i + 1).find(x => x.identifier === 'title');
+    const num = title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
+    const why = num && (missing || []).find(m => String(m.entry).replace(/\D/g, '') === num);
+    notes.push({
+      anchor: { index: i },
+      text: (prefix || '') + (c.identifier === 'header-image' ? 'No opening picture yet.' : 'No picture in this frame yet.') +
+        (why ? ' From the chat: ' + why.note : ''),
+    });
+  });
+  return notes;
+}
+
+// Flagged editor-instruction lines become comments on themselves, so they are
+// visible in Studio's Comments panel and not only in the converter's review box.
+function flaggedNotes(meta, prefix) {
+  return (meta.flagged || []).map(f => ({
+    anchor: { quote: f.text },
+    text: (prefix || '') + 'Editor instruction left in the copy — delete before publishing.' +
+      (f.hrefs && f.hrefs.length ? ' Link: ' + f.hrefs.join(' ') : ''),
+  }));
+}
+
 // ─── UI state ─────────────────────────────────────────────────────────────
 let parsedData = null;
 let uploadedFilename = '';
@@ -1260,7 +1407,9 @@ parseBtn.addEventListener('click', async () => {
     metaAuthor.value   = meta.author;
 
     if (meta.flagged && meta.flagged.length) {
-      unrecognizedList.innerHTML = meta.flagged.map(t => `<li>${escapeHtml(t)}</li>`).join('');
+      unrecognizedList.innerHTML = meta.flagged.map(f =>
+        `<li>${escapeHtml(f.text)}${f.hrefs.filter(h => !f.text.includes(h)).map(h => ` → <a href="${escapeHtml(h)}" target="_blank" rel="noopener">${escapeHtml(h)}</a>`).join('')}</li>`
+      ).join('');
       unrecognizedBox.classList.remove('hidden');
     } else {
       unrecognizedBox.classList.add('hidden');
