@@ -46,6 +46,13 @@ groups:
 - **Already in Studio — choose to re-import**: fetches the pictures again (e.g.
   once missing ones arrive) and re-runs the AI.
 
+A **status line** above the list says what the receiver is doing: "An export
+arrived at 12:33 and is being processed… about 2 minutes", then "1 new article,
+12 already known", or why an export failed. The list re-reads itself while the
+WhatsApp source is showing and reloads when an export finishes (never under a
+selected article); there is a Refresh button too. Expect about 2–3 minutes from
+the export reaching Dropbox to a new article being listed.
+
 The **Receiver key** field takes the receiver's `RECEIVER_KEY`. It is stored in
 the browser's localStorage (demo arrangement; see the receiver README).
 
