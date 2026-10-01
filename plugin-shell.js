@@ -574,8 +574,13 @@
       credentials: 'omit',
       headers: Object.assign({ 'X-Proxy-Key': receiverKey() }, opts.headers || {}),
     }).then(function (r) {
-      if (r.status === 401) throw new Error('The WhatsApp receiver refused the key — check it and try again.');
-      if (!r.ok) throw new Error('WhatsApp receiver: HTTP ' + r.status);
+      if (r.status === 401) throw new Error('The receiver refused the key — check it and try again.');
+      if (!r.ok) {
+        // The receiver explains itself in { error }; show that, not a bare status.
+        return r.json().then(function (j) { return j && j.error; }, function () { return null; }).then(function (why) {
+          throw new Error(why || ('The receiver answered HTTP ' + r.status + '.'));
+        });
+      }
       return r;
     });
   }
@@ -619,7 +624,9 @@
     var out = [];
     out.push('<strong>' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</strong>' +
       (b.images && b.images.length ? ' — ' + b.images.length + ' image' + (b.images.length === 1 ? '' : 's') : '') +
-      ' · sent by ' + esc(b.sender) + ' ' + esc(b.ts.replace('T', ' ')));
+      (b.source === 'upload'
+        ? ' · from the document you uploaded, ' + esc(b.ts.slice(11, 16))
+        : ' · sent by ' + esc(b.sender) + ' ' + esc(b.ts.replace('T', ' '))));
     if (b.statusNote) out.push(esc(b.statusNote));
     if (b.imported) {
       out.push('Already imported into Studio on ' + esc(String(b.imported.at || '').slice(0, 10)) +
@@ -939,6 +946,12 @@
       '    <div class="wdab-row" id="' + p + '-docx-row">' +
       '      <label for="' + p + '-file">Word document (.docx)</label>' +
       '      <input type="file" id="' + p + '-file" accept=".docx">' +
+      '      <label style="margin-top:10px"><input type="checkbox" id="' + p + '-docx-fetch"> <span>Fetch the pictures linked in the document and run the AI checks (about 1–2 minutes)</span></label>' +
+      '      <div id="' + p + '-docx-key-row" class="wdab-hidden">' +
+      '        <label for="' + p + '-docx-key" style="margin-top:6px">Receiver key</label>' +
+      '        <input type="password" id="' + p + '-docx-key" autocomplete="off">' +
+      '      </div>' +
+      '      <div class="wdab-wa-info wdab-hidden" id="' + p + '-docx-info"></div>' +
       '    </div>' +
       '    <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
       '      <label for="' + p + '-url">TopGear article URL</label>' +
@@ -990,8 +1003,23 @@
       $('parse').disabled = !$('file').files.length;
       $('preview').classList.add('wdab-hidden');
       state.parsedData = null;
+      state.bundle = null;
+      $('docx-info').classList.add('wdab-hidden');
       $('parse-error').style.display = 'none';
     });
+
+    // Word source, optional: send the doc to the receiver for its pictures and
+    // the AI checks. On by default only when a receiver key is already stored,
+    // so a Word upload without a key behaves exactly as before.
+    $('docx-key').value = receiverKey();
+    $('docx-fetch').checked = !!receiverKey();
+    function syncDocxFetch() { $('docx-key-row').classList.toggle('wdab-hidden', !$('docx-fetch').checked); }
+    $('docx-fetch').addEventListener('change', syncDocxFetch);
+    $('docx-key').addEventListener('change', function () {
+      setReceiverKey($('docx-key').value.trim());
+      $('wa-key').value = receiverKey();
+    });
+    syncDocxFetch();
 
     $('source').addEventListener('change', function () {
       var src = $('source').value;
@@ -1007,6 +1035,7 @@
     $('wa-key').value = receiverKey();
     $('wa-key').addEventListener('change', function () {
       setReceiverKey($('wa-key').value.trim());
+      $('docx-key').value = receiverKey();
       loadBundles();
     });
 
@@ -1169,6 +1198,21 @@
         return type === 'crosshead' ? parseCrosshead(html) : parseNumbered(html, type);
       }
 
+      // Pictures, their order and the AI's picks from a receiver bundle — the
+      // same for a WhatsApp article and for a Word doc sent to the receiver.
+      function useBundle(bundle) {
+        var ordered = orderedBundleImages(bundle);
+        state.imageUrls = ordered.map(function (im) { return bundleFileUrl(bundle, im.file); });
+        state.placement = { byUrl: {}, heroUrl: null };
+        ordered.forEach(function (im, i) {
+          state.placement.byUrl[state.imageUrls[i]] = entryOfImage(im, bundle);
+          if (bundle.selection && bundle.selection.hero === im.name) state.placement.heroUrl = state.imageUrls[i];
+        });
+        state.fetchImage = fetchFromReceiver;
+        state.bundleKey = bundle.key;
+        state.uploadedFilename = bundle.name;
+      }
+
       var pipeline;
       if (source === 'url') {
         var articleUrl = $('url').value.trim();
@@ -1201,26 +1245,56 @@
         })
           .then(function (x) { return x[0].convertToHtml({ arrayBuffer: x[1] }); })
           .then(function (result) {
-            var ordered = orderedBundleImages(bundle);
-            state.imageUrls = ordered.map(function (im) { return bundleFileUrl(bundle, im.file); });
-            state.placement = { byUrl: {}, heroUrl: null };
-            ordered.forEach(function (im, i) {
-              state.placement.byUrl[state.imageUrls[i]] = entryOfImage(im, bundle);
-              if (bundle.selection && bundle.selection.hero === im.name) state.placement.heroUrl = state.imageUrls[i];
-            });
-            state.fetchImage = fetchFromReceiver;
-            state.bundleKey = bundle.key;
-            state.uploadedFilename = bundle.name;
+            useBundle(bundle);
             return parseDocHtml(result.value);
           });
       } else {
-        pipeline = loadMammoth()
-          .then(function (mammoth) { return file.arrayBuffer().then(function (buf) { return mammoth.convertToHtml({ arrayBuffer: buf }); }); })
-          .then(function (result) {
+        // Optionally send the doc to the receiver first: it fetches the Dropbox
+        // pictures the doc links to, resizes them and runs the AI checks, as it
+        // does for a WhatsApp article. If that fails the doc is still parsed
+        // here, without pictures, and the reason is shown — nothing is lost.
+        var viaReceiver = $('docx-fetch').checked;
+        if (viaReceiver && !receiverKey()) {
+          showParseError('Enter the receiver key to fetch pictures, or untick the box to convert the document without them.');
+          $('parse').disabled = false; refreshParse();
+          return;
+        }
+        var started = Date.now(), ticker = null;
+        if (viaReceiver) {
+          ticker = setInterval(function () {
+            var s = Math.round((Date.now() - started) / 1000);
+            $('parse').textContent = 'Fetching pictures and running the AI checks… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+          }, 1000);
+        }
+        var fresh = state.docFresh; state.docFresh = false;
+        pipeline = file.arrayBuffer().then(function (buf) {
+          var fromReceiver = !viaReceiver ? Promise.resolve(null)
+            : receiverFetch('/docs?name=' + encodeURIComponent(file.name) + (fresh ? '&fresh=1' : ''), {
+                method: 'POST', body: buf, headers: { 'Content-Type': 'application/octet-stream' },
+              }).then(function (r) { return r.json(); })
+                .catch(function (e) { return { failed: e.message }; });
+          return Promise.all([loadMammoth(), fromReceiver]).then(function (x) {
+            clearInterval(ticker);
+            var bundle = x[1];
             state.imageUrls = [];
             state.uploadedFilename = file.name.replace(/\.docx$/i, '');
-            return parseDocHtml(result.value);
+            $('docx-info').classList.add('wdab-hidden');
+            if (bundle && bundle.failed) {
+              $('docx-info').innerHTML = '<div><strong>Pictures were not fetched.</strong> ' + esc(bundle.failed) + ' The document has been converted without them.</div>';
+              $('docx-info').classList.remove('wdab-hidden');
+            } else if (bundle) {
+              state.bundle = bundle;
+              useBundle(bundle);
+              $('docx-info').innerHTML = bundleInfoHtml(bundle) +
+                '<div>' + (bundle.reused ? 'Using the pictures and AI checks from a few minutes ago. ' : '') +
+                '<button type="button" class="wdab-linkbtn" id="' + p + '-docx-again">Fetch again</button></div>';
+              $('docx-info').classList.remove('wdab-hidden');
+              $('docx-again').addEventListener('click', function () { state.docFresh = true; $('parse').click(); });
+            }
+            return x[0].convertToHtml({ arrayBuffer: buf });
           });
+        }).then(function (result) { return parseDocHtml(result.value); })
+          .catch(function (e) { clearInterval(ticker); throw e; });
       }
 
       pipeline
