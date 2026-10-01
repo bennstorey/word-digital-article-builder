@@ -658,6 +658,38 @@
     return out.map(function (l) { return '<div>' + l + '</div>'; }).join('');
   }
 
+  // What the receiver is doing with the latest export, in plain words — so an
+  // empty list is never mistaken for "it failed" while an export is still being
+  // prepared (pictures + AI take about 1–1½ minutes per new article).
+  function clockTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var today = new Date().toDateString() === d.toDateString();
+    return today ? t : d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + t;
+  }
+
+  function exportStatusText(ex) {
+    var pr = ex && ex.processing;
+    if (pr) {
+      var head = 'An export arrived at ' + clockTime(pr.startedAt) + ' and is being processed. ';
+      if (pr.stage !== 'preparing' || pr.toPrepare == null) return { busy: true, text: head + 'Reading the chat…' };
+      if (!pr.toPrepare) return { busy: true, text: head + 'Nothing new in it so far — finishing up.' };
+      var mins = Math.max(1, Math.round((pr.expectedSeconds || 100) / 60));
+      return { busy: true, text: head + 'Preparing ' + (pr.article ? '“' + pr.article + '”' : 'new articles') +
+        (pr.toPrepare > 1 ? ' (' + (pr.preparing || 1) + ' of ' + pr.toPrepare + ')' : '') +
+        ': fetching pictures and running the AI checks. About ' + mins + ' minute' + (mins === 1 ? '' : 's') +
+        ' in total — this list updates by itself.' };
+    }
+    var last = ex && ex.last;
+    if (!last) return { text: 'No export received yet. Export the chat from WhatsApp to the Dropbox folder “TG WhatsApp exports”.' };
+    if (last.error) return { failed: true, text: 'The export that arrived at ' + clockTime(last.startedAt) + ' could not be processed (' + last.error + '). Export again; if it fails again, the receiver needs a look.' };
+    var n = (last.newArticles || []).length;
+    return { text: 'Last export: ' + clockTime(last.finishedAt) + ' — ' +
+      (n ? n + ' new article' + (n === 1 ? '' : 's') + ' (' + last.newArticles.join(', ') + ')' : 'nothing new') +
+      ', ' + (last.known || 0) + ' already known.' };
+  }
+
   // ─── Comments in the created article ──────────────────────────────────────
   // Notes become Digital editor comments (see addComments in the engine). They
   // carry the creating editor's user id; the prefix says who raised them.
@@ -822,6 +854,10 @@
     '.wdab label{display:block;font-weight:500;color:#334155;margin:0 0 4px}',
     '.wdab .wdab-wa-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:#334155}',
     '.wdab .wdab-wa-info div+div{margin-top:4px}',
+    '.wdab .wdab-wa-status{margin-top:10px;font-size:12px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}',
+    '.wdab .wdab-wa-status.wdab-busy{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}',
+    '.wdab .wdab-wa-status.wdab-failed{background:#fef2f2;border-color:#fecaca;color:#991b1b}',
+    '.wdab button.wdab-linkbtn{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2563eb;cursor:pointer;text-decoration:underline}',
     '.wdab select,.wdab input[type=text],.wdab input[type=password]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
     '.wdab input[type=file]{width:100%;font:inherit}',
     '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle}',
@@ -888,6 +924,10 @@
       '    <div class="wdab-row wdab-hidden" id="' + p + '-wa-row">' +
       '      <label for="' + p + '-wa-key">Receiver key</label>' +
       '      <input type="password" id="' + p + '-wa-key" autocomplete="off">' +
+      '      <div class="wdab-wa-status" id="' + p + '-wa-status" role="status" aria-live="polite">' +
+      '        <span id="' + p + '-wa-status-text">Checking for exports…</span> ' +
+      '        <button type="button" class="wdab-linkbtn" id="' + p + '-wa-refresh">Refresh</button>' +
+      '      </div>' +
       '      <label for="' + p + '-wa-bundle" style="margin-top:10px">Article from WhatsApp</label>' +
       '      <select id="' + p + '-wa-bundle"><option value="">—</option></select>' +
       '      <div class="wdab-wa-info wdab-hidden" id="' + p + '-wa-info"></div>' +
@@ -971,7 +1011,45 @@
       $('parse-error').style.display = msg ? 'block' : 'none';
     }
 
+    // Status line + self-refresh. While an export is being processed the list is
+    // re-read every few seconds; once it finishes the list reloads by itself,
+    // unless an article is already selected (then it just says so).
+    var pollTimer = null;
+    function showExportStatus(ex) {
+      if (!$('wa-status')) return false; // dialog closed
+      var st = exportStatusText(ex);
+      $('wa-status-text').textContent = st.text;
+      $('wa-status').classList.toggle('wdab-busy', !!st.busy);
+      $('wa-status').classList.toggle('wdab-failed', !!st.failed);
+      // While an export is being prepared, an empty list must not say "nothing new".
+      var first = $('wa-bundle').options[0];
+      if (first && !first.value && /^Nothing new/.test(first.textContent) && st.busy) first.textContent = 'Still preparing — see above';
+      return !!st.busy;
+    }
+    // Keeps checking while the WhatsApp source is showing — the dialog is often
+    // open before the export arrives. Quicker while an export is in progress.
+    var seenExport = null; // finishedAt of the last export the list reflects
+    function schedulePoll(busy) {
+      clearTimeout(pollTimer);
+      pollTimer = setTimeout(function () {
+        if (!$('wa-status') || $('source').value !== 'whatsapp') return;
+        receiverFetch('/bundles?all=1').then(function (r) { return r.json(); }).then(function (j) {
+          var nowBusy = showExportStatus(j.export);
+          var finished = j.export && j.export.last ? j.export.last.finishedAt : null;
+          if (nowBusy || finished === seenExport) return schedulePoll(nowBusy);
+          // A new export has finished. Reload the list, but never under an
+          // article that is being worked on.
+          if (!$('wa-bundle').value) return loadBundles();
+          $('wa-status-text').textContent += ' Press Refresh to see new articles.';
+          seenExport = finished;
+          schedulePoll(false);
+        }).catch(function () { schedulePoll(busy); });
+      }, busy ? 5000 : 12000);
+    }
+    $('wa-refresh').addEventListener('click', function () { loadBundles(); });
+
     function loadBundles() {
+      clearTimeout(pollTimer);
       state.bundle = null;
       $('wa-info').classList.add('wdab-hidden');
       $('wa-bundle').innerHTML = '<option value="">Loading…</option>';
@@ -980,6 +1058,9 @@
         .then(function (r) { return r.json(); })
         .then(function (j) {
           showParseError('');
+          var busy = showExportStatus(j.export);
+          seenExport = j.export && j.export.last ? j.export.last.finishedAt : null;
+          schedulePoll(busy);
           var list = j.bundles || [];
           // New first; then docs the chat shows were already built by hand
           // (BRS replied with an apple.news draft); then ones imported here.
@@ -997,13 +1078,14 @@
             return items.length ? '<optgroup label="' + esc(label) + '">' + items.map(opt).join('') + '</optgroup>' : '';
           };
           $('wa-bundle').innerHTML =
-            '<option value="">' + (waiting.length ? 'Choose an article…' : 'Nothing new from WhatsApp') + '</option>' +
+            '<option value="">' + (waiting.length ? 'Choose an article…' : busy ? 'Still preparing — see above' : 'Nothing new from WhatsApp') + '</option>' +
             group('Waiting', waiting) +
             group('Already drafted — apple.news link posted in the chat', byHand) +
             group('Already in Studio — choose to re-import', done);
         })
         .catch(function (e) {
           $('wa-bundle').innerHTML = '<option value="">—</option>';
+          if ($('wa-status-text')) $('wa-status-text').textContent = 'Could not reach the WhatsApp receiver.';
           showParseError(e.message);
         });
     }
