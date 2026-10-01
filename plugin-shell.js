@@ -669,7 +669,7 @@
     return today ? t : d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + t;
   }
 
-  function exportStatusText(ex) {
+  function exportStatusText(ex, hasArticles) {
     var pr = ex && ex.processing;
     if (pr) {
       var head = 'An export arrived at ' + clockTime(pr.startedAt) + ' and is being processed. ';
@@ -682,7 +682,11 @@
         ' in total — this list updates by itself.' };
     }
     var last = ex && ex.last;
-    if (!last) return { text: 'No export received yet. Export the chat from WhatsApp to the Dropbox folder “TG WhatsApp exports”.' };
+    if (!last) {
+      return { text: hasArticles
+        ? 'Watching for exports. A new one shows up here by itself, usually 2–3 minutes after it is saved to Dropbox.'
+        : 'No export received yet. Export the chat from WhatsApp to the Dropbox folder “TG WhatsApp exports”.' };
+    }
     if (last.error) return { failed: true, text: 'The export that arrived at ' + clockTime(last.startedAt) + ' could not be processed (' + last.error + '). Export again; if it fails again, the receiver needs a look.' };
     var n = (last.newArticles || []).length;
     return { text: 'Last export: ' + clockTime(last.finishedAt) + ' — ' +
@@ -1015,9 +1019,9 @@
     // re-read every few seconds; once it finishes the list reloads by itself,
     // unless an article is already selected (then it just says so).
     var pollTimer = null;
-    function showExportStatus(ex) {
+    function showExportStatus(ex, hasArticles) {
       if (!$('wa-status')) return false; // dialog closed
-      var st = exportStatusText(ex);
+      var st = exportStatusText(ex, hasArticles);
       $('wa-status-text').textContent = st.text;
       $('wa-status').classList.toggle('wdab-busy', !!st.busy);
       $('wa-status').classList.toggle('wdab-failed', !!st.failed);
@@ -1034,7 +1038,7 @@
       pollTimer = setTimeout(function () {
         if (!$('wa-status') || $('source').value !== 'whatsapp') return;
         receiverFetch('/bundles?all=1').then(function (r) { return r.json(); }).then(function (j) {
-          var nowBusy = showExportStatus(j.export);
+          var nowBusy = showExportStatus(j.export, (j.bundles || []).length > 0);
           var finished = j.export && j.export.last ? j.export.last.finishedAt : null;
           if (nowBusy || finished === seenExport) return schedulePoll(nowBusy);
           // A new export has finished. Reload the list, but never under an
@@ -1058,7 +1062,7 @@
         .then(function (r) { return r.json(); })
         .then(function (j) {
           showParseError('');
-          var busy = showExportStatus(j.export);
+          var busy = showExportStatus(j.export, (j.bundles || []).length > 0);
           seenExport = j.export && j.export.last ? j.export.last.finishedAt : null;
           schedulePoll(busy);
           var list = j.bundles || [];
