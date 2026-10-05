@@ -227,3 +227,22 @@ inspected. Comments written with `userId: "benn.storey"` render correctly
 `ContentStationSdk.getInfo()` in Studio's console and adjust `currentUserId()`
 in `plugin-shell.js`.
 
+## 7. Sectioned list built as a crosshead article, no picture frames (FIXED)
+
+**Reported:** 2026-10-05 (Benn, "The 40 Best Used EV Bargains!", created from WhatsApp as article 94889)
+**Status:** fixed in the build after `51a2d2be`
+
+The doc is 40 unnumbered bold car names grouped under 8 Word headings for the
+price bands ("Up to £5,000"…). The detector counted headings and bold names
+together (48), which didn't match the "40" in the headline, so it fell back to
+Type 3. A crosshead article has no per-item picture frames, so none of the 40
+pictures (fetched, and named `1 - …` to `40 - …`) were placed.
+
+Fix: `parseCrosshead` marks entries that came from Word headings. When a doc
+mixes headings and bold names, the headings are sections (`isSectionHeading`)
+and only the bold names are items. Type 4 carries sections as
+`{ section: true }`, and `buildNumbered` emits them as the crosshead template's
+alternate-style `crosshead` component, with no picture frame, between the
+groups. Result on the real doc: 40 items, 8 sections, 41 frames, 41 of 41
+filled from the real filenames. The 13 earlier test docs detect as before.
+

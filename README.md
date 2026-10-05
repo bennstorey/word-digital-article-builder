@@ -83,7 +83,7 @@ user id.
 | 1 — Countdown | Numbered 50 → 1 | Entries as `50. Name` … `1. Name` |
 | 2 — Ascending | Numbered 1 → 50 | Entries as `1. Name` … `50. Name` |
 | 3 — Crosshead / generic article | Review Q&A or plain prose | Crossheads as bold paragraphs or Word headings; a doc with no crossheads (e.g. "First Look" pieces) becomes one body component per paragraph |
-| 4 — Snippet list | Unnumbered list: picture → item name → copy, per item | Item names as bold paragraphs, no numbers; the headline gives the count ("The 50 most bonkers American cars"). The Type 2 layout with each title's number removed (name in the title's normal style); document order kept |
+| 4 — Snippet list | Unnumbered list: picture → item name → copy, per item | Item names as bold paragraphs, no numbers; the headline gives the count ("The 50 most bonkers American cars"). The Type 2 layout with each title's number removed (name in the title's normal style); document order kept. Word headings among the bold item names (e.g. price bands, "Up to £5,000") are **section headings**: placed between the groups, with no picture frame of their own |
 
 **Auto-detect** (the default) reads the type from the document:
 - three or more `N. Name` entries give countdown or ascending, by the direction most steps take;

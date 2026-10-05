@@ -342,7 +342,9 @@ function parseNumbered(html, type) {
 
     if (realEntries.length > 1) {
       const total = realEntries.length;
-      const numbered = realEntries.map((e, i) => ({
+      // Type 4 keeps section headings as sections; the numbered types number
+      // every crosshead by position, as before.
+      const numbered = type === 'snippet' ? toSnippetEntries(realEntries) : realEntries.map((e, i) => ({
         number: type === 'countdown' ? total - i : i + 1,
         name: e.crosshead,
         nameDeltas: e.crossheadDeltas,
@@ -370,6 +372,7 @@ function parseCrosshead(html) {
   let inContent = false;
   let curCrosshead = null;
   let curCrossheadDeltas = null;
+  let curHeading = false; // the current crosshead came from a Word heading (h1–h6), not a bold paragraph
   let curBodyParts = [];
   let pendingMetaKey = null;
 
@@ -421,11 +424,12 @@ function parseCrosshead(html) {
     const crosshead = isInstruction ? null : extractCrosshead(p);
     if (crosshead) {
       if (inContent && curCrosshead !== null) {
-        entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
+        entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts, heading: curHeading });
       }
       inContent = true;
       curCrosshead = crosshead.crosshead;
       curCrossheadDeltas = crosshead.crossheadDeltas;
+      curHeading = /^H[1-6]$/.test(p.tagName);
       curBodyParts = crosshead.remainingDeltas && crosshead.remainingDeltas.length
         ? [crosshead.remainingDeltas]
         : [];
@@ -442,7 +446,7 @@ function parseCrosshead(html) {
       }
     }
   }
-  if (curCrosshead !== null) entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
+  if (curCrosshead !== null) entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts, heading: curHeading });
   return { meta, entries };
 }
 
@@ -510,11 +514,29 @@ function extractMetaFromNextData(article) {
 }
 
 // TopGear listicle: items array with { title, body (HTML), media }
+// A list can be grouped under section headings: "The 40 Best Used EV Bargains"
+// is 40 bold car names under 8 Word headings for the price bands ("Up to
+// £5,000"…). When a doc mixes Word headings and bold names, the headings are
+// the sections and the bold names are the items. A doc that uses only one kind
+// has no sections — those are all items.
+function isSectionHeading(entry, entries) {
+  return !!entry.heading && entries.some(e => !e.heading);
+}
+
+// Crosshead-shaped entries → Type 4 entries: items numbered by position (the
+// number is never shown), section headings carried as { section: true }.
+function toSnippetEntries(crossheadEntries) {
+  let n = 0;
+  return crossheadEntries.map(e => isSectionHeading(e, crossheadEntries)
+    ? { section: true, number: null, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: e.bodyParts || [] }
+    : { number: ++n, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: e.bodyParts || [] });
+}
+
 // Type 4 from crosshead-shaped copy: each crosshead is an item, numbered by
 // position (the number is never shown); copy before the first item stays as lead.
 function snippetFromCrossheads(parsed) {
   return Object.assign({}, parsed, {
-    entries: parsed.entries.map((e, i) => ({ number: i + 1, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: e.bodyParts || [] })),
+    entries: toSnippetEntries(parsed.entries),
     leadParts: (parsed.leadParts || []).concat(parsed.introParts || []),
     introParts: [],
   });
@@ -682,12 +704,13 @@ function parseCrossheadFromHtml(htmlString) {
   let curCrosshead = null;
   let curCrossheadDeltas = null;
   let curBodyParts = [];
+  let curHeading = false;
   let inContent = false;
   let score = '';
 
   const flush = () => {
     if (curCrosshead !== null) {
-      entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts });
+      entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts, heading: curHeading });
     }
   };
 
@@ -704,6 +727,7 @@ function parseCrossheadFromHtml(htmlString) {
       inContent = true;
       curCrosshead = crosshead.crosshead;
       curCrossheadDeltas = crosshead.crossheadDeltas;
+      curHeading = /^H[1-6]$/.test(p.tagName);
       curBodyParts = crosshead.remainingDeltas.length ? [crosshead.remainingDeltas] : [];
       continue;
     }
@@ -893,9 +917,13 @@ function detectArticleType(html, hints = {}) {
     if (listed >= 3) return { type: 'ascending', reason: `Word numbered list, 1 → ${listed}` };
     // Unnumbered list: bold item names, with the headline giving the count.
     const byBold = parseCrosshead(html);
-    const items = byBold.entries.map(e => e.crosshead || '').filter(t => t && !shouldFlag(t));
+    const real = byBold.entries.filter(e => e.crosshead && !shouldFlag(e.crosshead));
+    const sections = real.filter(e => isSectionHeading(e, real)).length;
+    const items = real.filter(e => !isSectionHeading(e, real)).map(e => e.crosshead);
     const n = looksLikeSnippetList(items, hints.title || byBold.meta.title || byBold.meta.feedHeadline);
-    if (n) return { type: 'snippet', reason: `${items.length} unnumbered items; the headline says ${n}` };
+    if (n) {
+      return { type: 'snippet', reason: `${items.length} unnumbered items` + (sections ? ` in ${sections} sections` : '') + `; the headline says ${n}` };
+    }
   }
   return detectTypeFromNumbers(nums);
 }
@@ -1035,7 +1063,18 @@ function buildNumbered(template, meta, entries, type) {
     result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
   });
 
-  ordered.forEach((entry, i) => {
+  let firstItemDone = false;
+  ordered.forEach((entry) => {
+    // A section heading (Type 4): the crosshead template's alternate-style
+    // heading, with any copy under it, and no picture frame of its own.
+    if (entry.section) {
+      result.push({ identifier: 'crosshead', styles: {}, id: genId(),
+        content: { text: entry.nameDeltas && entry.nameDeltas.length ? deepClone(entry.nameDeltas) : [{ insert: entry.name }] } });
+      (entry.bodyParts || []).forEach(deltas => {
+        result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+      });
+      return;
+    }
     const group = deepClone(canonical);
 
     // Update title component (keep the template's coloured number op; NBSP separates number and name)
@@ -1070,12 +1109,14 @@ function buildNumbered(template, meta, entries, type) {
     }));
     group.splice(bodyCompIdx + 1, 0, ...extraBodies);
 
-    // Insert apple-news-follow after first entry (offset by extra paragraphs)
-    if (i === 0 && channelFollow) {
+    // Insert apple-news-follow after the first entry (offset by extra
+    // paragraphs) — the first real entry, not a section heading before it.
+    if (!firstItemDone && channelFollow) {
       const af = deepClone(channelFollow);
       af.id = genId();
       group.splice(appleInsertAt + extraBodies.length, 0, af);
     }
+    firstItemDone = true;
 
     result.push(...group);
   });
@@ -2200,7 +2241,7 @@ function flaggedNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '51a2d2be';
+  var PLUGIN_BUILD = 'ab79c4fc';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2646,10 +2687,11 @@ function flaggedNotes(meta, prefix) {
             $('images-progress').textContent = note;
           }
 
-          $('count').textContent = parsed.entries.length;
+          $('count').textContent = parsed.entries.filter(function (e) { return !e.section; }).length;
           $('entries').innerHTML = parsed.entries.slice(0, 60).map(function (e, i) {
             return type === 'crosshead'
               ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || e.name || '(no crosshead)') + '</div>'
+              : e.section ? '<div><strong>' + esc(e.name) + '</strong> <span class="n">(section heading)</span></div>'
               : '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
           }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
 

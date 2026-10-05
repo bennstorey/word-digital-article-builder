@@ -1336,10 +1336,11 @@
             $('images-progress').textContent = note;
           }
 
-          $('count').textContent = parsed.entries.length;
+          $('count').textContent = parsed.entries.filter(function (e) { return !e.section; }).length;
           $('entries').innerHTML = parsed.entries.slice(0, 60).map(function (e, i) {
             return type === 'crosshead'
               ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || e.name || '(no crosshead)') + '</div>'
+              : e.section ? '<div><strong>' + esc(e.name) + '</strong> <span class="n">(section heading)</span></div>'
               : '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
           }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
 
