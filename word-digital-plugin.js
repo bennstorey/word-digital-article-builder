@@ -1507,23 +1507,37 @@ function flaggedNotes(meta, prefix) {
     });
   }
 
-  // Object names may not contain the characters Enterprise rejects (/ \ : * ? " < > |).
-  // Only the Studio object name is sanitised — headlines inside the article keep them.
-  // Enterprise rejects / \ : * ? " < > | and enforces a name-length limit that
-  // varies by install — 60 chars has been seen to fail with S1026. Cut on a word
-  // boundary so a shortened name still reads sensibly.
-  function sanitizeObjectName(name, maxLen) {
-    var out = String(name)
-      .replace(/[\/\\:*?"<>|]/g, ' ')
+  // Studio object names are made web-safe: letters, digits, spaces, "-", "_"
+  // and "." only. Studio rejects more than the documented / \ : * ? " < > | —
+  // "These are the UK's top…" failed with S1026 at every length (2026-10-06),
+  // so this is an allow-list, not a block-list. Only the object's name is
+  // changed; the headline inside the article keeps its punctuation.
+  //   UK's → UKs · café → cafe · £5,000 → 5000 · R&D → R and D · 50–1 → 50-1
+  // The server's name-length limit varies by install (60 has been seen to
+  // fail), so the name is cut on a word boundary and retried shorter.
+  function webSafeName(name) {
+    var out = String(name == null ? '' : name).replace(/\u2026|\.{2,}/g, ' '); // … and ... → a space
+    if (out.normalize) out = out.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); // é → e
+    return out
+      .replace(/[\u2018\u2019\u02bc\u0060\u00b4']/g, '')    // apostrophes: UK's → UKs
+      .replace(/[\u201c\u201d"]/g, '')                        // quote marks
+      .replace(/[\u2013\u2014\u2212]/g, '-')                  // en/em dash, minus
+      .replace(/&/g, ' and ')
+      .replace(/(\d),(?=\d{3}\b)/g, '$1')                     // 5,000 → 5000
+      .replace(/[^A-Za-z0-9 ._-]+/g, ' ')                      // everything else
       .replace(/\s+/g, ' ')
-      .trim();
+      .replace(/^[ ._-]+|[ ._-]+$/g, '');                      // no leading/trailing punctuation
+  }
+
+  function sanitizeObjectName(name, maxLen) {
+    var out = webSafeName(name);
     var limit = maxLen || NAME_LIMITS[0];
     if (out.length > limit) {
       out = out.slice(0, limit);
       var cut = out.lastIndexOf(' ');
       if (cut > limit * 0.5) out = out.slice(0, cut);
     }
-    return out.trim();
+    return out.replace(/[ ._-]+$/, '') || 'Untitled article';
   }
 
   // Tried in order when the server rejects a name as too long (S1026).
@@ -2241,7 +2255,7 @@ function flaggedNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = 'ab79c4fc';
+  var PLUGIN_BUILD = '2dc8a12a';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2775,6 +2789,9 @@ function flaggedNotes(meta, prefix) {
       injectCss();
       var dialogId = null;
       var busy = false;
+      // Pictures already uploaded by this dialog, so a retry after a failed
+      // article (e.g. a rejected name) reuses them instead of adding a second set.
+      var uploaded = { key: null, images: null };
 
       var content = '<div class="wdab-modal">' + formHtml('wdabm', 'Create Digital Article in this Dossier') + '</div>';
 
@@ -2827,13 +2844,21 @@ function flaggedNotes(meta, prefix) {
         // IDs and arrive with pictures already in its image slots. Image failure
         // is never fatal — the article is still created, just without them.
         var imagesStep = Promise.resolve(null);
-        if (result.addImages) {
+        var imagesKey = result.imageUrls.join('|');
+        if (result.addImages && uploaded.key === imagesKey && uploaded.images && uploaded.images.created.length) {
+          imagesStep = Promise.resolve(uploaded.images);
+          var reuseEl = ctl.$('images-progress');
+          if (reuseEl) reuseEl.textContent = 'Using the ' + uploaded.images.created.length + ' images already added to this Dossier.';
+        } else if (result.addImages) {
           btn.textContent = 'Adding images…';
           var progEl = ctl.$('images-progress');
           imagesStep = createImagesInDossier(result.imageUrls, dossier, function (done, total) {
             if (progEl) progEl.textContent = 'Uploading image ' + Math.min(done + 1, total) + ' of ' + total + '…';
           }, result.fetchImage).catch(function (e) {
             return { created: [], failed: [], fatal: e.message };
+          }).then(function (images) {
+            if (images && images.created.length) uploaded = { key: imagesKey, images: images };
+            return images;
           });
         }
 
@@ -2904,7 +2929,12 @@ function flaggedNotes(meta, prefix) {
             if (dialogId !== null) ContentStationSdk.closeModalDialog(dialogId);
           })
           .catch(function (err) {
-            errEl.textContent = err.message + '\nNothing was created. You can fix the issue and try again.';
+            // Say what really happened: the pictures are created before the article.
+            var kept = uploaded.key === imagesKey && uploaded.images ? uploaded.images.created.length : 0;
+            errEl.textContent = err.message + '\n' + (kept
+              ? 'The article was not created, but ' + kept + ' image' + (kept === 1 ? ' is' : 's are') + ' already in this Dossier. ' +
+                'Press Create again when ready — those images will be reused, not uploaded twice.'
+              : 'Nothing was created. You can fix the issue and try again.');
             errEl.style.display = 'block';
           })
           .then(function () {

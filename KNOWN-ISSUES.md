@@ -246,3 +246,24 @@ alternate-style `crosshead` component, with no picture frame, between the
 groups. Result on the real doc: 40 items, 8 sections, 41 frames, 41 of 41
 filled from the real filenames. The 13 earlier test docs detect as before.
 
+## 8. Article refused for its name; "Nothing was created" was untrue (FIXED)
+
+**Reported:** 2026-10-06 (Benn; headline beginning "These are the UK's top…")
+**Status:** fixed in the build after `ab79c4fc`
+
+`CreateObjects` failed with S1026 ("Name has invalid characters or is too
+long") at all three name lengths, down to 25 characters, so the cause was a
+character, not the length. The name sanitiser only removed the documented
+`/ \ : * ? " < > |`; the headline had an apostrophe. (Which character exactly
+was not confirmed on the lab: the Studio connector was failing lookups that day.)
+
+Fix 1: `webSafeName()` is an allow-list of letters, digits, spaces, `-`, `_`
+and `.`. Accents are folded, apostrophes and quote marks dropped, dashes become
+`-`, `&` becomes "and", thousands commas go, everything else becomes a space.
+An empty result becomes "Untitled article". Only the object name changes.
+
+Fix 2: pictures are created before the article, so when the article failed the
+dialog's "Nothing was created" was false, and a retry would have uploaded a
+second set. The dialog now says how many images are already in the Dossier and
+reuses them on the next Create.
+

@@ -144,7 +144,7 @@ Note: `{SESSION_ID}` URL-app wildcards are deprecated since Studio 10.40 / Enter
 **Happy path (Dossier button):** open a Dossier → click **Word & Web → Digital** in the toolbar → pick the source (.docx, topgear.com URL or From WhatsApp; the article type auto-detects) → parse → check metadata → **Create Digital Article in this Dossier**. The article is created in the dossier with:
 
 - the dossier's Brand/Category, its channel/issue Targets, and the brand's first Article workflow status
-- Studio object name sanitised (Enterprise rejects `/ \ : * ? " < > |` in names)
+- Studio object name made **web-safe**: letters, digits, spaces, `-`, `_` and `.` only (`UK's` → `UKs`, `café` → `cafe`, `£5,000` → `5000`, `R&D` → `R and D`). Studio rejects more than the documented `/ \ : * ? " < > |`. The headline inside the article is not changed. Picture names use the same rule
 - `C_HEADLINE` set from the feed headline (no manual copy needed)
 - component set, Look and Feel and Twixl Collection ID from `BRAND_DEFAULTS` in `plugin-shell.js` (Top Gear: Default set, "TG-custom-styles-ISSUE-APPLE 2026", Twixl `102069`), plus `C_CS_FILEFORMATVERSION` / `C_CS_DE_COMPONENT_NAMES`. **Only Top Gear (brand 3) has defaults.** In any other brand (e.g. the lab's *WW Development Sandbox*) the article has no Look and Feel, and the dialog warns before anything is created
 
