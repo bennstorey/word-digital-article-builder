@@ -322,7 +322,21 @@ the way the Word path builds one — first paragraph in the styled opening, the
 Follow block after it — instead of an empty section title followed by plain
 body.
 
-**Still open:** the crosshead layout has two picture frames, so 27 of the 29
-pictures go into the Dossier unplaced (see §1). A real Top Gear article uses a
-`slideshow` component for a gallery; building one from each web gallery is
-the next step. `carReview` pages still come through with no body text.
+**Slideshows (added the same day).** A gallery inside the body of a web
+article is now built as Top Gear's `slideshow` component, where it sat in the
+copy. `paras()` swaps each gallery block for a marker, the parsers carry it as
+a `{ gallery: [urls] }` body part, `buildCrosshead()` emits the component
+(shape copied from a published TG article), and `placeGalleries()` swaps each
+slide's web address for the Studio Image id once the pictures exist. A slide
+whose picture failed is left out; a slideshow with none is removed; with
+"add images" off, or in the standalone download, no slideshow is emitted.
+The Jaguar page gives two: 14 and 11 slides.
+
+**Still open:**
+- Not yet seen in Studio: that the server accepts a slideshow built this way.
+- Only the crosshead layout builds slideshows. In a list layout the gallery
+  pictures go to the item frames and the Dossier.
+- Only galleries inside the body. A news article's top carousel (the
+  `carousel` field) and single inline pictures still go to the Dossier unplaced.
+- The closing frame takes the first gallery picture, which is then also a slide.
+- `carReview` pages still come through with no body text.

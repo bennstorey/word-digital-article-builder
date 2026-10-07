@@ -1157,12 +1157,14 @@
     });
 
     // Slots available in the layout the current article type would produce.
+    var ctlGalleries = { slideshows: 0, slides: 0 };
     function ctlSlotCount() {
       if (!state.parsedData) return 0;
       var t = deepClone(TEMPLATES[state.parsedData.type]);
       var d = state.parsedData.type === 'crosshead'
         ? buildCrosshead(t, state.parsedData.meta, state.parsedData.entries)
         : buildNumbered(t, state.parsedData.meta, state.parsedData.entries, state.parsedData.type);
+      ctlGalleries = gallerySummary(d);
       return (d.data.content || []).filter(function (c) {
         return c.identifier === 'image' || c.identifier === 'header-image';
       }).length;
@@ -1344,7 +1346,10 @@
               (imgs.length === 1 ? '' : 's') + ' to this Dossier';
             var note = placeable + ' of ' + imgs.length + ' will be placed in the article' +
               ' (' + slotCount + ' image slot' + (slotCount === 1 ? '' : 's') + ' in this layout).';
-            if (imgs.length > slotCount) {
+            if (ctlGalleries.slideshows) {
+              note += ' The web galler' + (ctlGalleries.slideshows === 1 ? 'y becomes a slideshow' : 'ies become ' + ctlGalleries.slideshows + ' slideshows') +
+                ' (' + ctlGalleries.slides + ' pictures).';
+            } else if (imgs.length > slotCount) {
               note += ' The rest are added to the Dossier only' +
                 (type === 'crosshead' ? ' — Type 1 or 2 has one image slot per entry.' : '.');
             }
@@ -1400,6 +1405,8 @@
             ? buildCrosshead(template, meta, state.parsedData.entries)
             : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
           var placed = applyImageIds(d, created ? assignSlots(d, created, state.placement) : null);
+          // Web galleries → slideshows, pointing at the pictures just created
+          placed.galleries = placeGalleries(placed.digital, created);
           placed.comments = 0;
           if ($('comments-add') && $('comments-add').checked) {
             var bundle = state.bundleKey ? state.bundle : null;

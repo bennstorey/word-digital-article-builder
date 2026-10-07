@@ -268,7 +268,15 @@ function matchMetaPrefix(text) {
 // so headings must be walked too — mammoth emits them as <h1>–<h6>.
 function paras(html) {
   const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
-  // Embedded JSON (topgear.com gallery blocks) is data, not copy
+  // Embedded JSON is data, not copy. A topgear.com gallery block is swapped
+  // for a marker, so it keeps its place among the paragraphs.
+  doc.querySelectorAll('script[type="application/json"]').forEach(el => {
+    const urls = galleryUrls(el.textContent);
+    if (!urls.length) return;
+    const marker = doc.createElement('div');
+    marker.setAttribute(GALLERY_ATTR, JSON.stringify(urls));
+    el.replaceWith(marker);
+  });
   doc.querySelectorAll('script, style').forEach(el => el.remove());
   // Innermost blocks only: <blockquote><p>…</p></blockquote> is one paragraph,
   // not the same text twice.
@@ -277,7 +285,22 @@ function paras(html) {
   const ownText = el => Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
   return Array.from(doc.querySelectorAll(BLOCKS)).filter(el => !el.querySelector(BLOCKS) || ownText(el));
 }
-const BLOCKS = 'p, h1, h2, h3, h4, h5, h6, blockquote, li';
+const GALLERY_ATTR = 'data-wd-gallery';
+const BLOCKS = 'p, h1, h2, h3, h4, h5, h6, blockquote, li, [' + GALLERY_ATTR + ']';
+
+// A web gallery, as it arrives inside the body of a topgear.com article:
+// { component: 'Carousel' | 'InlineGallery', props: { media: [{ image: { src } }] } }
+function galleryUrls(json) {
+  let block;
+  try { block = JSON.parse(json); } catch { return []; }
+  const media = block && block.props && block.props.media;
+  if (!Array.isArray(media)) return [];
+  return media.map(m => m && m.image && m.image.src).filter(src => typeof src === 'string' && src).map(articleImageUrl);
+}
+// A gallery among the body paragraphs is carried as { gallery: [urls] } and
+// built as a slideshow where it sat. Only the crosshead layout places them.
+const galleryOf = p => p.hasAttribute(GALLERY_ATTR) ? JSON.parse(p.getAttribute(GALLERY_ATTR)) : null;
+const isGalleryPart = part => !!(part && part.gallery);
 
 // A web pull quote: a line lifted from the article and shown large. It is kept
 // once, in place, as plain body text, and listed so the editor can style it or
@@ -652,9 +675,12 @@ function isSectionHeading(entry, entries) {
 // number is never shown), section headings carried as { section: true }.
 function toSnippetEntries(crossheadEntries) {
   let n = 0;
+  // The list layouts have a frame per item and no slideshow, so a gallery's
+  // pictures go to the Dossier and the frames instead.
+  const text = e => (e.bodyParts || []).filter(part => !isGalleryPart(part));
   return crossheadEntries.map(e => isSectionHeading(e, crossheadEntries)
-    ? { section: true, number: null, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: e.bodyParts || [] }
-    : { number: ++n, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: e.bodyParts || [] });
+    ? { section: true, number: null, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: text(e) }
+    : { number: ++n, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: text(e) });
 }
 
 // Type 4 from crosshead-shaped copy: each crosshead is an item, numbered by
@@ -662,7 +688,7 @@ function toSnippetEntries(crossheadEntries) {
 function snippetFromCrossheads(parsed) {
   return Object.assign({}, parsed, {
     entries: toSnippetEntries(parsed.entries),
-    leadParts: (parsed.leadParts || []).concat(parsed.introParts || []),
+    leadParts: (parsed.leadParts || []).concat(parsed.introParts || []).filter(part => !isGalleryPart(part)),
     introParts: [],
   });
 }
@@ -708,14 +734,14 @@ function parseListicleItems(article) {
 function fullSizeImage(url) {
   return url.replace(/\/sites\/default\/files\/styles\/[^/]+\/public\//, '/sites/default/files/').split('?')[0];
 }
+const articleImageUrl = src => fullSizeImage(src.startsWith('http') ? src : 'https://www.topgear.com' + src);
 const imageFileName = url => decodeURIComponent(url.split('?')[0].split('/').pop()).toLowerCase();
 
 function extractArticleImages(article) {
-  const base = 'https://www.topgear.com';
   const urls = [];
   const add = src => {
     if (!src || typeof src !== 'string') return;
-    const abs = fullSizeImage(src.startsWith('http') ? src : base + src);
+    const abs = articleImageUrl(src);
     // The opener comes back as headerImage and again as the first carousel
     // slide: same file name, another folder. Only the opener is matched by
     // name — two different pictures elsewhere may share one.
@@ -748,11 +774,7 @@ function extractArticleImages(article) {
     const d = new DOMParser().parseFromString('<div>' + article.body + '</div>', 'text/html');
     d.querySelectorAll('img, script[type="application/json"]').forEach(el => {
       if (el.tagName === 'IMG') { add(el.getAttribute('src')); return; }
-      let block;
-      try { block = JSON.parse(el.textContent); } catch { return; }
-      const media = block && block.props && block.props.media;
-      if (!Array.isArray(media)) return;
-      media.forEach(m => add(m && m.image && m.image.src));
+      galleryUrls(el.textContent).forEach(add);
     });
   }
 
@@ -865,6 +887,12 @@ function parseCrossheadFromHtml(htmlString) {
   };
 
   for (const p of paras(htmlString)) {
+    const gallery = galleryOf(p);
+    if (gallery) {
+      if (inContent) curBodyParts.push({ gallery });
+      else introParts.push({ ops: [], flagged: true, gallery });
+      continue;
+    }
     const text = p.textContent.trim();
     if (!text) continue;
 
@@ -901,6 +929,8 @@ function parseProseFromHtml(htmlString) {
   const flagged = [];
   const pullQuotes = [];
   for (const p of paras(htmlString)) {
+    const gallery = galleryOf(p);
+    if (gallery) { parts.push({ gallery }); continue; }
     const text = p.textContent.trim();
     if (!text) continue;
     const deltas = trimDeltas(paraToDeltas(p));
@@ -909,7 +939,7 @@ function parseProseFromHtml(htmlString) {
     if (isPullQuote(p)) pullQuotes.push(pullQuoteEntry(text));
     parts.push(deltas);
   }
-  if (!parts.length) return { entries: [], flagged, pullQuotes };
+  if (!parts.some(part => !isGalleryPart(part))) return { entries: [], flagged, pullQuotes };
   return { entries: [{ crosshead: '', crossheadDeltas: [], number: 1, name: '', nameDeltas: [], bodyParts: parts }], flagged, pullQuotes };
 }
 
@@ -926,10 +956,11 @@ function parseBody(bodyHtml, type) {
   // A feature with no crossheads at all (a big read) is all intro: the first
   // paragraph takes the styled opening and the rest follow as body.
   if (type === 'crosshead' && (parsed.introParts || []).some(part => !partFlagged(part))) return parsed;
-
   // No entries matched. Anything the parser gathered as intro/lead is real copy,
   // so re-run as prose rather than emitting an article with no body.
   const prose = parseProseFromHtml(bodyHtml);
+  // Only the crosshead layout builds slideshows
+  if (type !== 'crosshead') prose.entries.forEach(e => { e.bodyParts = e.bodyParts.filter(part => !isGalleryPart(part)); });
   prose.proseFallback = prose.entries.length > 0;
   return prose;
 }
@@ -942,7 +973,8 @@ function applyParsed(meta, parsed, debugInfo) {
   meta.pullQuotes = parsed.pullQuotes || [];
   if (parsed.score) meta.score = parsed.score;
   if (meta.introParts.length && !meta.intro) {
-    meta.intro = meta.introParts.map(function (x) { return deltasToText(partOps(x)); }).join('\n\n');
+    meta.intro = meta.introParts.filter(function (x) { return !isGalleryPart(x); })
+      .map(function (x) { return deltasToText(partOps(x)); }).join('\n\n');
   }
   if (parsed.proseFallback) debugInfo.proseFallback = true;
   debugInfo.flaggedCount = meta.flagged.length;
@@ -1318,6 +1350,56 @@ function buildNumbered(template, meta, entries, type) {
   return { version: template.version, data: { content: result } };
 }
 
+// A web gallery as Top Gear's slideshow component (shape taken from a
+// published TG article). Each slide starts as { image: { src } } — the web
+// address — and placeGalleries() swaps it for the Studio Image object once
+// the pictures exist. Nothing with a `src` slide may be saved.
+function slideshowComp(urls) {
+  const fit = { fitting: '_fit-frame-height-to-content' };
+  return {
+    identifier: 'slideshow', id: genId(), styles: Object.assign({}, fit), content: {},
+    containers: { slideshow: urls.map(src => ({
+      identifier: 'image', id: genId(), styles: Object.assign({}, fit),
+      content: { image: { src } }, data: { 'an-image-role': 'photo' },
+    })) },
+  };
+}
+
+// created: [{ id, url }] for the pictures now in the Dossier (or none). A
+// slide whose picture was not created is left out; a slideshow with no slides
+// is removed. A slide for the opener — dropped from the download list because
+// it repeats the header picture — is matched by file name.
+function placeGalleries(digital, created) {
+  const made = (created || []).filter(c => c && c.id && c.url);
+  const idFor = src => {
+    const hit = made.find(c => c.url === src) || made.find(c => imageFileName(c.url) === imageFileName(src));
+    return hit ? String(hit.id) : null;
+  };
+  let slideshows = 0, slides = 0, dropped = 0;
+  digital.data.content = (digital.data.content || []).filter(comp => {
+    if (comp.identifier !== 'slideshow' || !comp.containers || !Array.isArray(comp.containers.slideshow)) return true;
+    comp.containers.slideshow = comp.containers.slideshow.filter(slide => {
+      const img = slide.content && slide.content.image;
+      if (!img || !img.src) return true;
+      const id = idFor(img.src);
+      if (!id) { dropped++; return false; }
+      slide.content = { image: { id } };
+      slides++;
+      return true;
+    });
+    if (!comp.containers.slideshow.length) return false;
+    slideshows++;
+    return true;
+  });
+  return { digital, slideshows, slides, dropped };
+}
+
+// What the crosshead layout would put in slideshows, for the form's note.
+function gallerySummary(digital) {
+  const shows = (digital.data.content || []).filter(c => c.identifier === 'slideshow');
+  return { slideshows: shows.length, slides: shows.reduce((n, c) => n + c.containers.slideshow.length, 0) };
+}
+
 function buildCrosshead(template, meta, entries) {
   const c = deepClone(template).data.content;
 
@@ -1344,6 +1426,7 @@ function buildCrosshead(template, meta, entries) {
     // position but render as plain body components, never as the styled lead.
     const firstRealIdx = parts.findIndex(part => !partFlagged(part));
     parts.forEach((part, i) => {
+      if (isGalleryPart(part)) { introComps.push(slideshowComp(part.gallery)); return; }
       if (i === firstRealIdx) {
         const introBody = deepClone(c[4]);
         introBody.id = genId();
@@ -1388,16 +1471,21 @@ function buildCrosshead(template, meta, entries) {
       };
     }
 
+    // The first paragraph takes the template's body component; the rest are
+    // plain body components, and a gallery is a slideshow where it sat.
+    const parts = entry.bodyParts || [];
+    const firstText = parts.findIndex(part => !isGalleryPart(part));
     const bodyComp = group.find(comp => comp.identifier === 'body');
-    if (bodyComp) bodyComp.content = { text: entry.bodyParts[0] || [] };
+    if (bodyComp) bodyComp.content = { text: firstText >= 0 ? parts[firstText] : [] };
 
     group.forEach(comp => { comp.id = genId(); });
 
-    const extraBodies = (entry.bodyParts || []).slice(1).map(deltas => ({
-      identifier: 'body', styles: {}, content: { text: deltas }, id: genId()
-    }));
+    const rest = parts.map((part, idx) => isGalleryPart(part) ? slideshowComp(part.gallery)
+      : (idx === firstText && bodyComp) ? bodyComp
+      : { identifier: 'body', styles: {}, content: { text: part }, id: genId() });
+    const lead = group.filter(comp => comp !== bodyComp || firstText < 0 && !parts.length);
 
-    result.push(...group, ...extraBodies);
+    result.push(...lead, ...rest);
 
     if (i === 0 && !followPlaced) result.push(deepClone(channelFollow));
   });
@@ -1749,6 +1837,8 @@ downloadBtn.addEventListener('click', () => {
   const digital = type === 'crosshead'
     ? buildCrosshead(template, meta, entries)
     : buildNumbered(template, meta, entries, type);
+  // A download has no Studio pictures to point at, so galleries are left out.
+  placeGalleries(digital, null);
 
   const json = JSON.stringify(digital);
   const blob = new Blob([json], { type: 'application/json' });
