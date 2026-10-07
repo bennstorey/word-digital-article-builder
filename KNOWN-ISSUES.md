@@ -287,3 +287,42 @@ written back into the box. Errors now say what happened (the proxy's reason, a
 404 from topgear.com, a timeout, or the proxy being unreachable); the
 localhost hint only appears when running locally. The box is full width.
 
+
+## 10. Big read from a URL: pull quote twice, galleries missing, spec lines run together (FIXED)
+
+**Reported:** 2026-10-07 (Benn, the Jaguar Type 01 big read, `longForm`)
+**Status:** fixed in the build after `b3c9b136`
+
+Three separate causes in the web path:
+
+- **Pull quote twice.** The page marks a pull quote as
+  `<blockquote><p>…</p></blockquote>`. `paras()` matched both the blockquote
+  and the paragraph inside it. It now returns innermost blocks only (a list
+  item wrapping a paragraph was doubled the same way). A pull quote is kept
+  once, in place, as plain body text, and gets a comment ("Pull quote on the
+  web page… style it or delete it"). Top Gear's component set has no quote
+  component, so there is nothing to style it with automatically.
+- **Galleries missing (4 of 29 pictures).** Galleries are not in the article
+  fields; they are JSON inside the body:
+  `<script type="application/json">{"component":"Carousel"|"InlineGallery","props":{"media":[{"image":{"src"}}]}}`.
+  `extractArticleImages()` now reads those in reading order, plus
+  `headerImage` and `footerImage`. Inline body pictures are fetched at full
+  size (the `/styles/<style>/public/` part removed). The opener repeated as
+  `headerImage` or as the first carousel slide is taken once.
+- **Spec lines run together.** The closing paragraph is
+  `<strong>Price</strong>: …<br><strong>Powertrain</strong>: …`. The bold
+  "Price" was read as a crosshead — the only one — so the whole article became
+  its intro and the rest of the paragraph its body, with the `<br>`s dropped.
+  A bold label followed by a colon, or several bold labels on `<br>` lines, is
+  now body text; `<br>` becomes a line break (this also keeps Word soft
+  returns, which were dropped before).
+
+Side effect, intended: a web article with no crossheads at all is now built
+the way the Word path builds one — first paragraph in the styled opening, the
+Follow block after it — instead of an empty section title followed by plain
+body.
+
+**Still open:** the crosshead layout has two picture frames, so 27 of the 29
+pictures go into the Dossier unplaced (see §1). A real Top Gear article uses a
+`slideshow` component for a gallery; building one from each web gallery is
+the next step. `carReview` pages still come through with no body text.

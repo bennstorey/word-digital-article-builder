@@ -1408,6 +1408,7 @@
             var expectPictures = !!bundle || (state.imageUrls || []).length > 0;
             var opener = expectPictures && created && created.length ? openerNote(placed.digital, created, bundle) : null;
             var notes = flaggedNotes(pm, TOOL_PREFIX)
+              .concat(pullQuoteNotes(pm, TOOL_PREFIX))
               .concat(bundle ? bundleNotes(bundle) : [])
               .concat(opener ? [opener] : [])
               .concat(expectPictures ? pictureNotes(placed.digital, bundle) : []);

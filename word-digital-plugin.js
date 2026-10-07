@@ -77,6 +77,9 @@ function nodesToDeltas(nodes, opts = {}) {
     const tag = node.tagName.toLowerCase();
     // Non-text embeds carry no copy — skip so alt/caption text isn't inlined
     if (tag === 'img' || tag === 'figure' || tag === 'script' || tag === 'style') return;
+    // A line break inside a paragraph (a Word soft return, or the web's spec
+    // lines "Price: …<br>Powertrain: …") stays a line break.
+    if (tag === 'br') { ops.push({ insert: '\n' }); return; }
     const next = Object.assign({}, fmt);
     if (tag === 'strong' || tag === 'b') next.bold = true;
     if (tag === 'em' || tag === 'i') next.italic = true;
@@ -162,8 +165,22 @@ function matchMetaPrefix(text) {
 // so headings must be walked too — mammoth emits them as <h1>–<h6>.
 function paras(html) {
   const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
-  return Array.from(doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, li'));
+  // Embedded JSON (topgear.com gallery blocks) is data, not copy
+  doc.querySelectorAll('script, style').forEach(el => el.remove());
+  // Innermost blocks only: <blockquote><p>…</p></blockquote> is one paragraph,
+  // not the same text twice.
+  // A block that wraps others and also has words of its own (a list item with
+  // a nested list) is kept, so nothing is dropped.
+  const ownText = el => Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+  return Array.from(doc.querySelectorAll(BLOCKS)).filter(el => !el.querySelector(BLOCKS) || ownText(el));
 }
+const BLOCKS = 'p, h1, h2, h3, h4, h5, h6, blockquote, li';
+
+// A web pull quote: a line lifted from the article and shown large. It is kept
+// once, in place, as plain body text, and listed so the editor can style it or
+// take it out.
+const isPullQuote = p => !!p.closest('blockquote');
+const pullQuoteEntry = text => ({ text });
 
 // Lines that read as editor instructions rather than article copy.
 // These are NOT dropped: they are recorded in meta.flagged for the review box
@@ -203,6 +220,11 @@ function extractCrosshead(para) {
   if (strongText === text) {
     return { crosshead: text, crossheadDeltas: headlineDeltas(), remainingBody: '', remainingDeltas: [] };
   }
+  // A spec block is not a heading: bold labels with values, either
+  // "Price: £120,000" (the colon outside the bold) or several labelled lines
+  // in one paragraph. It stays body text, labels bold, one line each.
+  const labels = para.querySelectorAll('strong, b').length;
+  if (/^\s*:/.test(text.slice(strongText.length)) || (labels > 1 && para.querySelector('br'))) return null;
   // Starts with bold (mixed paragraph: bold question + plain answer)
   const firstEl = para.firstElementChild;
   if (firstEl && (firstEl.tagName === 'STRONG' || firstEl.tagName === 'B')) {
@@ -577,17 +599,30 @@ function parseListicleItems(article) {
 
 // Collect every image the article carries, whatever its contentType.
 // Covers: hero, listicle items, carousel/gallery slides, and inline body images.
+// Inline body pictures are served as a resized derivative
+// (/sites/default/files/styles/<style>/public/<path>?itok=…); the original is
+// the same path without the style part.
+function fullSizeImage(url) {
+  return url.replace(/\/sites\/default\/files\/styles\/[^/]+\/public\//, '/sites/default/files/').split('?')[0];
+}
+const imageFileName = url => decodeURIComponent(url.split('?')[0].split('/').pop()).toLowerCase();
+
 function extractArticleImages(article) {
   const base = 'https://www.topgear.com';
   const urls = [];
   const add = src => {
     if (!src || typeof src !== 'string') return;
-    const abs = src.startsWith('http') ? src : base + src;
-    if (!urls.includes(abs)) urls.push(abs);
+    const abs = fullSizeImage(src.startsWith('http') ? src : base + src);
+    // The opener comes back as headerImage and again as the first carousel
+    // slide: same file name, another folder. Only the opener is matched by
+    // name — two different pictures elsewhere may share one.
+    if (urls.includes(abs) || (urls.length && imageFileName(abs) === imageFileName(urls[0]))) return;
+    urls.push(abs);
   };
 
-  // Main hero image
+  // Main hero image (big reads repeat it as headerImage)
   add(article.image && article.image.src);
+  add(typeof article.headerImage === 'string' ? article.headerImage : article.headerImage && article.headerImage.src);
 
   // Listicle: per-item images
   (article.items || []).forEach(item => add(item.media && item.media.image && item.media.image.src));
@@ -603,11 +638,22 @@ function extractArticleImages(article) {
     });
   });
 
-  // Inline images inside the body HTML
-  if (typeof article.body === 'string' && article.body.includes('<img')) {
+  // The body, in reading order: inline pictures, and the galleries, which
+  // arrive as embedded JSON — { component: 'Carousel' | 'InlineGallery',
+  // props: { media: [{ type: 'image', image: { src } }] } }.
+  if (typeof article.body === 'string' && /<img|<script/.test(article.body)) {
     const d = new DOMParser().parseFromString('<div>' + article.body + '</div>', 'text/html');
-    d.querySelectorAll('img').forEach(img => add(img.getAttribute('src')));
+    d.querySelectorAll('img, script[type="application/json"]').forEach(el => {
+      if (el.tagName === 'IMG') { add(el.getAttribute('src')); return; }
+      let block;
+      try { block = JSON.parse(el.textContent); } catch { return; }
+      const media = block && block.props && block.props.media;
+      if (!Array.isArray(media)) return;
+      media.forEach(m => add(m && m.image && m.image.src));
+    });
   }
+
+  add(typeof article.footerImage === 'string' ? article.footerImage : article.footerImage && article.footerImage.src);
 
   return urls;
 }
@@ -701,6 +747,7 @@ function parseCrossheadFromHtml(htmlString) {
   const entries = [];
   const introParts = [];
   const flagged = [];
+  const pullQuotes = [];
   let curCrosshead = null;
   let curCrossheadDeltas = null;
   let curBodyParts = [];
@@ -721,7 +768,7 @@ function parseCrossheadFromHtml(htmlString) {
     // Score line (e.g. "SCORE: 7/10") — must run before crosshead detection
     if (/^score:\s*\d/i.test(text)) { score = text; continue; }
 
-    const crosshead = extractCrosshead(p);
+    const crosshead = isPullQuote(p) ? null : extractCrosshead(p);
     if (crosshead) {
       flush();
       inContent = true;
@@ -735,12 +782,13 @@ function parseCrossheadFromHtml(htmlString) {
     const deltas = trimDeltas(paraToDeltas(p));
     if (!deltas.length) continue;
     if (shouldFlag(text)) flagged.push(flagEntry(p, text));
+    if (isPullQuote(p)) pullQuotes.push(pullQuoteEntry(text));
 
     if (inContent) curBodyParts.push(deltas);
-    else introParts.push(mkPart(deltas, shouldFlag(text)));
+    else introParts.push(mkPart(deltas, shouldFlag(text) || isPullQuote(p)));
   }
   flush();
-  return { entries, introParts, flagged, score };
+  return { entries, introParts, flagged, pullQuotes, score };
 }
 
 // Straight prose with no crossheads, numbering or bold leads (e.g. garageReview
@@ -748,16 +796,18 @@ function parseCrossheadFromHtml(htmlString) {
 function parseProseFromHtml(htmlString) {
   const parts = [];
   const flagged = [];
+  const pullQuotes = [];
   for (const p of paras(htmlString)) {
     const text = p.textContent.trim();
     if (!text) continue;
     const deltas = trimDeltas(paraToDeltas(p));
     if (!deltas.length) continue;
     if (shouldFlag(text)) flagged.push(flagEntry(p, text));
+    if (isPullQuote(p)) pullQuotes.push(pullQuoteEntry(text));
     parts.push(deltas);
   }
-  if (!parts.length) return { entries: [], flagged };
-  return { entries: [{ crosshead: '', crossheadDeltas: [], number: 1, name: '', nameDeltas: [], bodyParts: parts }], flagged };
+  if (!parts.length) return { entries: [], flagged, pullQuotes };
+  return { entries: [{ crosshead: '', crossheadDeltas: [], number: 1, name: '', nameDeltas: [], bodyParts: parts }], flagged, pullQuotes };
 }
 
 // Runs the parser for the chosen type, falling back to prose when the article
@@ -769,6 +819,10 @@ function parseBody(bodyHtml, type) {
     : parseNumberedFromHtml(bodyHtml);
 
   if (parsed.entries.length) return parsed;
+
+  // A feature with no crossheads at all (a big read) is all intro: the first
+  // paragraph takes the styled opening and the rest follow as body.
+  if (type === 'crosshead' && (parsed.introParts || []).some(part => !partFlagged(part))) return parsed;
 
   // No entries matched. Anything the parser gathered as intro/lead is real copy,
   // so re-run as prose rather than emitting an article with no body.
@@ -782,6 +836,7 @@ function applyParsed(meta, parsed, debugInfo) {
   meta.introParts = parsed.introParts || [];
   meta.leadParts  = parsed.leadParts || [];
   meta.flagged    = parsed.flagged || [];
+  meta.pullQuotes = parsed.pullQuotes || [];
   if (parsed.score) meta.score = parsed.score;
   if (meta.introParts.length && !meta.intro) {
     meta.intro = meta.introParts.map(function (x) { return deltasToText(partOps(x)); }).join('\n\n');
@@ -1412,6 +1467,13 @@ function flaggedNotes(meta, prefix) {
     anchor: { quote: f.text },
     text: (prefix || '') + 'Editor instruction left in the copy — delete before publishing.' +
       (f.hrefs && f.hrefs.length ? ' Link: ' + f.hrefs.join(' ') : ''),
+  }));
+}
+
+function pullQuoteNotes(meta, prefix) {
+  return (meta.pullQuotes || []).map(q => ({
+    anchor: { quote: q.text },
+    text: (prefix || '') + 'Pull quote on the web page. Kept once as plain text — style it or delete it.',
   }));
 }
 
@@ -2290,7 +2352,7 @@ function flaggedNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = 'b3c9b136';
+  var PLUGIN_BUILD = '3ecea887';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2794,6 +2856,7 @@ function flaggedNotes(meta, prefix) {
             var expectPictures = !!bundle || (state.imageUrls || []).length > 0;
             var opener = expectPictures && created && created.length ? openerNote(placed.digital, created, bundle) : null;
             var notes = flaggedNotes(pm, TOOL_PREFIX)
+              .concat(pullQuoteNotes(pm, TOOL_PREFIX))
               .concat(bundle ? bundleNotes(bundle) : [])
               .concat(opener ? [opener] : [])
               .concat(expectPictures ? pictureNotes(placed.digital, bundle) : []);
