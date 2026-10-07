@@ -13,7 +13,7 @@ the workflow API.
 | Source | Needs | Notes |
 |--------|-------|-------|
 | `.docx` | nothing — runs fully in the browser | Original path. **Optional, with the receiver key:** tick *Fetch the pictures linked in the document and run the AI checks* and the doc goes to the receiver first, which fetches its Dropbox pictures (resized to 2000px), chooses the opener and reviews the copy — the same treatment as a WhatsApp article, minus the chat. About 1–2 minutes; re-parsing reuses the result for 30 minutes (*Fetch again* forces it). If the receiver can't be reached the doc is still converted, without pictures, and the reason is shown |
-| topgear.com URL | the proxy in `../server.js` | topgear.com sends no CORS headers, and its Akamai edge 403s non-browser user agents, so the fetch must be server-side |
+| topgear.com URL (pasted in any form — with or without `https://`, `www.`, tracking parameters; it is cleaned up and shown back) | the proxy in `../server.js` | topgear.com sends no CORS headers, and its Akamai edge 403s non-browser user agents, so the fetch must be server-side |
 | From WhatsApp | the receiver on the same Fly app, and its key | Plug-in only. See **From WhatsApp** below |
 
 Both sources feed the **same** parsers and builders and produce the same

@@ -904,11 +904,21 @@ async function fetchWithProxy(targetUrl) {
     const resp = await fetch(proxyUrl(targetUrl), { signal: controller.signal });
     clearTimeout(tid);
     if (resp.ok) return await resp.text();
-    throw new Error('Server returned HTTP ' + resp.status);
+    // The proxy's own refusals come with a short reason in the body (400/403);
+    // anything else is topgear.com's answer, passed through.
+    const why = resp.status === 400 || resp.status === 403 ? (await resp.text().catch(() => '')).slice(0, 120) : '';
+    throw Object.assign(new Error(
+      resp.status === 404 ? 'topgear.com has no page at that address (404). Check the link is complete.'
+      : why ? 'The address was not accepted: ' + why + '.'
+      : 'topgear.com answered HTTP ' + resp.status + ' for that address.'), { fromProxy: true });
   } catch (e) {
     clearTimeout(tid);
-    if (e.name === 'AbortError') throw new Error('Request timed out after 25 seconds.');
-    throw new Error('Could not fetch the article: ' + e.message + '. Make sure server.js is running (node server.js) and you opened http://localhost:3456');
+    if (e.name === 'AbortError') throw new Error('Fetching the article timed out after 25 seconds. Try again.');
+    if (e.fromProxy) throw new Error('Could not fetch the article. ' + e.message);
+    // A network-level failure: the proxy itself could not be reached.
+    const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    throw new Error('Could not reach the article proxy (' + e.message + ').' +
+      (local ? ' Make sure server.js is running (node server.js) and you opened http://localhost:3456.' : ' Check your connection and try again.'));
   }
 }
 
@@ -955,7 +965,31 @@ async function downloadImagesAsZip(imageUrls, slug) {
   downloadImagesBtn.disabled = false;
 }
 
+// A topgear.com article address as people paste it → the one form the proxy
+// accepts (https, www.topgear.com, no tracking junk). The proxy answers 400 to
+// an address with no scheme or with http://, which is how most pastes from a
+// phone or a chat arrive ("www.topgear.com/car-news/…").
+function normaliseArticleUrl(input) {
+  let v = String(input == null ? '' : input).trim().replace(/^<|>$/g, '');
+  if (!v) throw new Error('Paste a topgear.com article address first.');
+  if (/^\/\//.test(v)) v = 'https:' + v;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) v = 'https://' + v;
+  let u;
+  try { u = new URL(v); } catch { throw new Error('That doesn\'t look like a web address: “' + String(input).trim().slice(0, 80) + '”.'); }
+  const host = u.hostname.toLowerCase().replace(/^(www|m|amp)\./, '');
+  if (host !== 'topgear.com') {
+    throw new Error('This source only reads topgear.com articles — that address is on ' + u.hostname + '.');
+  }
+  u.protocol = 'https:';
+  u.hostname = 'www.topgear.com';
+  u.port = '';
+  u.hash = '';
+  u.search = ''; // utm_…, fbclid and the like: article pages don't use the query
+  return u.toString();
+}
+
 function slugFromUrl(url) {
+  try { url = normaliseArticleUrl(url); } catch { /* fall through to the default */ }
   try {
     const parts = new URL(url).pathname.split('/').filter(Boolean);
     return parts[parts.length - 1] || 'topgear-article';
@@ -1033,6 +1067,7 @@ function detectArticleType(html, hints = {}) {
 
 // type may be 'auto'; the result carries the type actually used and why.
 async function parseFromUrl(articleUrl, type) {
+  articleUrl = normaliseArticleUrl(articleUrl);
   const html = await fetchWithProxy(articleUrl);
   const debug = {};
 
@@ -1615,7 +1650,7 @@ parseBtn.addEventListener('click', async () => {
 
     preview.classList.remove('hidden');
   } catch (err) {
-    parseError.textContent = 'Error parsing document: ' + err.message;
+    parseError.textContent = (source === 'docx' ? 'Error parsing document: ' : '') + err.message;
     parseError.classList.remove('hidden');
   } finally {
     parseBtn.disabled = false;

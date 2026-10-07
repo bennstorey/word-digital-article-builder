@@ -267,3 +267,23 @@ dialog's "Nothing was created" was false, and a retry would have uploaded a
 second set. The dialog now says how many images are already in the Dossier and
 reuses them on the next Create.
 
+## 9. URL source: "HTTP 400 … make sure server.js is running" (FIXED)
+
+**Reported:** 2026-10-07 (Benn, a Jaguar Type 01 article, in Studio)
+**Status:** fixed in the build after `2dc8a12a`
+
+The proxy answers 400 when the address has no scheme ("www.topgear.com/…",
+"Malformed url param") or is `http://` ("Only https:// targets are allowed").
+The plug-in passed the pasted text through untouched, and its error text was
+left over from the standalone tool ("make sure server.js is running… open
+http://localhost:3456"), which means nothing inside Studio. The URL box was
+also only a few characters wide (`input[type=url]` had no width rule), so the
+missing `https://` could not be seen.
+
+Fix: `normaliseArticleUrl()` trims the paste, adds or corrects `https://`,
+maps `topgear.com` / `m.` / `amp.` to `www.topgear.com`, drops the query and
+fragment, and refuses other sites with a plain reason. The cleaned address is
+written back into the box. Errors now say what happened (the proxy's reason, a
+404 from topgear.com, a timeout, or the proxy being unreachable); the
+localhost hint only appears when running locally. The box is full width.
+

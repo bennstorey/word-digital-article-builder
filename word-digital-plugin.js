@@ -801,11 +801,21 @@ async function fetchWithProxy(targetUrl) {
     const resp = await fetch(proxyUrl(targetUrl), { signal: controller.signal });
     clearTimeout(tid);
     if (resp.ok) return await resp.text();
-    throw new Error('Server returned HTTP ' + resp.status);
+    // The proxy's own refusals come with a short reason in the body (400/403);
+    // anything else is topgear.com's answer, passed through.
+    const why = resp.status === 400 || resp.status === 403 ? (await resp.text().catch(() => '')).slice(0, 120) : '';
+    throw Object.assign(new Error(
+      resp.status === 404 ? 'topgear.com has no page at that address (404). Check the link is complete.'
+      : why ? 'The address was not accepted: ' + why + '.'
+      : 'topgear.com answered HTTP ' + resp.status + ' for that address.'), { fromProxy: true });
   } catch (e) {
     clearTimeout(tid);
-    if (e.name === 'AbortError') throw new Error('Request timed out after 25 seconds.');
-    throw new Error('Could not fetch the article: ' + e.message + '. Make sure server.js is running (node server.js) and you opened http://localhost:3456');
+    if (e.name === 'AbortError') throw new Error('Fetching the article timed out after 25 seconds. Try again.');
+    if (e.fromProxy) throw new Error('Could not fetch the article. ' + e.message);
+    // A network-level failure: the proxy itself could not be reached.
+    const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    throw new Error('Could not reach the article proxy (' + e.message + ').' +
+      (local ? ' Make sure server.js is running (node server.js) and you opened http://localhost:3456.' : ' Check your connection and try again.'));
   }
 }
 
@@ -852,7 +862,31 @@ async function downloadImagesAsZip(imageUrls, slug) {
   downloadImagesBtn.disabled = false;
 }
 
+// A topgear.com article address as people paste it → the one form the proxy
+// accepts (https, www.topgear.com, no tracking junk). The proxy answers 400 to
+// an address with no scheme or with http://, which is how most pastes from a
+// phone or a chat arrive ("www.topgear.com/car-news/…").
+function normaliseArticleUrl(input) {
+  let v = String(input == null ? '' : input).trim().replace(/^<|>$/g, '');
+  if (!v) throw new Error('Paste a topgear.com article address first.');
+  if (/^\/\//.test(v)) v = 'https:' + v;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) v = 'https://' + v;
+  let u;
+  try { u = new URL(v); } catch { throw new Error('That doesn\'t look like a web address: “' + String(input).trim().slice(0, 80) + '”.'); }
+  const host = u.hostname.toLowerCase().replace(/^(www|m|amp)\./, '');
+  if (host !== 'topgear.com') {
+    throw new Error('This source only reads topgear.com articles — that address is on ' + u.hostname + '.');
+  }
+  u.protocol = 'https:';
+  u.hostname = 'www.topgear.com';
+  u.port = '';
+  u.hash = '';
+  u.search = ''; // utm_…, fbclid and the like: article pages don't use the query
+  return u.toString();
+}
+
 function slugFromUrl(url) {
+  try { url = normaliseArticleUrl(url); } catch { /* fall through to the default */ }
   try {
     const parts = new URL(url).pathname.split('/').filter(Boolean);
     return parts[parts.length - 1] || 'topgear-article';
@@ -930,6 +964,7 @@ function detectArticleType(html, hints = {}) {
 
 // type may be 'auto'; the result carries the type actually used and why.
 async function parseFromUrl(articleUrl, type) {
+  articleUrl = normaliseArticleUrl(articleUrl);
   const html = await fetchWithProxy(articleUrl);
   const debug = {};
 
@@ -2234,7 +2269,7 @@ function flaggedNotes(meta, prefix) {
     '.wdab .wdab-wa-status.wdab-busy{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}',
     '.wdab .wdab-wa-status.wdab-failed{background:#fef2f2;border-color:#fecaca;color:#991b1b}',
     '.wdab button.wdab-linkbtn{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2563eb;cursor:pointer;text-decoration:underline}',
-    '.wdab select,.wdab input[type=text],.wdab input[type=password]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
+    '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
     '.wdab input[type=file]{width:100%;font:inherit}',
     '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle}',
     '.wdab-row label input[type=checkbox]+span{font-weight:400;color:#334155}',
@@ -2255,7 +2290,7 @@ function flaggedNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '2dc8a12a';
+  var PLUGIN_BUILD = 'b3c9b136';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2581,6 +2616,7 @@ function flaggedNotes(meta, prefix) {
       var pipeline;
       if (source === 'url') {
         var articleUrl = $('url').value.trim();
+        try { articleUrl = normaliseArticleUrl(articleUrl); $('url').value = articleUrl; } catch (e) { /* parseFromUrl reports it */ }
         pipeline = parseFromUrl(articleUrl, type).then(function (r) {
           type = r.type;
           showDetected(r.detected);
@@ -2712,7 +2748,7 @@ function flaggedNotes(meta, prefix) {
           $('preview').classList.remove('wdab-hidden');
         })
         .catch(function (err) {
-          $('parse-error').textContent = 'Error parsing document: ' + err.message;
+          $('parse-error').textContent = (source === 'docx' ? 'Error parsing document: ' : '') + err.message;
           $('parse-error').style.display = 'block';
         })
         .then(function () {

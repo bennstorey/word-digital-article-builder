@@ -883,7 +883,7 @@
     '.wdab .wdab-wa-status.wdab-busy{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}',
     '.wdab .wdab-wa-status.wdab-failed{background:#fef2f2;border-color:#fecaca;color:#991b1b}',
     '.wdab button.wdab-linkbtn{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2563eb;cursor:pointer;text-decoration:underline}',
-    '.wdab select,.wdab input[type=text],.wdab input[type=password]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
+    '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
     '.wdab input[type=file]{width:100%;font:inherit}',
     '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle}',
     '.wdab-row label input[type=checkbox]+span{font-weight:400;color:#334155}',
@@ -1230,6 +1230,7 @@
       var pipeline;
       if (source === 'url') {
         var articleUrl = $('url').value.trim();
+        try { articleUrl = normaliseArticleUrl(articleUrl); $('url').value = articleUrl; } catch (e) { /* parseFromUrl reports it */ }
         pipeline = parseFromUrl(articleUrl, type).then(function (r) {
           type = r.type;
           showDetected(r.detected);
@@ -1361,7 +1362,7 @@
           $('preview').classList.remove('wdab-hidden');
         })
         .catch(function (err) {
-          $('parse-error').textContent = 'Error parsing document: ' + err.message;
+          $('parse-error').textContent = (source === 'docx' ? 'Error parsing document: ' : '') + err.message;
           $('parse-error').style.display = 'block';
         })
         .then(function () {
