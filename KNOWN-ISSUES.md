@@ -340,3 +340,24 @@ The Jaguar page gives two: 14 and 11 slides.
   `carousel` field) and single inline pictures still go to the Dossier unplaced.
 - The closing frame takes the first gallery picture, which is then also a slide.
 - `carReview` pages still come through with no body text.
+
+## 11. Numbered list: section headings not styled; a numbered picture moved by the AI (FIXED)
+
+**Reported:** 2026-10-08 (Benn, a 62-item numbered list from WhatsApp)
+**Status:** fixed in the build after `e41b519f`
+
+- **Section headings.** The doc had two Word headings among the numbered
+  entries (one above entry 1, one above entry 11). §7 handled headings only in
+  unnumbered lists; in a numbered list the first became a lead paragraph and
+  the second the last body paragraph of entry 10. `parseNumbered()` now carries
+  a Word heading on the entry that follows it (`entry.sectionBefore`), and
+  `buildNumbered()` emits it as the `crosshead` component where the displayed
+  order enters that section, so a countdown still has each heading above its
+  own group. The preview list shows them as "(section heading)".
+- **Picture on the wrong entry.** The file was named `10 - <car>.jpg`; entry
+  10 is a general item with no car of its own, and the same car is entry 51.
+  The AI matched by what it saw and `entryOfImage()` took the AI's answer
+  before the file name, so frame 10 stayed empty. The number on the file name
+  now comes first; the AI's reading is used only when the name has no number.
+  When the two disagree the entry gets a comment saying so. The receiver does
+  the same check (`keepFileNumbers`) and tells the model to keep the number.

@@ -416,6 +416,20 @@ function parseNumbered(html, type) {
     return null;
   };
 
+  // A Word heading between numbered entries is a section heading ("Dealer
+  // discounts" above entries 11–62). It travels on the entry that follows it,
+  // so sorting and counting the entries is unaffected.
+  let section = null;
+  let leadHeading = null;
+  const isHeading = p => /^H[1-6]$/.test(p.tagName);
+  const sectionFrom = (p, text) => ({ name: text, nameDeltas: trimDeltas(paraToDeltas(p, { italicOnly: true })) });
+  const take = entry => { if (section) { entry.sectionBefore = section; section = null; } return entry; };
+  // A heading with no entry after it is kept as copy, never dropped
+  const keepStraySection = () => {
+    if (section && pending) pending.bodyParts.push(section.nameDeltas, ...(section.bodyParts || []));
+    section = null;
+  };
+
   for (const p of ps) {
     const text = p.textContent.trim();
     if (!text) continue;
@@ -435,7 +449,12 @@ function parseNumbered(html, type) {
       const first = entryFrom(p, text);
       if (first) {
         inEntries = true;
-        pending = first;
+        // A heading directly above the first entry opens the first section
+        if (leadHeading && meta.leadParts[meta.leadParts.length - 1] === leadHeading.part) {
+          meta.leadParts.pop();
+          section = leadHeading.section;
+        }
+        pending = take(first);
         continue;
       }
       const match = matchMetaPrefix(text);
@@ -452,13 +471,25 @@ function parseNumbered(html, type) {
         var isInstr = shouldFlag(text);
         if (isInstr) meta.flagged.push(flagEntry(p, text));
         const deltas = trimDeltas(paraToDeltas(p));
-        if (deltas.length) meta.leadParts.push(mkPart(deltas, isInstr));
+        if (deltas.length) {
+          const part = mkPart(deltas, isInstr);
+          meta.leadParts.push(part);
+          leadHeading = isHeading(p) && !isInstr ? { part, section: sectionFrom(p, text) } : null;
+        }
       }
     } else {
       const next = entryFrom(p, text);
       if (next) {
         if (pending) entries.push(pending);
-        pending = next;
+        pending = take(next);
+      } else if (isHeading(p) && !shouldFlag(text)) {
+        keepStraySection();
+        section = sectionFrom(p, text);
+      } else if (section) {
+        // Copy under a section heading, before its first entry
+        if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
+        const deltas = trimDeltas(paraToDeltas(p));
+        if (deltas.length) (section.bodyParts = section.bodyParts || []).push(deltas);
       } else {
         if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
         if (pending) {
@@ -468,6 +499,7 @@ function parseNumbered(html, type) {
       }
     }
   }
+  keepStraySection();
   if (pending) entries.push(pending);
 
   // Some countdown docs are written with bold entry names and no "1. " prefix,
@@ -1288,8 +1320,26 @@ function buildNumbered(template, meta, entries, type) {
     result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
   });
 
+  // Numbered lists carry a section heading on the entry that followed it in
+  // the doc. Each entry belongs to the latest heading above it, and the
+  // heading is shown where the displayed order enters that section — so a
+  // countdown, shown in reverse, still has each heading above its own group.
+  const sectionOf = new Map();
+  let docSection = null;
+  entries.forEach(e => { if (e.sectionBefore) docSection = e.sectionBefore; sectionOf.set(e, docSection); });
+  let shownSection = null;
+
   let firstItemDone = false;
   ordered.forEach((entry) => {
+    const sec = sectionOf.get(entry);
+    if (sec && sec !== shownSection) {
+      result.push({ identifier: 'crosshead', styles: {}, id: genId(),
+        content: { text: sec.nameDeltas && sec.nameDeltas.length ? deepClone(sec.nameDeltas) : [{ insert: sec.name }] } });
+      (sec.bodyParts || []).forEach(deltas => {
+        result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+      });
+      shownSection = sec;
+    }
     // A section heading (Type 4): the crosshead template's alternate-style
     // heading, with any copy under it, and no picture frame of its own.
     if (entry.section) {

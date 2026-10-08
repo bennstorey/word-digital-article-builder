@@ -313,6 +313,20 @@ function parseNumbered(html, type) {
     return null;
   };
 
+  // A Word heading between numbered entries is a section heading ("Dealer
+  // discounts" above entries 11–62). It travels on the entry that follows it,
+  // so sorting and counting the entries is unaffected.
+  let section = null;
+  let leadHeading = null;
+  const isHeading = p => /^H[1-6]$/.test(p.tagName);
+  const sectionFrom = (p, text) => ({ name: text, nameDeltas: trimDeltas(paraToDeltas(p, { italicOnly: true })) });
+  const take = entry => { if (section) { entry.sectionBefore = section; section = null; } return entry; };
+  // A heading with no entry after it is kept as copy, never dropped
+  const keepStraySection = () => {
+    if (section && pending) pending.bodyParts.push(section.nameDeltas, ...(section.bodyParts || []));
+    section = null;
+  };
+
   for (const p of ps) {
     const text = p.textContent.trim();
     if (!text) continue;
@@ -332,7 +346,12 @@ function parseNumbered(html, type) {
       const first = entryFrom(p, text);
       if (first) {
         inEntries = true;
-        pending = first;
+        // A heading directly above the first entry opens the first section
+        if (leadHeading && meta.leadParts[meta.leadParts.length - 1] === leadHeading.part) {
+          meta.leadParts.pop();
+          section = leadHeading.section;
+        }
+        pending = take(first);
         continue;
       }
       const match = matchMetaPrefix(text);
@@ -349,13 +368,25 @@ function parseNumbered(html, type) {
         var isInstr = shouldFlag(text);
         if (isInstr) meta.flagged.push(flagEntry(p, text));
         const deltas = trimDeltas(paraToDeltas(p));
-        if (deltas.length) meta.leadParts.push(mkPart(deltas, isInstr));
+        if (deltas.length) {
+          const part = mkPart(deltas, isInstr);
+          meta.leadParts.push(part);
+          leadHeading = isHeading(p) && !isInstr ? { part, section: sectionFrom(p, text) } : null;
+        }
       }
     } else {
       const next = entryFrom(p, text);
       if (next) {
         if (pending) entries.push(pending);
-        pending = next;
+        pending = take(next);
+      } else if (isHeading(p) && !shouldFlag(text)) {
+        keepStraySection();
+        section = sectionFrom(p, text);
+      } else if (section) {
+        // Copy under a section heading, before its first entry
+        if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
+        const deltas = trimDeltas(paraToDeltas(p));
+        if (deltas.length) (section.bodyParts = section.bodyParts || []).push(deltas);
       } else {
         if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
         if (pending) {
@@ -365,6 +396,7 @@ function parseNumbered(html, type) {
       }
     }
   }
+  keepStraySection();
   if (pending) entries.push(pending);
 
   // Some countdown docs are written with bold entry names and no "1. " prefix,
@@ -1185,8 +1217,26 @@ function buildNumbered(template, meta, entries, type) {
     result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
   });
 
+  // Numbered lists carry a section heading on the entry that followed it in
+  // the doc. Each entry belongs to the latest heading above it, and the
+  // heading is shown where the displayed order enters that section — so a
+  // countdown, shown in reverse, still has each heading above its own group.
+  const sectionOf = new Map();
+  let docSection = null;
+  entries.forEach(e => { if (e.sectionBefore) docSection = e.sectionBefore; sectionOf.set(e, docSection); });
+  let shownSection = null;
+
   let firstItemDone = false;
   ordered.forEach((entry) => {
+    const sec = sectionOf.get(entry);
+    if (sec && sec !== shownSection) {
+      result.push({ identifier: 'crosshead', styles: {}, id: genId(),
+        content: { text: sec.nameDeltas && sec.nameDeltas.length ? deepClone(sec.nameDeltas) : [{ insert: sec.name }] } });
+      (sec.bodyParts || []).forEach(deltas => {
+        result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+      });
+      shownSection = sec;
+    }
     // A section heading (Type 4): the crosshead template's alternate-style
     // heading, with any copy under it, and no picture frame of its own.
     if (entry.section) {
@@ -2298,11 +2348,34 @@ function pullQuoteNotes(meta, prefix) {
   // filename like "15-F90.jpg" or "15.jpg". Camera names such as
   // "03.02.2026-Geely…" are not read as entry 3 (digit after the separator).
   function entryOfImage(im, bundle) {
-    var r = bundle.selection && (bundle.selection.ranked || []).filter(function (x) { return x.file === im.name; })[0];
+    // The number the desk put on the file name comes first: "10 - Renault
+    // 4.jpg" was chosen for entry 10 even though a Renault 4 is also entry 51.
+    // The AI's reading of the picture is used only when the name has no number.
+    var fromName = entryFromFileName(im.name);
+    if (fromName != null) return fromName;
+    var r = rankedFor(im.name, bundle);
     var fromAi = r && r.entry != null && String(r.entry).match(/\d+/);
-    if (fromAi) return Number(fromAi[0]);
-    var m = im.name.match(/^0*(\d{1,3})(?:[\s._-]+(?!\d)|\.[a-z]+$)/i);
+    return fromAi ? Number(fromAi[0]) : null;
+  }
+  function entryFromFileName(name) {
+    var m = String(name || '').match(/^0*(\d{1,3})(?:[\s._-]+(?!\d)|\.[a-z]+$)/i);
     return m ? Number(m[1]) : null;
+  }
+  function rankedFor(name, bundle) {
+    return bundle.selection && (bundle.selection.ranked || []).filter(function (x) { return x.file === name; })[0];
+  }
+  // Pictures where the file name says one entry and the AI saw another. The
+  // name wins; the editor is told, on that entry, what the AI thought.
+  function numberConflictNotes(bundle) {
+    if (!bundle || !bundle.selection) return [];
+    return (bundle.selection.ranked || []).map(function (r) {
+      var n = entryFromFileName(r.file);
+      var aiRaw = r.aiEntry != null ? r.aiEntry : r.entry;
+      var ai = aiRaw != null && String(aiRaw).match(/\d+/);
+      if (n == null || !ai || Number(ai[0]) === n) return null;
+      return { anchor: { entry: n }, text: AI_PREFIX + 'Picture “' + r.file + '” is placed here because its file name says ' + n +
+        ', but it looks like entry ' + Number(ai[0]) + (r.reason ? ' (' + r.reason + ')' : '') + '. Check it is the right picture.' };
+    }).filter(Boolean);
   }
 
   // Image object ids per frame, in frame order (null = leave empty).
@@ -2400,7 +2473,7 @@ function pullQuoteNotes(meta, prefix) {
       if (emptyEntries.indexOf(m.note) !== -1) return; // already said on the empty frame
       notes.push({ anchor: { entry: m.entry }, text: AI_PREFIX + 'The chat says this picture was missing (' + m.note + '). Check the picture placed here.' });
     });
-    return notes;
+    return notes.concat(numberConflictNotes(bundle));
   }
 
   // ─── Shared converter UI ───────────────────────────────────────────────────
@@ -2440,7 +2513,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = 'e41b519f';
+  var PLUGIN_BUILD = '51a58c24';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2897,7 +2970,8 @@ function pullQuoteNotes(meta, prefix) {
             return type === 'crosshead'
               ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || e.name || '(no crosshead)') + '</div>'
               : e.section ? '<div><strong>' + esc(e.name) + '</strong> <span class="n">(section heading)</span></div>'
-              : '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
+              : (e.sectionBefore ? '<div><strong>' + esc(e.sectionBefore.name) + '</strong> <span class="n">(section heading)</span></div>' : '') +
+                '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
           }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
 
           $('preview').classList.remove('wdab-hidden');

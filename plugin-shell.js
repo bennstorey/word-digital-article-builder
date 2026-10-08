@@ -762,11 +762,34 @@
   // filename like "15-F90.jpg" or "15.jpg". Camera names such as
   // "03.02.2026-Geely…" are not read as entry 3 (digit after the separator).
   function entryOfImage(im, bundle) {
-    var r = bundle.selection && (bundle.selection.ranked || []).filter(function (x) { return x.file === im.name; })[0];
+    // The number the desk put on the file name comes first: "10 - Renault
+    // 4.jpg" was chosen for entry 10 even though a Renault 4 is also entry 51.
+    // The AI's reading of the picture is used only when the name has no number.
+    var fromName = entryFromFileName(im.name);
+    if (fromName != null) return fromName;
+    var r = rankedFor(im.name, bundle);
     var fromAi = r && r.entry != null && String(r.entry).match(/\d+/);
-    if (fromAi) return Number(fromAi[0]);
-    var m = im.name.match(/^0*(\d{1,3})(?:[\s._-]+(?!\d)|\.[a-z]+$)/i);
+    return fromAi ? Number(fromAi[0]) : null;
+  }
+  function entryFromFileName(name) {
+    var m = String(name || '').match(/^0*(\d{1,3})(?:[\s._-]+(?!\d)|\.[a-z]+$)/i);
     return m ? Number(m[1]) : null;
+  }
+  function rankedFor(name, bundle) {
+    return bundle.selection && (bundle.selection.ranked || []).filter(function (x) { return x.file === name; })[0];
+  }
+  // Pictures where the file name says one entry and the AI saw another. The
+  // name wins; the editor is told, on that entry, what the AI thought.
+  function numberConflictNotes(bundle) {
+    if (!bundle || !bundle.selection) return [];
+    return (bundle.selection.ranked || []).map(function (r) {
+      var n = entryFromFileName(r.file);
+      var aiRaw = r.aiEntry != null ? r.aiEntry : r.entry;
+      var ai = aiRaw != null && String(aiRaw).match(/\d+/);
+      if (n == null || !ai || Number(ai[0]) === n) return null;
+      return { anchor: { entry: n }, text: AI_PREFIX + 'Picture “' + r.file + '” is placed here because its file name says ' + n +
+        ', but it looks like entry ' + Number(ai[0]) + (r.reason ? ' (' + r.reason + ')' : '') + '. Check it is the right picture.' };
+    }).filter(Boolean);
   }
 
   // Image object ids per frame, in frame order (null = leave empty).
@@ -864,7 +887,7 @@
       if (emptyEntries.indexOf(m.note) !== -1) return; // already said on the empty frame
       notes.push({ anchor: { entry: m.entry }, text: AI_PREFIX + 'The chat says this picture was missing (' + m.note + '). Check the picture placed here.' });
     });
-    return notes;
+    return notes.concat(numberConflictNotes(bundle));
   }
 
   // ─── Shared converter UI ───────────────────────────────────────────────────
@@ -1361,7 +1384,8 @@
             return type === 'crosshead'
               ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || e.name || '(no crosshead)') + '</div>'
               : e.section ? '<div><strong>' + esc(e.name) + '</strong> <span class="n">(section heading)</span></div>'
-              : '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
+              : (e.sectionBefore ? '<div><strong>' + esc(e.sectionBefore.name) + '</strong> <span class="n">(section heading)</span></div>' : '') +
+                '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
           }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
 
           $('preview').classList.remove('wdab-hidden');
