@@ -361,3 +361,35 @@ The Jaguar page gives two: 14 and 11 slides.
   now comes first; the AI's reading is used only when the name has no number.
   When the two disagree the entry gets a comment saying so. The receiver does
   the same check (`keepFileNumbers`) and tells the model to keep the number.
+
+## 12. Crosshead article from WhatsApp: only the opener and closing picture placed (BUILT, AI step not yet run live)
+
+**Reported:** 2026-10-10 (Benn, a first drive with 13 pictures and 9 crossheads)
+**Status:** built in the build after `51a58c24`; the AI's section matching has
+not run on a real article yet
+
+The crosshead layout has two frames, so 11 of 13 pictures went to the Dossier
+unplaced. Benn's brief: pictures placed individually where they relate to the
+text, and as galleries where there are more than are needed.
+
+Layout rules, measured on seven published Top Gear crosshead articles
+(component order of each): a picture or gallery sits at the end of a section,
+before the next crosshead; not every section has one; galleries hold 3–10
+pictures; the closing picture stays with the score.
+
+- **Receiver:** `inspectDocx` lists the article's crossheads; the picture step
+  sends the copy and asks, per picture, which section it illustrates and how
+  surely (`selection.placements`). Headings and file names the AI invents are
+  dropped.
+- **Plug-in** (`sectionPictures`): the first two pictures in upload order are
+  the opener and the closing picture. Each section takes the one picture
+  matched to it most surely, at 0.7 or above, placed at the end of the section.
+  Everything else goes in one gallery at the end of the last section (two or
+  more; a single leftover stays in the Dossier). Each placement gets a comment
+  with the AI's reason.
+- **Engine:** a `{ picture: url }` body part, held as a placeholder component
+  until the pictures exist so the fixed frames are counted without it.
+
+**File-name numbers (Benn, 2026-10-12):** on listicles the numbers are the
+entry order and decide placement (§11). On first drives and similar they are
+export numbers and mean nothing; the AI is told to ignore them.

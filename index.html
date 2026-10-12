@@ -300,7 +300,9 @@ function galleryUrls(json) {
 // A gallery among the body paragraphs is carried as { gallery: [urls] } and
 // built as a slideshow where it sat. Only the crosshead layout places them.
 const galleryOf = p => p.hasAttribute(GALLERY_ATTR) ? JSON.parse(p.getAttribute(GALLERY_ATTR)) : null;
-const isGalleryPart = part => !!(part && part.gallery);
+// A single picture placed in the copy travels the same way, as { picture: url }.
+const isGalleryPart = part => !!(part && (part.gallery || part.picture));
+const mediaComp = part => part.picture ? pictureComp(part.picture) : slideshowComp(part.gallery);
 
 // A web pull quote: a line lifted from the article and shown large. It is kept
 // once, in place, as plain body text, and listed so the editor can style it or
@@ -1415,6 +1417,15 @@ function slideshowComp(urls) {
   };
 }
 
+// A single picture in the copy. It is held under its own name until the
+// pictures exist, so the template's fixed frames (opener, closing picture) are
+// counted and filled without it; placeGalleries() then makes it a real image
+// component, or leaves it out.
+function pictureComp(src) {
+  return { identifier: PICTURE_HOLD, id: genId(), src };
+}
+const PICTURE_HOLD = 'wd-picture';
+
 // created: [{ id, url }] for the pictures now in the Dossier (or none). A
 // slide whose picture was not created is left out; a slideshow with no slides
 // is removed. A slide for the opener — dropped from the download list because
@@ -1425,8 +1436,17 @@ function placeGalleries(digital, created) {
     const hit = made.find(c => c.url === src) || made.find(c => imageFileName(c.url) === imageFileName(src));
     return hit ? String(hit.id) : null;
   };
-  let slideshows = 0, slides = 0, dropped = 0;
+  let slideshows = 0, slides = 0, dropped = 0, pictures = 0;
   digital.data.content = (digital.data.content || []).filter(comp => {
+    if (comp.identifier === PICTURE_HOLD) {
+      const id = idFor(comp.src);
+      if (!id) { dropped++; return false; }
+      delete comp.src;
+      Object.assign(comp, { identifier: 'image', styles: { fitting: '_fit-frame-height-to-content' },
+        content: { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } }, data: { 'an-image-role': 'photo' } });
+      pictures++;
+      return true;
+    }
     if (comp.identifier !== 'slideshow' || !comp.containers || !Array.isArray(comp.containers.slideshow)) return true;
     comp.containers.slideshow = comp.containers.slideshow.filter(slide => {
       const img = slide.content && slide.content.image;
@@ -1441,7 +1461,7 @@ function placeGalleries(digital, created) {
     slideshows++;
     return true;
   });
-  return { digital, slideshows, slides, dropped };
+  return { digital, slideshows, slides, pictures, dropped };
 }
 
 // What the crosshead layout would put in slideshows, for the form's note.
@@ -1476,7 +1496,7 @@ function buildCrosshead(template, meta, entries) {
     // position but render as plain body components, never as the styled lead.
     const firstRealIdx = parts.findIndex(part => !partFlagged(part));
     parts.forEach((part, i) => {
-      if (isGalleryPart(part)) { introComps.push(slideshowComp(part.gallery)); return; }
+      if (isGalleryPart(part)) { introComps.push(mediaComp(part)); return; }
       if (i === firstRealIdx) {
         const introBody = deepClone(c[4]);
         introBody.id = genId();
@@ -1530,7 +1550,7 @@ function buildCrosshead(template, meta, entries) {
 
     group.forEach(comp => { comp.id = genId(); });
 
-    const rest = parts.map((part, idx) => isGalleryPart(part) ? slideshowComp(part.gallery)
+    const rest = parts.map((part, idx) => isGalleryPart(part) ? mediaComp(part)
       : (idx === firstText && bodyComp) ? bodyComp
       : { identifier: 'body', styles: {}, content: { text: part }, id: genId() });
     const lead = group.filter(comp => comp !== bodyComp || firstText < 0 && !parts.length);

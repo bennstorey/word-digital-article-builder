@@ -197,7 +197,9 @@ function galleryUrls(json) {
 // A gallery among the body paragraphs is carried as { gallery: [urls] } and
 // built as a slideshow where it sat. Only the crosshead layout places them.
 const galleryOf = p => p.hasAttribute(GALLERY_ATTR) ? JSON.parse(p.getAttribute(GALLERY_ATTR)) : null;
-const isGalleryPart = part => !!(part && part.gallery);
+// A single picture placed in the copy travels the same way, as { picture: url }.
+const isGalleryPart = part => !!(part && (part.gallery || part.picture));
+const mediaComp = part => part.picture ? pictureComp(part.picture) : slideshowComp(part.gallery);
 
 // A web pull quote: a line lifted from the article and shown large. It is kept
 // once, in place, as plain body text, and listed so the editor can style it or
@@ -1312,6 +1314,15 @@ function slideshowComp(urls) {
   };
 }
 
+// A single picture in the copy. It is held under its own name until the
+// pictures exist, so the template's fixed frames (opener, closing picture) are
+// counted and filled without it; placeGalleries() then makes it a real image
+// component, or leaves it out.
+function pictureComp(src) {
+  return { identifier: PICTURE_HOLD, id: genId(), src };
+}
+const PICTURE_HOLD = 'wd-picture';
+
 // created: [{ id, url }] for the pictures now in the Dossier (or none). A
 // slide whose picture was not created is left out; a slideshow with no slides
 // is removed. A slide for the opener — dropped from the download list because
@@ -1322,8 +1333,17 @@ function placeGalleries(digital, created) {
     const hit = made.find(c => c.url === src) || made.find(c => imageFileName(c.url) === imageFileName(src));
     return hit ? String(hit.id) : null;
   };
-  let slideshows = 0, slides = 0, dropped = 0;
+  let slideshows = 0, slides = 0, dropped = 0, pictures = 0;
   digital.data.content = (digital.data.content || []).filter(comp => {
+    if (comp.identifier === PICTURE_HOLD) {
+      const id = idFor(comp.src);
+      if (!id) { dropped++; return false; }
+      delete comp.src;
+      Object.assign(comp, { identifier: 'image', styles: { fitting: '_fit-frame-height-to-content' },
+        content: { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } }, data: { 'an-image-role': 'photo' } });
+      pictures++;
+      return true;
+    }
     if (comp.identifier !== 'slideshow' || !comp.containers || !Array.isArray(comp.containers.slideshow)) return true;
     comp.containers.slideshow = comp.containers.slideshow.filter(slide => {
       const img = slide.content && slide.content.image;
@@ -1338,7 +1358,7 @@ function placeGalleries(digital, created) {
     slideshows++;
     return true;
   });
-  return { digital, slideshows, slides, dropped };
+  return { digital, slideshows, slides, pictures, dropped };
 }
 
 // What the crosshead layout would put in slideshows, for the form's note.
@@ -1373,7 +1393,7 @@ function buildCrosshead(template, meta, entries) {
     // position but render as plain body components, never as the styled lead.
     const firstRealIdx = parts.findIndex(part => !partFlagged(part));
     parts.forEach((part, i) => {
-      if (isGalleryPart(part)) { introComps.push(slideshowComp(part.gallery)); return; }
+      if (isGalleryPart(part)) { introComps.push(mediaComp(part)); return; }
       if (i === firstRealIdx) {
         const introBody = deepClone(c[4]);
         introBody.id = genId();
@@ -1427,7 +1447,7 @@ function buildCrosshead(template, meta, entries) {
 
     group.forEach(comp => { comp.id = genId(); });
 
-    const rest = parts.map((part, idx) => isGalleryPart(part) ? slideshowComp(part.gallery)
+    const rest = parts.map((part, idx) => isGalleryPart(part) ? mediaComp(part)
       : (idx === firstText && bodyComp) ? bodyComp
       : { identifier: 'body', styles: {}, content: { text: part }, id: genId() });
     const lead = group.filter(comp => comp !== bodyComp || firstText < 0 && !parts.length);
@@ -2378,6 +2398,51 @@ function pullQuoteNotes(meta, prefix) {
     }).filter(Boolean);
   }
 
+  // Crosshead articles (first drives, Q&As). Measured on published Top Gear
+  // articles: a picture sits at the end of the section it illustrates, not
+  // every section has one, and the surplus is shown as a gallery.
+  //   - the first two pictures in upload order are the opener and the closing
+  //     picture, and are not used again;
+  //   - each section takes the one picture the AI matched to it most surely
+  //     (at or above SECTION_CONFIDENCE);
+  //   - everything else goes in one gallery at the end of the last section
+  //     (two or more pictures; a single leftover stays in the Dossier).
+  // Numbers on these file names are export numbers and are ignored.
+  var SECTION_CONFIDENCE = 0.7;
+  function sectionPictures(entries, bundle) {
+    var sel = bundle && bundle.selection;
+    var images = orderedBundleImages(bundle || {});
+    if (!sel || !(sel.placements || []).length || images.length < 3 || !entries.length) return null;
+    var norm = function (t) { return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var urlOf = function (name) {
+      var im = images.filter(function (x) { return x.name === name; })[0];
+      return im ? bundleFileUrl(bundle, im.file) : null;
+    };
+    var taken = {};
+    images.slice(0, 2).forEach(function (im) { taken[im.name] = true; });
+
+    var out = entries.map(function (e) { return Object.assign({}, e, { bodyParts: (e.bodyParts || []).slice() }); });
+    var notes = [];
+    out.forEach(function (e) {
+      if (!e.crosshead) return;
+      var best = sel.placements.filter(function (p) {
+        return !taken[p.file] && p.section && norm(p.section) === norm(e.crosshead) && p.confidence >= SECTION_CONFIDENCE && urlOf(p.file);
+      }).sort(function (a, b) { return b.confidence - a.confidence; })[0];
+      if (!best) return;
+      taken[best.file] = true;
+      e.bodyParts.push({ picture: urlOf(best.file) });
+      notes.push({ anchor: { crosshead: e.crosshead }, text: AI_PREFIX + 'Picture “' + best.file + '” placed at the end of this section' +
+        (best.reason ? ': ' + best.reason : '') + '. Swap or remove it if it does not fit.' });
+    });
+
+    var rest = images.filter(function (im) { return !taken[im.name]; });
+    if (rest.length >= 2) {
+      out[out.length - 1].bodyParts.push({ gallery: rest.map(function (im) { return bundleFileUrl(bundle, im.file); }) });
+      notes.push({ anchor: {}, text: TOOL_PREFIX + 'The other ' + rest.length + ' pictures are in a gallery at the end of the last section. Move it, or drag a picture out of it, as needed.' });
+    }
+    return { entries: out, notes: notes, placed: notes.length };
+  }
+
   // Image object ids per frame, in frame order (null = leave empty).
   // created: [{ id, url }] in upload order; placement: { byUrl: {url: entry}, heroUrl }.
   // A numbered list whose pictures mostly know their entry is placed by entry,
@@ -2513,7 +2578,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '51a58c24';
+  var PLUGIN_BUILD = 'b7adcc83';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -3011,8 +3076,12 @@ function pullQuoteNotes(meta, prefix) {
         // created: [{ id, url }] from createImagesInDossier, in upload order.
         function build(created) {
           var template = deepClone(TEMPLATES[state.parsedData.type]);
+          // Crosshead article from WhatsApp: pictures the AI matched to a
+          // section go under that section; the rest become a gallery.
+          var sectioned = created && state.bundleKey && state.parsedData.type === 'crosshead'
+            ? sectionPictures(state.parsedData.entries, state.bundle) : null;
           var d = state.parsedData.type === 'crosshead'
-            ? buildCrosshead(template, meta, state.parsedData.entries)
+            ? buildCrosshead(template, meta, sectioned ? sectioned.entries : state.parsedData.entries)
             : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
           var placed = applyImageIds(d, created ? assignSlots(d, created, state.placement) : null);
           // Web galleries → slideshows, pointing at the pictures just created
@@ -3028,7 +3097,8 @@ function pullQuoteNotes(meta, prefix) {
               .concat(pullQuoteNotes(pm, TOOL_PREFIX))
               .concat(bundle ? bundleNotes(bundle) : [])
               .concat(opener ? [opener] : [])
-              .concat(expectPictures ? pictureNotes(placed.digital, bundle) : []);
+              .concat(expectPictures ? pictureNotes(placed.digital, bundle) : [])
+              .concat(sectioned ? sectioned.notes : []);
             var withComments = addComments(placed.digital, notes, currentUserId());
             placed.digital = withComments.digital;
             placed.comments = withComments.placed.length;
