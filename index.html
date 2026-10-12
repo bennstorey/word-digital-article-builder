@@ -1425,6 +1425,8 @@ function pictureComp(src) {
   return { identifier: PICTURE_HOLD, id: genId(), src };
 }
 const PICTURE_HOLD = 'wd-picture';
+// { picture: PICTURE_EMPTY } is a frame left empty for the editor to fill
+const PICTURE_EMPTY = 'empty';
 
 // created: [{ id, url }] for the pictures now in the Dossier (or none). A
 // slide whose picture was not created is left out; a slideshow with no slides
@@ -1436,15 +1438,18 @@ function placeGalleries(digital, created) {
     const hit = made.find(c => c.url === src) || made.find(c => imageFileName(c.url) === imageFileName(src));
     return hit ? String(hit.id) : null;
   };
-  let slideshows = 0, slides = 0, dropped = 0, pictures = 0;
+  let slideshows = 0, slides = 0, dropped = 0, pictures = 0, empty = 0;
   digital.data.content = (digital.data.content || []).filter(comp => {
     if (comp.identifier === PICTURE_HOLD) {
-      const id = idFor(comp.src);
-      if (!id) { dropped++; return false; }
+      const frame = comp.src === PICTURE_EMPTY;
+      const id = frame ? null : idFor(comp.src);
+      // With no pictures at all (a download, or "add images" off) there are
+      // no frames; a picture that failed to arrive leaves its frame empty.
+      if (!id && !made.length) { dropped++; return false; }
       delete comp.src;
       Object.assign(comp, { identifier: 'image', styles: { fitting: '_fit-frame-height-to-content' },
-        content: { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } }, data: { 'an-image-role': 'photo' } });
-      pictures++;
+        content: id ? { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } } : {}, data: { 'an-image-role': 'photo' } });
+      if (id) pictures++; else empty++;
       return true;
     }
     if (comp.identifier !== 'slideshow' || !comp.containers || !Array.isArray(comp.containers.slideshow)) return true;
@@ -1461,7 +1466,7 @@ function placeGalleries(digital, created) {
     slideshows++;
     return true;
   });
-  return { digital, slideshows, slides, pictures, dropped };
+  return { digital, slideshows, slides, pictures, empty, dropped };
 }
 
 // What the crosshead layout would put in slideshows, for the form's note.

@@ -1322,6 +1322,8 @@ function pictureComp(src) {
   return { identifier: PICTURE_HOLD, id: genId(), src };
 }
 const PICTURE_HOLD = 'wd-picture';
+// { picture: PICTURE_EMPTY } is a frame left empty for the editor to fill
+const PICTURE_EMPTY = 'empty';
 
 // created: [{ id, url }] for the pictures now in the Dossier (or none). A
 // slide whose picture was not created is left out; a slideshow with no slides
@@ -1333,15 +1335,18 @@ function placeGalleries(digital, created) {
     const hit = made.find(c => c.url === src) || made.find(c => imageFileName(c.url) === imageFileName(src));
     return hit ? String(hit.id) : null;
   };
-  let slideshows = 0, slides = 0, dropped = 0, pictures = 0;
+  let slideshows = 0, slides = 0, dropped = 0, pictures = 0, empty = 0;
   digital.data.content = (digital.data.content || []).filter(comp => {
     if (comp.identifier === PICTURE_HOLD) {
-      const id = idFor(comp.src);
-      if (!id) { dropped++; return false; }
+      const frame = comp.src === PICTURE_EMPTY;
+      const id = frame ? null : idFor(comp.src);
+      // With no pictures at all (a download, or "add images" off) there are
+      // no frames; a picture that failed to arrive leaves its frame empty.
+      if (!id && !made.length) { dropped++; return false; }
       delete comp.src;
       Object.assign(comp, { identifier: 'image', styles: { fitting: '_fit-frame-height-to-content' },
-        content: { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } }, data: { 'an-image-role': 'photo' } });
-      pictures++;
+        content: id ? { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } } : {}, data: { 'an-image-role': 'photo' } });
+      if (id) pictures++; else empty++;
       return true;
     }
     if (comp.identifier !== 'slideshow' || !comp.containers || !Array.isArray(comp.containers.slideshow)) return true;
@@ -1358,7 +1363,7 @@ function placeGalleries(digital, created) {
     slideshows++;
     return true;
   });
-  return { digital, slideshows, slides, pictures, dropped };
+  return { digital, slideshows, slides, pictures, empty, dropped };
 }
 
 // What the crosshead layout would put in slideshows, for the form's note.
@@ -2398,25 +2403,31 @@ function pullQuoteNotes(meta, prefix) {
     }).filter(Boolean);
   }
 
-  // Crosshead articles (first drives, Q&As). Measured on published Top Gear
-  // articles: a picture sits at the end of the section it illustrates, not
-  // every section has one, and the surplus is shown as a gallery.
+  // Crosshead articles (first drives, Q&As): a picture frame above every
+  // crosshead from the second one down, the way the list layouts have one
+  // above every item (Benn, 2026-10-12). The first crosshead has none: it sits
+  // just under the opener.
   //   - the first two pictures in upload order are the opener and the closing
   //     picture, and are not used again;
-  //   - each section takes the one picture the AI matched to it most surely
-  //     (at or above SECTION_CONFIDENCE);
-  //   - everything else goes in one gallery at the end of the last section
-  //     (two or more pictures; a single leftover stays in the Dossier).
+  //   - a frame is filled with the picture the AI matched most surely to the
+  //     section below it (at or above SECTION_CONFIDENCE), and gets a comment
+  //     with the AI's reason;
+  //   - otherwise the frame is left empty for the editor, with the usual
+  //     "no picture in this frame" comment. Empty frames must be deleted
+  //     before publishing;
+  //   - no gallery is built: where one belongs is the editor's call. Pictures
+  //     not placed stay in the Dossier.
   // Numbers on these file names are export numbers and are ignored.
   // 0.5, not the 0.7 used for chat links: the AI is told "a guess is below
   // 0.5", and on the first real article (12 Oct) its sound matches — exhausts
   // to the section on the engine note, cornering to handling — came in at
-  // 0.55–0.6. At 0.7 only one picture of 13 was placed.
+  // 0.5–0.6.
   var SECTION_CONFIDENCE = 0.5;
   function sectionPictures(entries, bundle) {
-    var sel = bundle && bundle.selection;
+    var sel = (bundle && bundle.selection) || {};
     var images = orderedBundleImages(bundle || {});
-    if (!sel || !(sel.placements || []).length || images.length < 3 || !entries.length) return null;
+    var heads = entries.filter(function (e) { return e.crosshead; });
+    if (heads.length < 2) return null;
     var norm = function (t) { return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
     var urlOf = function (name) {
       var im = images.filter(function (x) { return x.name === name; })[0];
@@ -2427,24 +2438,39 @@ function pullQuoteNotes(meta, prefix) {
 
     var out = entries.map(function (e) { return Object.assign({}, e, { bodyParts: (e.bodyParts || []).slice() }); });
     var notes = [];
-    out.forEach(function (e) {
-      if (!e.crosshead) return;
-      var best = sel.placements.filter(function (p) {
-        return !taken[p.file] && p.section && norm(p.section) === norm(e.crosshead) && p.confidence >= SECTION_CONFIDENCE && urlOf(p.file);
-      }).sort(function (a, b) { return b.confidence - a.confidence; })[0];
-      if (!best) return;
-      taken[best.file] = true;
-      e.bodyParts.push({ picture: urlOf(best.file) });
-      notes.push({ anchor: { crosshead: e.crosshead }, text: AI_PREFIX + 'Picture “' + best.file + '” placed at the end of this section' +
-        (best.reason ? ': ' + best.reason : '') + '. Swap or remove it if it does not fit.' });
+    var filled = 0, frames = 0;
+    // Best matches first, so a picture goes to the section it fits most surely
+    var claims = (sel.placements || []).filter(function (p) {
+      return p.section && p.confidence >= SECTION_CONFIDENCE && urlOf(p.file);
+    }).sort(function (a, b) { return b.confidence - a.confidence; });
+    var chosen = {};
+    claims.forEach(function (p) {
+      var k = norm(p.section);
+      if (taken[p.file] || chosen[k]) return;
+      chosen[k] = p; taken[p.file] = true;
     });
+    out.forEach(function (e, i) {
+      if (!e.crosshead || i === 0 || entries[i] === heads[0]) return;
+      // The frame above crosshead i is the last thing in the section before it
+      var best = chosen[norm(e.crosshead)];
+      out[i - 1].bodyParts.push({ picture: best ? urlOf(best.file) : PICTURE_EMPTY });
+      frames++;
+      if (!best) return;
+      filled++;
+      notes.push({ anchor: { crosshead: e.crosshead }, text: AI_PREFIX + 'Picture “' + best.file + '” placed above this crosshead' +
+        (best.reason ? ': ' + best.reason : '') + '. Swap it if another fits better.' });
+    });
+    // A picture matched to the first section has no frame; un-take it
+    var first = chosen[norm(heads[0].crosshead)];
+    if (first) delete taken[first.file];
 
-    var rest = images.filter(function (im) { return !taken[im.name]; });
-    if (rest.length >= 2) {
-      out[out.length - 1].bodyParts.push({ gallery: rest.map(function (im) { return bundleFileUrl(bundle, im.file); }) });
-      notes.push({ anchor: {}, text: TOOL_PREFIX + 'The other ' + rest.length + ' pictures are in a gallery at the end of the last section. Move it, or drag a picture out of it, as needed.' });
+    var left = images.filter(function (im) { return !taken[im.name]; }).length;
+    if (frames) {
+      notes.push({ anchor: {}, text: TOOL_PREFIX + filled + ' of the ' + frames + ' picture frames above the crossheads are filled. ' +
+        (frames - filled ? 'Fill or delete the empty ones before publishing. ' : '') +
+        (left ? left + ' more picture' + (left === 1 ? ' is' : 's are') + ' in the Dossier, for the empty frames or a gallery.' : '') });
     }
-    return { entries: out, notes: notes, placed: notes.length };
+    return { entries: out, notes: notes, frames: frames, filled: filled };
   }
 
   // Image object ids per frame, in frame order (null = leave empty).
@@ -2582,7 +2608,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '711bd54f';
+  var PLUGIN_BUILD = '1a58a443';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);

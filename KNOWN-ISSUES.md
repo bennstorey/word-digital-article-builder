@@ -393,3 +393,13 @@ pictures; the closing picture stays with the score.
 **File-name numbers (Benn, 2026-10-12):** on listicles the numbers are the
 entry order and decide placement (§11). On first drives and similar they are
 export numbers and mean nothing; the AI is told to ignore them.
+
+**Changed 2026-10-12 (Benn, after the first real article):** the first build
+put one matched picture, the gallery and the closing picture in a run at the
+bottom. Benn's layout instead: a picture frame above every crosshead from the
+second one down (the first sits just under the opener). A frame is filled when
+the AI's match for the section below it is 0.5 or better — its sound matches
+came in at 0.5–0.6, so the 0.7 used for chat links placed almost nothing — and
+is otherwise left empty with the usual comment. Empty frames must be deleted
+before publishing. No gallery is built automatically; unplaced pictures stay in
+the Dossier and the editor adds a gallery where it belongs.
