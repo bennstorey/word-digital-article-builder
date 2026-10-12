@@ -634,85 +634,74 @@
     'doc-missing': 'Word doc missing from the export',
   };
 
+  // The article summary under the picker: one status line, a few one-line
+  // bullets for what the editor must know, and the AI's notes folded away.
+  // (Benn, 2026-10-12: "too much text, needs to be collapsed bullet points".)
   function bundleInfoHtml(b) {
-    var out = [];
-    out.push('<strong>' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</strong>' +
-      (b.images && b.images.length ? ' — ' + b.images.length + ' image' + (b.images.length === 1 ? '' : 's') : '') +
-      (b.source === 'upload'
-        ? ' · from the document you uploaded, ' + esc(b.ts.slice(11, 16))
-        : ' · sent by ' + esc(b.sender) + ' ' + esc(b.ts.replace('T', ' '))));
-    if (b.statusNote) out.push(esc(b.statusNote));
-    if (b.imported) {
-      out.push('Already imported into Studio on ' + esc(String(b.imported.at || '').slice(0, 10)) +
-        '. Loading it re-imports: the pictures are fetched from Dropbox again (so any added since are included) and the AI runs again.');
-    } else if (b.builtByHand) {
-      var h = b.builtByHand;
-      out.push('Already drafted — apple.news link posted in the chat on ' + esc(h.ts.replace('T', ' ').slice(0, 16)) + ' — “' + esc(h.text.slice(0, 80)) + '” ' +
-        '<a href="' + esc(h.href) + '" target="_blank" rel="noopener">open draft</a>' +
-        (h.rule === 'order' ? ' (matched by timing, not by name — check it’s this article)' : '') + '.');
-      if (b.pictureStatus === 'built-by-hand') out.push('Loading it imports it anyway: the pictures are fetched from Dropbox and the AI runs then.');
+    var when = function (ts) { return esc(String(ts || '').replace('T', ' ').slice(5, 16)); };
+    var n = (b.images || []).length;
+    var head = '<strong>' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</strong>' +
+      (n ? ' · ' + n + ' picture' + (n === 1 ? '' : 's') : '') +
+      (b.source === 'upload' ? ' · your upload' : ' · ' + esc(b.sender) + ', ' + when(b.ts));
+    var link = function (href, text) { return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + text + '</a>'; };
+
+    var must = [];
+    if (b.statusNote) must.push(esc(brief(b.statusNote, 110)));
+    if (b.imported) must.push('In Studio since ' + esc(String(b.imported.at || '').slice(0, 10)) + '. Re-import fetches the pictures and runs the AI again.');
+    else if (b.builtByHand) {
+      must.push('Drafted by hand, ' + when(b.builtByHand.ts) + ' · ' + link(b.builtByHand.href, 'open draft') +
+        (b.builtByHand.rule === 'order' ? ' · matched by timing, check it' : ''));
     }
     (b.pictures || []).forEach(function (p) {
-      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') {
-        out.push('Fetch by hand: <a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.type) + ' link</a>' +
-          (p.reason ? ' (' + esc(p.reason) + ')' : ''));
-      } else if (p.from === 'chat') {
-        out.push('Pictures from the chat: ' + esc(p.reason || ''));
-      }
+      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') must.push('Fetch by hand: ' + link(p.href, esc(p.type) + ' link'));
     });
     (b.suggestedPictures || []).forEach(function (p) {
-      out.push('Possibly for this article (AI, ' + Math.round(p.confidence * 100) + '%): <a href="' + esc(p.href) + '" target="_blank" rel="noopener">link</a> — ' + esc(p.reason));
+      must.push('Possible pictures (' + Math.round(p.confidence * 100) + '%): ' + link(p.href, 'link'));
     });
+    (b.errors || []).forEach(function (e) { must.push('⚠ ' + esc(e.step) + ': ' + esc(brief(e.message, 90))); });
+
+    var ai = [];
     if (b.selection) {
-      out.push(b.selection.hero
-        ? 'AI picked the opener: ' + esc(b.selection.hero) + (b.selection.heroReason ? ' — ' + esc(b.selection.heroReason) : '')
-        : 'AI found no picture that works as the opener' + (b.selection.heroReason ? ': ' + esc(b.selection.heroReason) : '.'));
+      ai.push(b.selection.hero
+        ? 'Opener: ' + esc(b.selection.hero) + (b.selection.heroReason ? ' — ' + esc(brief(b.selection.heroReason, 80)) : '')
+        : 'No picture works as the opener');
+      var matched = (b.selection.placements || []).filter(function (x) { return x.section && x.confidence >= SECTION_CONFIDENCE; }).length;
+      if (matched) ai.push(matched + ' picture' + (matched === 1 ? '' : 's') + ' matched to sections');
     }
     var ins = b.instructions;
     if (ins) {
-      (ins.missing || []).forEach(function (m) { out.push('Missing pictures: ' + esc(m.entry) + ' — ' + esc(m.note)); });
-      (ins.embeds || []).forEach(function (e) { out.push('Embed: ' + esc(e.url) + ' (' + esc(e.where) + ')'); });
-      if (ins.embargo) out.push('Embargo: ' + esc(ins.embargo));
-      (ins.otherNotes || []).forEach(function (n) { out.push(esc(n)); });
+      (ins.missing || []).forEach(function (m) { ai.push('Missing picture ' + esc(m.entry) + ': ' + esc(brief(m.note, 60))); });
+      (ins.embeds || []).forEach(function (e) { ai.push('Embed: ' + esc(e.url)); });
+      if (ins.embargo) ai.push('Embargo: ' + esc(brief(ins.embargo, 80)));
+      (ins.otherNotes || []).forEach(function (t) { if (!ALREADY_HANDLED.test(t)) ai.push(esc(brief(t, 110))); });
     }
-    (b.errors || []).forEach(function (e) { out.push('⚠ ' + esc(e.step) + ': ' + esc(e.message)); });
-    return out.map(function (l) { return '<div>' + l + '</div>'; }).join('');
+    var q = ((b.review && b.review.queries) || []).length;
+    if (q) ai.push(q + ' copy quer' + (q === 1 ? 'y' : 'ies') + ' to check');
+    var list = function (items) { return '<ul>' + items.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul>'; };
+    return '<div>' + head + '</div>' + (must.length ? list(must) : '') +
+      (ai.length ? '<details><summary>AI notes (' + ai.length + ')</summary>' + list(ai) + '</details>' : '');
   }
-
-  // What the receiver is doing with the latest export, in plain words — so an
-  // empty list is never mistaken for "it failed" while an export is still being
-  // prepared (pictures + AI take about 1–1½ minutes per new article).
-  function clockTime(iso) {
-    var d = new Date(iso);
-    if (isNaN(d)) return '';
-    var t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    var today = new Date().toDateString() === d.toDateString();
-    return today ? t : d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + t;
-  }
-
   function exportStatusText(ex, hasArticles) {
     var pr = ex && ex.processing;
     if (pr) {
-      var head = 'An export arrived at ' + clockTime(pr.startedAt) + ' and is being processed. ';
-      if (pr.stage !== 'preparing' || pr.toPrepare == null) return { busy: true, text: head + 'Reading the chat…' };
-      if (!pr.toPrepare) return { busy: true, text: head + 'Nothing new in it so far — finishing up.' };
+      var head = 'Export from ' + clockTime(pr.startedAt) + ': ';
+      if (pr.stage !== 'preparing' || pr.toPrepare == null) return { busy: true, text: head + 'reading the chat…' };
+      if (!pr.toPrepare) return { busy: true, text: head + 'nothing new so far, finishing up.' };
       var mins = Math.max(1, Math.round((pr.expectedSeconds || 100) / 60));
-      return { busy: true, text: head + 'Preparing ' + (pr.article ? '“' + pr.article + '”' : 'new articles') +
+      return { busy: true, text: head + 'preparing ' + (pr.article ? '“' + pr.article + '”' : 'new articles') +
         (pr.toPrepare > 1 ? ' (' + (pr.preparing || 1) + ' of ' + pr.toPrepare + ')' : '') +
-        ': fetching pictures and running the AI checks. About ' + mins + ' minute' + (mins === 1 ? '' : 's') +
-        ' in total — this list updates by itself.' };
+        ', about ' + mins + ' min. Updates by itself.' };
     }
     var last = ex && ex.last;
     if (!last) {
       return { text: hasArticles
-        ? 'Watching for exports. A new one shows up here by itself, usually 2–3 minutes after it is saved to Dropbox.'
-        : 'No export received yet. Export the chat from WhatsApp to the Dropbox folder “TG WhatsApp exports”.' };
+        ? 'Watching for exports. New ones appear here, usually within 2–3 minutes.'
+        : 'No export yet. Export the chat to the Dropbox folder “TG WhatsApp exports”.' };
     }
-    if (last.error) return { failed: true, text: 'The export that arrived at ' + clockTime(last.startedAt) + ' could not be processed (' + last.error + '). Export again; if it fails again, the receiver needs a look.' };
+    if (last.error) return { failed: true, text: 'Export from ' + clockTime(last.startedAt) + ' failed (' + brief(last.error, 80) + '). Export again.' };
     var n = (last.newArticles || []).length;
-    return { text: 'Last export: ' + clockTime(last.finishedAt) + ' — ' +
-      (n ? n + ' new article' + (n === 1 ? '' : 's') + ' (' + last.newArticles.join(', ') + ')' : 'nothing new') +
-      ', ' + (last.known || 0) + ' already known.' };
+    return { text: 'Last export ' + clockTime(last.finishedAt) + ': ' +
+      (n ? n + ' new (' + last.newArticles.join(', ') + ')' : 'nothing new') + '.' };
   }
 
   // ─── Comments in the created article ──────────────────────────────────────
@@ -970,37 +959,78 @@
   }
 
   // ─── Shared converter UI ───────────────────────────────────────────────────
+  // Look taken from the content reuse plug-in (claude-content-re-use-assets-
+  // studio/plugin/src/15-styles.js): slate + amber + teal, numbered stepper,
+  // staged progress list with a spinning mark. Class names are the contract
+  // with the markup below; restyle freely.
   var CSS = [
+    '.wdab{--w-page:#f8fafc;--w-surface:#fff;--w-line:#e2e8f0;--w-field:#d1d5db;--w-ink:#0f172a;--w-ink2:#374151;--w-ink3:#4b5563;--w-ink4:#94a3b8;' +
+      '--w-accent:#f59e0b;--w-accent-soft:#fff8e8;--w-mute:#f1f5f9;--w-teal:#0f766e;--w-ok:#0d9488;--w-bad:#8c1d18;--w-bad-soft:#fdecea;--w-warn:#7a5300;--w-warn-soft:#fff6e5;' +
+      'max-width:640px;margin:0 auto;padding:0 2px 8px;font:14px/1.45 Geist,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--w-ink)}',
     '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
-    '.wdab{max-width:640px;margin:0 auto;padding:24px 16px 48px;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1e293b}',
-    '.wdab-modal{max-height:min(600px,calc(100vh - 280px));overflow-y:auto;-webkit-overflow-scrolling:touch}',
-    '.wdab-modal .wdab{padding:4px 2px 8px;max-width:none}',
-    '.wdab h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin:0 0 14px}',
-    '.wdab .wdab-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}',
-    '.wdab-modal .wdab .wdab-card{border:0;box-shadow:none;padding:8px 0;margin-bottom:4px}',
-    '.wdab label{display:block;font-weight:500;color:#334155;margin:0 0 4px}',
-    '.wdab .wdab-wa-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:#334155}',
-    '.wdab .wdab-wa-info div+div{margin-top:4px}',
-    '.wdab .wdab-wa-status{margin-top:10px;font-size:12px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}',
-    '.wdab .wdab-wa-status.wdab-busy{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}',
-    '.wdab .wdab-wa-status.wdab-failed{background:#fef2f2;border-color:#fecaca;color:#991b1b}',
-    '.wdab button.wdab-linkbtn{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2563eb;cursor:pointer;text-decoration:underline}',
-    '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font:inherit;color:#1e293b;background:#fff}',
-    '.wdab input[type=file]{width:100%;font:inherit}',
-    '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle}',
-    '.wdab-row label input[type=checkbox]+span{font-weight:400;color:#334155}',
-    '.wdab .wdab-row{margin-bottom:14px}',
-    '.wdab button.wdab-btn{display:inline-block;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;background:#2563eb;color:#fff;width:100%}',
-    '.wdab button.wdab-btn:disabled{opacity:.4;cursor:not-allowed}',
-    '.wdab .wdab-feed input{border-color:#fcd34d;background:#fffbeb}',
-    '.wdab .wdab-feed-note{display:inline-block;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:400}',
-    '.wdab .wdab-error{color:#dc2626;margin-top:8px;display:none;white-space:pre-wrap}',
-    '.wdab .wdab-warn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:14px;display:none}',
-    '.wdab .wdab-warn ul{margin:6px 0 0;padding-left:18px;color:#92400e}',
-    '.wdab .wdab-entries{max-height:220px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;color:#334155}',
-    '.wdab .wdab-entries .n{color:#94a3b8;margin-right:6px}',
+    '.wdab-modal{max-height:min(620px,calc(100vh - 280px));overflow-y:auto;-webkit-overflow-scrolling:touch}',
+    '.wdab button,.wdab input,.wdab select{font-family:inherit}',
     '.wdab .wdab-hidden{display:none}',
-    '.wdab .wdab-note{color:#64748b;font-size:12px;margin-top:8px}'
+    // Stepper
+    '.wdab-steps{display:flex;align-items:center;gap:14px;list-style:none;margin:0 0 14px;padding:10px 0;border-bottom:1px solid var(--w-line);position:sticky;top:0;background:var(--w-surface);z-index:2}',
+    '.wdab-step{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--w-ink4);white-space:nowrap}',
+    '.wdab-step i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--w-mute);border:1px solid var(--w-line);color:var(--w-ink4);font-size:11px;font-weight:600}',
+    '.wdab-step.is-on{color:var(--w-ink);font-weight:600}',
+    '.wdab-step.is-on i,.wdab-step.is-done i{background:var(--w-teal);border-color:var(--w-teal);color:#fff}',
+    '.wdab-step.is-done{color:var(--w-ink3)}',
+    '.wdab-step+.wdab-step::before{content:"";width:18px;height:1px;background:var(--w-line);margin-right:8px}',
+    // Fields
+    '.wdab .wdab-row{margin-bottom:12px}',
+    '.wdab label{display:block;font-size:13px;font-weight:500;color:var(--w-ink3);margin:0 0 4px}',
+    '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid var(--w-field);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--w-ink);background:var(--w-surface)}',
+    '.wdab input[type=file]{width:100%;font-size:13px}',
+    '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle;accent-color:var(--w-teal)}',
+    '.wdab-row label input[type=checkbox]+span{font-weight:400;color:var(--w-ink2)}',
+    '.wdab .wdab-feed input{border-color:var(--w-accent);background:var(--w-accent-soft)}',
+    '.wdab .wdab-feed-note{display:inline-block;font-size:11px;color:var(--w-warn);background:var(--w-warn-soft);border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:500}',
+    // Buttons
+    // Pinned to the bottom of the dialog, so the next action never scrolls away
+    '.wdab-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:14px;padding:12px 0 4px;border-top:1px solid var(--w-line);position:sticky;bottom:0;background:var(--w-surface);z-index:2}',
+    '.wdab button.wdab-btn{border:none;border-radius:6px;padding:10px 18px;background:var(--w-accent);color:var(--w-ink);font-size:14px;font-weight:700;cursor:pointer}',
+    '.wdab button.wdab-btn:disabled{opacity:.45;cursor:default}',
+    '.wdab button.wdab-back{padding:10px 16px;border:1px solid var(--w-field);border-radius:6px;background:var(--w-surface);color:var(--w-ink);font-size:14px;font-weight:600;cursor:pointer;margin-right:auto}',
+    '.wdab button.wdab-linkbtn{border:0;background:none;padding:0;font-size:12px;font-weight:600;color:var(--w-ink3);cursor:pointer;text-decoration:underline}',
+    // Boxes, notes, alerts
+    '.wdab .wdab-box{background:var(--w-surface);border:1px solid var(--w-line);border-radius:8px;padding:12px 14px;margin-top:10px}',
+    '.wdab .wdab-wa-info{background:var(--w-page);border:1px solid var(--w-line);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--w-ink2)}',
+    '.wdab .wdab-wa-info ul{margin:4px 0 0;padding-left:16px}',
+    '.wdab .wdab-wa-info li{margin:2px 0}',
+    '.wdab .wdab-wa-info details{margin-top:6px}',
+    '.wdab .wdab-wa-info summary,.wdab details.wdab-more>summary{cursor:pointer;font-weight:600;color:var(--w-ink3);font-size:12px}',
+    '.wdab .wdab-wa-status{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:12px;color:var(--w-ink3);background:var(--w-mute);border-radius:6px;padding:7px 10px}',
+    '.wdab .wdab-wa-status>span{flex:1 1 auto;min-width:0}',
+    '.wdab .wdab-wa-status.wdab-busy{background:var(--w-accent-soft);color:var(--w-warn)}',
+    '.wdab .wdab-wa-status.wdab-failed{background:var(--w-bad-soft);color:var(--w-bad)}',
+    '.wdab .wdab-error{display:none;white-space:pre-wrap;margin-top:10px;padding:10px 12px;border-radius:6px;background:var(--w-bad-soft);color:var(--w-bad);font-size:13px}',
+    '.wdab .wdab-warn{display:none;margin-bottom:12px;padding:10px 12px;border-radius:6px;background:var(--w-warn-soft);border:1px solid #f0dcb4;color:var(--w-warn);font-size:13px}',
+    '.wdab .wdab-warn ul{margin:6px 0 0;padding-left:18px}',
+    '.wdab .wdab-note{color:var(--w-ink3);font-size:12px;margin:6px 0 0}',
+    '.wdab .wdab-chip{display:inline-block;background:var(--w-mute);border-radius:4px;padding:3px 8px;font-size:12px;font-weight:600;color:var(--w-ink3);margin-bottom:12px}',
+    '.wdab .wdab-entries{max-height:200px;overflow-y:auto;border:1px solid var(--w-line);border-radius:6px;padding:8px 12px;margin-top:6px;color:var(--w-ink2);font-size:13px}',
+    '.wdab .wdab-entries .n{color:var(--w-ink4);margin-right:6px}',
+    '.wdab h3.wdab-h{margin:4px 0 10px;font-size:15px;font-weight:600}',
+    // Staged progress
+    '.wdab-stages{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}',
+    '.wdab-stage{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 0;font-size:13px;color:var(--w-ink4)}',
+    '.wdab-stage.is-active,.wdab-stage.is-done{color:var(--w-ink)}',
+    '.wdab-stage.is-active{font-weight:600}',
+    '.wdab-stage.is-failed,.wdab-stage.is-failed .wdab-stage-d{color:var(--w-bad)}',
+    '.wdab-stage-d{grid-column:2 / 4;font-size:12px;font-weight:400;color:var(--w-ink3);margin-top:-2px;overflow-wrap:anywhere}',
+    '.wdab-stage-t{font-size:12px;font-weight:400;color:var(--w-ink4);font-variant-numeric:tabular-nums}',
+    '.wdab-mark{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;box-sizing:border-box}',
+    '.wdab-mark.pending{border:1.5px solid var(--w-field)}',
+    '.wdab-mark.done{background:var(--w-ok);color:#fff}',
+    '.wdab-mark.failed{background:var(--w-bad);color:#fff}',
+    '.wdab-mark.active{border:2px solid var(--w-mute);border-top-color:var(--w-accent);animation:wdab-spin .8s linear infinite}',
+    '@keyframes wdab-spin{to{transform:rotate(360deg)}}',
+    '.wdab-sbar{grid-column:2 / 4;height:4px;border-radius:2px;background:var(--w-mute);overflow:hidden}',
+    '.wdab-sbar>span{display:block;height:100%;background:var(--w-accent);transition:width .3s ease}',
+    '@media (prefers-reduced-motion:reduce){.wdab-mark.active{animation-duration:2.4s}}'
   ].join('\n');
 
   var cssInjected = false;
@@ -1024,89 +1054,179 @@
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // A staged progress list: one row per step, with a mark (pending, spinning,
+  // done, failed), the time it took and an optional bar. start(id) finishes
+  // whatever was running before it, so the callers only say what begins.
+  var STAGE_MARK = { done: '✓', failed: '!' };
+  function stageList(el, defs) {
+    var st = {};
+    defs.forEach(function (d) { st[d.id] = { state: 'pending', detail: d.detail || '', started: 0, took: null, bar: null }; });
+    var clock = function (ms) { var x = Math.round(ms / 1000); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+    function render() {
+      if (!el) return;
+      el.innerHTML = defs.map(function (d) {
+        var x = st[d.id];
+        var t = x.state === 'active' ? clock(Date.now() - x.started) : x.took != null ? clock(x.took) : '';
+        return '<li class="wdab-stage is-' + x.state + '" data-id="' + d.id + '">' +
+          '<span class="wdab-mark ' + x.state + '" aria-hidden="true">' + (STAGE_MARK[x.state] || '') + '</span>' +
+          '<span>' + esc(d.label) + '</span><span class="wdab-stage-t">' + t + '</span>' +
+          (x.bar != null && x.state === 'active' ? '<div class="wdab-sbar"><span style="width:' + x.bar + '%"></span></div>' : '') +
+          (x.detail ? '<div class="wdab-stage-d">' + esc(x.detail) + '</div>' : '') + '</li>';
+      }).join('');
+    }
+    // The clock ticks without re-rendering, so the spinner never restarts
+    var tick = setInterval(function () {
+      if (!el || !el.isConnected) return clearInterval(tick);
+      defs.forEach(function (d) {
+        if (st[d.id].state !== 'active') return;
+        var t = el.querySelector('[data-id="' + d.id + '"] .wdab-stage-t');
+        if (t) t.textContent = clock(Date.now() - st[d.id].started);
+      });
+    }, 1000);
+    var settle = function (state, detail) {
+      defs.forEach(function (d) {
+        var x = st[d.id];
+        if (x.state !== 'active') return;
+        x.state = state; x.took = Date.now() - x.started; x.bar = null;
+        if (detail != null) x.detail = detail;
+      });
+    };
+    var api = {
+      start: function (id, detail) {
+        if (!st[id]) return api;
+        settle('done');
+        st[id].state = 'active'; st[id].started = Date.now();
+        if (detail != null) st[id].detail = detail;
+        render(); return api;
+      },
+      // Bar and detail change in place — again so the spinner keeps turning
+      progress: function (id, done, total, detail) {
+        var x = st[id]; if (!x) return api;
+        var first = x.bar == null;
+        x.bar = total ? Math.round(100 * done / total) : 0;
+        if (detail != null) x.detail = detail;
+        var row = el && el.querySelector('[data-id="' + id + '"]');
+        var bar = row && row.querySelector('.wdab-sbar > span'), det = row && row.querySelector('.wdab-stage-d');
+        if (first || !bar || (detail != null && !det)) render();
+        else { bar.style.width = x.bar + '%'; if (det && detail != null) det.textContent = detail; }
+        return api;
+      },
+      done: function (id, detail) {
+        var x = st[id]; if (!x) return api;
+        if (x.state !== 'active') { x.started = Date.now(); }
+        x.state = 'done'; x.took = x.started ? Date.now() - x.started : null; x.bar = null;
+        if (detail != null) x.detail = detail;
+        render(); return api;
+      },
+      // One step went wrong but the run carries on (pictures failed, article still made)
+      failed: function (id, detail) {
+        var x = st[id]; if (!x) return api;
+        x.state = 'failed'; x.took = x.started ? Date.now() - x.started : null; x.bar = null;
+        if (detail != null) x.detail = detail;
+        render(); return api;
+      },
+      finish: function () { settle('done'); render(); clearInterval(tick); return api; },
+      fail: function (detail) { settle('failed', detail); render(); clearInterval(tick); return api; },
+    };
+    render();
+    return api;
+  }
+
   function formHtml(p, actionLabel) {
+    var step = function (n, label) {
+      return '<li class="wdab-step' + (n === 1 ? ' is-on' : '') + '" data-step="' + n + '"><i>' + n + '</i><span>' + label + '</span></li>';
+    };
     return '<div class="wdab">' +
-      '  <div class="wdab-card">' +
-      '    <h2>1 — Set up</h2>' +
-      '    <div class="wdab-warn" id="' + p + '-brand-warn"></div>' +
-      '    <div class="wdab-row">' +
-      '      <label for="' + p + '-type">Article type</label>' +
-      '      <select id="' + p + '-type">' +
-      '        <option value="auto" selected>Auto-detect from the document</option>' +
-      '        <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
-      '        <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
-      '        <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
-      '        <option value="snippet">Type 4 — Snippet list (unnumbered items)</option>' +
-      '      </select>' +
-      '      <p class="wdab-note wdab-hidden" id="' + p + '-type-note"></p>' +
-      '    </div>' +
-      '    <div class="wdab-row">' +
-      '      <label for="' + p + '-source">Source</label>' +
-      '      <select id="' + p + '-source">' +
-      '        <option value="docx">Word document (.docx)</option>' +
-      '        <option value="url">TopGear article URL</option>' +
-      '        <option value="whatsapp">From WhatsApp</option>' +
-      '      </select>' +
-      '    </div>' +
-      '    <div class="wdab-row wdab-hidden" id="' + p + '-wa-row">' +
-      '      <label for="' + p + '-wa-key">Receiver key</label>' +
-      '      <input type="password" id="' + p + '-wa-key" autocomplete="off">' +
-      '      <div class="wdab-wa-status" id="' + p + '-wa-status" role="status" aria-live="polite">' +
-      '        <span id="' + p + '-wa-status-text">Checking for exports…</span> ' +
-      '        <button type="button" class="wdab-linkbtn" id="' + p + '-wa-refresh">Refresh</button>' +
-      '      </div>' +
-      '      <label for="' + p + '-wa-bundle" style="margin-top:10px">Article from WhatsApp</label>' +
-      '      <select id="' + p + '-wa-bundle"><option value="">—</option></select>' +
-      '      <div class="wdab-wa-info wdab-hidden" id="' + p + '-wa-info"></div>' +
-      '    </div>' +
-      '    <div class="wdab-row" id="' + p + '-docx-row">' +
-      '      <label for="' + p + '-file">Word document (.docx)</label>' +
-      '      <input type="file" id="' + p + '-file" accept=".docx">' +
-      '      <label style="margin-top:10px"><input type="checkbox" id="' + p + '-docx-fetch"> <span>Fetch the pictures linked in the document and run the AI checks (about 1–2 minutes)</span></label>' +
-      '      <div id="' + p + '-docx-key-row" class="wdab-hidden">' +
-      '        <label for="' + p + '-docx-key" style="margin-top:6px">Receiver key</label>' +
-      '        <input type="password" id="' + p + '-docx-key" autocomplete="off">' +
-      '      </div>' +
-      '      <div class="wdab-wa-info wdab-hidden" id="' + p + '-docx-info"></div>' +
-      '    </div>' +
-      '    <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
-      '      <label for="' + p + '-url">TopGear article URL</label>' +
-      '      <input type="url" id="' + p + '-url" placeholder="https://www.topgear.com/…">' +
-      '    </div>' +
-      '    <button class="wdab-btn" id="' + p + '-parse" disabled>Parse Document</button>' +
-      '    <p class="wdab-error" id="' + p + '-parse-error"></p>' +
+      '<ol class="wdab-steps" id="' + p + '-steps">' + step(1, 'Source') + step(2, 'Check') + step(3, 'Create') + '</ol>' +
+      '<div class="wdab-warn" id="' + p + '-brand-warn"></div>' +
+
+      // ── Stage 1: where the article comes from ──
+      '<div id="' + p + '-stage1">' +
+      '  <div class="wdab-row">' +
+      '    <label for="' + p + '-source">Source</label>' +
+      '    <select id="' + p + '-source">' +
+      '      <option value="docx">Word document (.docx)</option>' +
+      '      <option value="url">TopGear article URL</option>' +
+      '      <option value="whatsapp">From WhatsApp</option>' +
+      '    </select>' +
       '  </div>' +
-      '  <div id="' + p + '-preview" class="wdab-hidden">' +
-      '    <div class="wdab-card">' +
-      '      <h2>2 — Detected metadata (editable)</h2>' +
-      '      <div class="wdab-row wdab-feed wdab-hidden" id="' + p + '-feed-row">' +
-      '        <label>Feed Headline<span class="wdab-feed-note" id="' + p + '-feed-note">Saved to C_HEADLINE</span></label>' +
-      '        <input type="text" id="' + p + '-feed">' +
-      '      </div>' +
-      '      <div class="wdab-row"><label>Article title</label><input type="text" id="' + p + '-title"></div>' +
-      '      <div class="wdab-row"><label>Subtitle</label><input type="text" id="' + p + '-subtitle"></div>' +
-      '      <div class="wdab-row"><label>Author name</label><input type="text" id="' + p + '-author"></div>' +
-      '      <div class="wdab-row wdab-hidden" id="' + p + '-images-row">' +
-      '        <label><input type="checkbox" id="' + p + '-images-add" checked> <span id="' + p + '-images-label"></span></label>' +
-      '        <p class="wdab-note" id="' + p + '-images-progress"></p>' +
-      '      </div>' +
-      '      <div class="wdab-row">' +
-      '        <label><input type="checkbox" id="' + p + '-comments-add" checked> <span>Add comments to the article for missing pictures and things to check</span></label>' +
-      '        <p class="wdab-note" id="' + p + '-comments-note"></p>' +
-      '      </div>' +
-      '      <div class="wdab-warn" id="' + p + '-warn"><strong>Flagged for review — kept in the article:</strong> these look like editor instructions rather than copy. Each stays in place as plain body text; delete any that shouldn\'t ship.<ul id="' + p + '-warn-list"></ul></div>' +
+      '  <div class="wdab-row wdab-hidden" id="' + p + '-wa-row">' +
+      '    <label for="' + p + '-wa-bundle">Article</label>' +
+      '    <select id="' + p + '-wa-bundle"><option value="">—</option></select>' +
+      '    <div class="wdab-wa-status" id="' + p + '-wa-status" role="status" aria-live="polite">' +
+      '      <span id="' + p + '-wa-status-text">Checking for exports…</span>' +
+      '      <button type="button" class="wdab-linkbtn" id="' + p + '-wa-refresh">Refresh</button>' +
       '    </div>' +
-      '    <div class="wdab-card">' +
-      '      <h2>3 — Entries (<span id="' + p + '-count">0</span>)</h2>' +
-      '      <div class="wdab-entries" id="' + p + '-entries"></div>' +
+      '    <div class="wdab-wa-info wdab-hidden" id="' + p + '-wa-info"></div>' +
+      '    <details class="wdab-more" style="margin-top:8px" id="' + p + '-wa-key-box"><summary>Receiver key</summary>' +
+      '      <input type="password" id="' + p + '-wa-key" autocomplete="off" style="margin-top:6px">' +
+      '    </details>' +
+      '  </div>' +
+      '  <div class="wdab-row" id="' + p + '-docx-row">' +
+      '    <label for="' + p + '-file">Word document (.docx)</label>' +
+      '    <input type="file" id="' + p + '-file" accept=".docx">' +
+      '    <label style="margin-top:10px"><input type="checkbox" id="' + p + '-docx-fetch"> <span>Fetch the linked pictures and run the AI checks (1–2 minutes)</span></label>' +
+      '    <div id="' + p + '-docx-key-row" class="wdab-hidden">' +
+      '      <label for="' + p + '-docx-key" style="margin-top:6px">Receiver key</label>' +
+      '      <input type="password" id="' + p + '-docx-key" autocomplete="off">' +
       '    </div>' +
+      '    <div class="wdab-wa-info wdab-hidden" id="' + p + '-docx-info"></div>' +
+      '  </div>' +
+      '  <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
+      '    <label for="' + p + '-url">TopGear article URL</label>' +
+      '    <input type="url" id="' + p + '-url" placeholder="https://www.topgear.com/…">' +
+      '  </div>' +
+      '  <div class="wdab-row">' +
+      '    <label for="' + p + '-type">Layout</label>' +
+      '    <select id="' + p + '-type">' +
+      '      <option value="auto" selected>Auto-detect from the document</option>' +
+      '      <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
+      '      <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
+      '      <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
+      '      <option value="snippet">Type 4 — Snippet list (unnumbered items)</option>' +
+      '    </select>' +
+      '  </div>' +
+      '  <div class="wdab-box wdab-hidden" id="' + p + '-load"><ol class="wdab-stages" id="' + p + '-load-list"></ol></div>' +
+      '  <p class="wdab-error" id="' + p + '-parse-error"></p>' +
+      '  <div class="wdab-foot"><button class="wdab-btn" id="' + p + '-parse" disabled>Load</button></div>' +
+      '</div>' +
+
+      // ── Stage 2: what was found, before anything is created ──
+      '<div id="' + p + '-preview" class="wdab-hidden">' +
+      '  <span class="wdab-chip wdab-hidden" id="' + p + '-type-note"></span>' +
+      '  <div class="wdab-row wdab-feed wdab-hidden" id="' + p + '-feed-row">' +
+      '    <label>Feed headline<span class="wdab-feed-note" id="' + p + '-feed-note">Saved to C_HEADLINE</span></label>' +
+      '    <input type="text" id="' + p + '-feed">' +
+      '  </div>' +
+      '  <div class="wdab-row"><label>Article title</label><input type="text" id="' + p + '-title"></div>' +
+      '  <div class="wdab-row"><label>Subtitle</label><input type="text" id="' + p + '-subtitle"></div>' +
+      '  <div class="wdab-row"><label>Author</label><input type="text" id="' + p + '-author"></div>' +
+      '  <div class="wdab-row wdab-hidden" id="' + p + '-images-row">' +
+      '    <label><input type="checkbox" id="' + p + '-images-add" checked> <span id="' + p + '-images-label"></span></label>' +
+      '    <p class="wdab-note" id="' + p + '-images-progress"></p>' +
+      '  </div>' +
+      '  <div class="wdab-row">' +
+      '    <label><input type="checkbox" id="' + p + '-comments-add" checked> <span>Add comments for missing pictures and things to check</span></label>' +
+      '    <p class="wdab-note" id="' + p + '-comments-note"></p>' +
+      '  </div>' +
+      '  <div class="wdab-warn" id="' + p + '-warn"><strong>Editor instructions left in the copy.</strong> Kept in place; delete any that shouldn\'t ship.<ul id="' + p + '-warn-list"></ul></div>' +
+      '  <details class="wdab-more"><summary>Entries (<span id="' + p + '-count">0</span>)</summary>' +
+      '    <div class="wdab-entries" id="' + p + '-entries"></div>' +
+      '  </details>' +
       (actionLabel
-        ? '<div class="wdab-card"><h2>4 — ' + esc(actionLabel) + '</h2>' +
-          '<button class="wdab-btn" id="' + p + '-action">' + esc(actionLabel) + '</button>' +
-          '<p class="wdab-error" id="' + p + '-action-error"></p>' +
-          '<p class="wdab-note" id="' + p + '-note"></p></div>'
+        ? '<p class="wdab-note" id="' + p + '-note"></p>' +
+          '<div class="wdab-foot"><button type="button" class="wdab-back" id="' + p + '-back">Back</button>' +
+          '<button class="wdab-btn" id="' + p + '-action">' + esc(actionLabel) + '</button></div>'
         : '') +
-      '  </div>' +
+      '</div>' +
+
+      // ── Stage 3: creating, step by step ──
+      '<div id="' + p + '-stage3" class="wdab-hidden">' +
+      '  <h3 class="wdab-h" id="' + p + '-run-title">Creating the article</h3>' +
+      '  <div class="wdab-box" style="margin-top:0"><ol class="wdab-stages" id="' + p + '-run-list"></ol></div>' +
+      '  <p class="wdab-error" id="' + p + '-action-error"></p>' +
+      '  <div class="wdab-foot wdab-hidden" id="' + p + '-run-foot"><button type="button" class="wdab-back" id="' + p + '-run-back">Back</button></div>' +
+      '</div>' +
       '</div>';
   }
 
@@ -1114,6 +1234,23 @@
   function wireForm(p, onAction) {
     var $ = function (id) { return document.getElementById(p + '-' + id); };
     var state = { parsedData: null, uploadedFilename: '' };
+
+    // 1 Source → 2 Check → 3 Create. One stage is on screen at a time.
+    function setStage(n) {
+      $('stage1').classList.toggle('wdab-hidden', n !== 1);
+      $('preview').classList.toggle('wdab-hidden', n !== 2);
+      $('stage3').classList.toggle('wdab-hidden', n !== 3);
+      Array.prototype.forEach.call($('steps').children, function (li) {
+        var k = Number(li.getAttribute('data-step'));
+        li.classList.toggle('is-on', k === n);
+        li.classList.toggle('is-done', k < n);
+        li.firstChild.textContent = k < n ? '✓' : String(k);
+      });
+      var box = $('steps').closest('.wdab-modal') || $('steps').closest('.wdab-scroll');
+      if (box) box.scrollTop = 0;
+    }
+    if ($('back')) $('back').addEventListener('click', function () { setStage(1); });
+    $('run-back').addEventListener('click', function () { setStage(2); });
 
     $('file').addEventListener('change', function () {
       $('parse').disabled = !$('file').files.length;
@@ -1149,6 +1286,8 @@
 
     // ── WhatsApp source ──
     $('wa-key').value = receiverKey();
+    // Folded away once a key is stored; open when one is still needed
+    $('wa-key-box').open = !receiverKey();
     $('wa-key').addEventListener('change', function () {
       setReceiverKey($('wa-key').value.trim());
       $('docx-key').value = receiverKey();
@@ -1277,11 +1416,11 @@
       $('parse').disabled = src === 'docx' ? !$('file').files.length
         : src === 'url' ? !$('url').value.trim()
         : !(state.bundle && state.bundle.docStored);
-      $('parse').textContent = src === 'docx' ? 'Parse Document'
-        : src === 'url' ? 'Fetch & Parse Article'
-        : state.bundle && state.bundle.imported ? 'Re-import from Dropbox & Load'
-        : state.bundle && state.bundle.pictureStatus === 'built-by-hand' ? 'Import from Dropbox & Load'
-        : 'Load from WhatsApp';
+      $('parse').textContent = src === 'docx' ? 'Read document'
+        : src === 'url' ? 'Fetch article'
+        : state.bundle && state.bundle.imported ? 'Re-import'
+        : state.bundle && state.bundle.pictureStatus === 'built-by-hand' ? 'Import'
+        : 'Load';
     }
 
     $('parse').addEventListener('click', function () {
@@ -1298,20 +1437,28 @@
       // Imported before, or held back as built by hand: fetch the pictures and
       // run the AI now, through the receiver's re-import.
       var needsImport = source === 'whatsapp' && (state.bundle.imported || state.bundle.pictureStatus === 'built-by-hand');
-      $('parse').textContent = source === 'docx' ? 'Parsing…'
-        : needsImport ? 'Importing from Dropbox…' : 'Fetching…';
+      $('parse').textContent = 'Working…';
       $('parse-error').style.display = 'none';
       $('type-note').classList.add('wdab-hidden');
+
+      // What is happening, step by step, while the article loads
+      var viaReceiverNow = source === 'docx' && $('docx-fetch').checked && !!receiverKey();
+      var load = stageList($('load-list'), []
+        .concat(needsImport ? [{ id: 'import', label: 'Fetch the pictures again and run the AI checks', detail: 'Usually 1–2 minutes' }] : [])
+        .concat(viaReceiverNow ? [{ id: 'receiver', label: 'Fetch the linked pictures and run the AI checks', detail: 'Usually 1–2 minutes' }] : [])
+        .concat(source === 'url' ? [{ id: 'fetch', label: 'Fetch the article from topgear.com' }] : [{ id: 'doc', label: 'Read the Word document' }])
+        .concat([{ id: 'layout', label: 'Work out the layout' }]));
+      $('load').classList.remove('wdab-hidden');
 
       // 'auto' reads the article type from the document itself, so nobody has
       // to open the Word file first. The editor can still pick one and re-parse.
       function showDetected(d) {
         if (!d) return;
-        $('type-note').textContent = 'Detected: ' + TYPE_LABELS[d.type] + ' (' + d.reason + '). ' +
-          'Pick a type above and parse again to override.';
+        $('type-note').textContent = 'Layout: ' + TYPE_LABELS[d.type] + ' — ' + d.reason;
         $('type-note').classList.remove('wdab-hidden');
       }
       function parseDocHtml(html) {
+        load.start('layout');
         if (type === 'auto') { var d = detectArticleType(html); type = d.type; showDetected(d); }
         return type === 'crosshead' ? parseCrosshead(html) : parseNumbered(html, type);
       }
@@ -1335,7 +1482,9 @@
       if (source === 'url') {
         var articleUrl = $('url').value.trim();
         try { articleUrl = normaliseArticleUrl(articleUrl); $('url').value = articleUrl; } catch (e) { /* parseFromUrl reports it */ }
+        load.start('fetch');
         pipeline = parseFromUrl(articleUrl, type).then(function (r) {
+          load.start('layout');
           type = r.type;
           showDetected(r.detected);
           state.imageUrls = r.imageUrls || [];
@@ -1346,6 +1495,7 @@
         var bundle = state.bundle;
         // Already in Studio: fetch its pictures again (the missing ones may
         // have arrived) and re-run the AI before loading it.
+        if (needsImport) load.start('import');
         var ready = needsImport
           ? receiverFetch('/bundles/' + bundle.key + '/reimport', { method: 'POST' })
               .then(function () { return receiverFetch('/bundles/' + bundle.key); })
@@ -1353,10 +1503,10 @@
               .then(function (fresh) {
                 bundle = state.bundle = fresh;
                 $('wa-info').innerHTML = bundleInfoHtml(fresh);
-                $('parse').textContent = 'Fetching…';
               })
           : Promise.resolve();
         pipeline = ready.then(function () {
+          load.start('doc');
           return Promise.all([
             loadMammoth(),
             receiverFetch(bundleFileUrl(bundle, 'doc.docx')).then(function (r) { return r.arrayBuffer(); }),
@@ -1374,17 +1524,12 @@
         // here, without pictures, and the reason is shown — nothing is lost.
         var viaReceiver = $('docx-fetch').checked;
         if (viaReceiver && !receiverKey()) {
-          showParseError('Enter the receiver key to fetch pictures, or untick the box to convert the document without them.');
+          showParseError('Enter the receiver key to fetch pictures, or untick the box.');
+          $('load').classList.add('wdab-hidden');
           $('parse').disabled = false; refreshParse();
           return;
         }
-        var started = Date.now(), ticker = null;
-        if (viaReceiver) {
-          ticker = setInterval(function () {
-            var s = Math.round((Date.now() - started) / 1000);
-            $('parse').textContent = 'Fetching pictures and running the AI checks… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-          }, 1000);
-        }
+        load.start(viaReceiver ? 'receiver' : 'doc');
         var fresh = state.docFresh; state.docFresh = false;
         pipeline = file.arrayBuffer().then(function (buf) {
           var fromReceiver = !viaReceiver ? Promise.resolve(null)
@@ -1393,7 +1538,7 @@
               }).then(function (r) { return r.json(); })
                 .catch(function (e) { return { failed: e.message }; });
           return Promise.all([loadMammoth(), fromReceiver]).then(function (x) {
-            clearInterval(ticker);
+            load.start('doc');
             var bundle = x[1];
             state.imageUrls = [];
             state.uploadedFilename = file.name.replace(/\.docx$/i, '');
@@ -1412,8 +1557,7 @@
             }
             return x[0].convertToHtml({ arrayBuffer: buf });
           });
-        }).then(function (result) { return parseDocHtml(result.value); })
-          .catch(function (e) { clearInterval(ticker); throw e; });
+        }).then(function (result) { return parseDocHtml(result.value); });
       }
 
       pipeline
@@ -1467,10 +1611,13 @@
                 '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
           }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
 
-          $('preview').classList.remove('wdab-hidden');
+          load.finish();
+          $('load').classList.add('wdab-hidden');
+          setStage(2);
         })
         .catch(function (err) {
-          $('parse-error').textContent = (source === 'docx' ? 'Error parsing document: ' : '') + err.message;
+          load.fail(brief(err.message, 140));
+          $('parse-error').textContent = (source === 'docx' ? 'Could not read the document: ' : '') + err.message;
           $('parse-error').style.display = 'block';
         })
         .then(function () {
@@ -1485,6 +1632,7 @@
 
     var controller = {
       $: $,
+      setStage: setStage,
       getResult: function () {
         if (!state.parsedData) return null;
         var pm = state.parsedData.meta;
@@ -1559,7 +1707,7 @@
       // article (e.g. a rejected name) reuses them instead of adding a second set.
       var uploaded = { key: null, images: null };
 
-      var content = '<div class="wdab-modal">' + formHtml('wdabm', 'Create Digital Article in this Dossier') + '</div>';
+      var content = '<div class="wdab-modal">' + formHtml('wdabm', 'Create article') + '</div>';
 
       dialogId = ContentStationSdk.openModalDialog({
         title: 'Word & Web → Digital',
@@ -1590,7 +1738,6 @@
         var errEl = ctl.$('action-error');
         var noteEl = ctl.$('note');
         btn.disabled = true;
-        btn.textContent = 'Creating…';
         errEl.style.display = 'none';
 
         var name = result.meta.title || result.filename;
@@ -1611,19 +1758,29 @@
         // is never fatal — the article is still created, just without them.
         var imagesStep = Promise.resolve(null);
         var imagesKey = result.imageUrls.join('|');
+        var nPics = result.imageUrls.length;
+        // Stage 3: every step on screen, so a slow one is never mistaken for a hang
+        ctl.$('run-title').textContent = 'Creating “' + brief(name, 60) + '”';
+        ctl.$('run-foot').classList.add('wdab-hidden');
+        ctl.setStage(3);
+        var run = stageList(ctl.$('run-list'), []
+          .concat(result.addImages ? [
+            { id: 'images', label: 'Add ' + nPics + ' picture' + (nPics === 1 ? '' : 's') + ' to the Dossier' },
+            { id: 'process', label: 'Wait for Studio to process the pictures' }] : [])
+          .concat([{ id: 'article', label: 'Build and create the article' }]));
         if (result.addImages && uploaded.key === imagesKey && uploaded.images && uploaded.images.created.length) {
           imagesStep = Promise.resolve(uploaded.images);
-          var reuseEl = ctl.$('images-progress');
-          if (reuseEl) reuseEl.textContent = 'Using the ' + uploaded.images.created.length + ' images already added to this Dossier.';
+          run.done('images', 'Using the ' + uploaded.images.created.length + ' already added');
         } else if (result.addImages) {
-          btn.textContent = 'Adding images…';
-          var progEl = ctl.$('images-progress');
+          run.start('images');
           imagesStep = createImagesInDossier(result.imageUrls, dossier, function (done, total) {
-            if (progEl) progEl.textContent = 'Uploading image ' + Math.min(done + 1, total) + ' of ' + total + '…';
+            run.progress('images', done, total, Math.min(done + 1, total) + ' of ' + total);
           }, result.fetchImage).catch(function (e) {
             return { created: [], failed: [], fatal: e.message };
           }).then(function (images) {
             if (images && images.created.length) uploaded = { key: imagesKey, images: images };
+            if (images && images.fatal) run.failed('images', 'Not added: ' + brief(images.fatal, 100));
+            else run.done('images', images ? images.created.length + ' added' + (images.failed.length ? ', ' + images.failed.length + ' failed' : '') : '');
             return images;
           });
         }
@@ -1638,18 +1795,18 @@
             // Don't build the article until Studio has finished ingesting the
             // images, or opening it straight away shows empty placements.
             if (!images || !images.created.length) return images;
-            btn.textContent = 'Processing images…';
-            var progEl2 = ctl.$('images-progress');
+            run.start('process');
             var ids0 = images.created.map(function (c) { return c.id; }).filter(Boolean);
             return waitForImagesReady(ids0, function (done, total) {
-              if (progEl2) progEl2.textContent = 'Waiting for Studio to process images (' + done + ' of ' + total + ')…';
+              run.progress('process', done, total, done + ' of ' + total + ' ready');
             }).then(function (r) {
               images.pending = r.pending;
+              run.done('process', r.pending && r.pending.length ? r.pending.length + ' still processing' : 'All ready');
               return images;
             });
           })
           .then(function (images) {
-            btn.textContent = 'Creating…';
+            run.start('article');
             var created = images ? images.created.filter(function (c) { return c.id; }) : [];
             var built = result.build(created);
             return attempt(built.digital, 0).then(function (res) {
@@ -1690,6 +1847,7 @@
               }
             }
             if (out.comments) msg += ' ' + out.comments + ' comment' + (out.comments === 1 ? '' : 's') + ' added — see the Comments panel.';
+            run.finish();
             ContentStationSdk.showNotification({ content: msg, icon: 'check' });
             try { ContentStationSdk.refreshCurrentSearch(); } catch (e) { /* non-fatal */ }
             if (dialogId !== null) ContentStationSdk.closeModalDialog(dialogId);
@@ -1697,16 +1855,18 @@
           .catch(function (err) {
             // Say what really happened: the pictures are created before the article.
             var kept = uploaded.key === imagesKey && uploaded.images ? uploaded.images.created.length : 0;
+            run.fail(brief(err.message, 140));
+            ctl.$('run-foot').classList.remove('wdab-hidden');
             errEl.textContent = err.message + '\n' + (kept
               ? 'The article was not created, but ' + kept + ' image' + (kept === 1 ? ' is' : 's are') + ' already in this Dossier. ' +
-                'Press Create again when ready — those images will be reused, not uploaded twice.'
-              : 'Nothing was created. You can fix the issue and try again.');
+                'Go back and create again — they will be reused, not uploaded twice.'
+              : 'Nothing was created. Go back, fix it and try again.');
             errEl.style.display = 'block';
           })
           .then(function () {
             busy = false;
             btn.disabled = false;
-            btn.textContent = 'Create Digital Article in this Dossier';
+            btn.textContent = 'Create article';
           });
 
         noteEl.textContent = result.meta.feedHeadline ? 'Feed headline will be saved to C_HEADLINE.' : '';

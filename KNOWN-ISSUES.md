@@ -420,3 +420,26 @@ fix, or one short fact; a justification in a few words; never a paragraph.
   gallery" / "PICS:" line) are dropped.
 - Prefixes shortened: "AI: " for the AI's notes, none for the tool's.
 - Receiver: the AI is asked for 10–20 words per answer, problem then fix.
+
+## 14. Dialog rework: stages, visible progress, content reuse styling (BUILT, not yet seen in Studio)
+
+**Asked for:** 2026-10-12 (Benn)
+**Status:** built in the build after `15d071a5`; checked in a local harness, not in Studio
+
+- **Three stages**, one on screen at a time, with a numbered stepper:
+  *Source* (where the article comes from, layout) → *Check* (headline fields,
+  pictures and comments options, entries folded away) → *Create*.
+- **Progress lists** (`stageList()`): one row per step with a spinning mark, a
+  running clock, a bar where there is a count, and the time each step took.
+  Loading shows fetch / AI checks / read / layout; creating shows pictures
+  added (n of N), Studio processing them (n of N), and the article. A failed
+  step turns red with the reason and a Back button. Before, the only sign of
+  life was the button's label.
+- **Styling** from the content reuse plug-in (`15-styles.js`): slate, amber
+  and teal tokens, its stepper, fields, amber action button and stage list.
+- **Article info box** cut to one status line, a few one-line bullets, and the
+  AI's notes folded under "AI notes (n)". Status line texts shortened. The
+  receiver key is folded away once stored.
+- Buttons are pinned to the bottom of the dialog.
+
+Element ids are unchanged, so the logic underneath is the same as before.
