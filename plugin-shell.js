@@ -993,6 +993,9 @@
     '.wdab .wdab-row{margin-bottom:12px}',
     '.wdab label{display:block;font-size:13px;font-weight:500;color:var(--w-ink3);margin:0 0 4px}',
     '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid var(--w-field);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--w-ink);background:var(--w-surface)}',
+    // Own arrow: the browser's sits against the edge and is too faint to read as a menu
+    '.wdab select{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:pointer;background-repeat:no-repeat;background-position:right 14px center;background-size:14px 14px;' +
+      'background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27 stroke=%27%230f172a%27 stroke-width=%272.2%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M3 6l5 5 5-5%27/%3E%3C/svg%3E")}',
     '.wdab input[type=file]{width:100%;box-sizing:border-box;font-size:13px;color:var(--w-ink3);border:1px dashed var(--w-field);border-radius:6px;padding:6px;background:var(--w-surface)}',
     '.wdab input[type=file]::file-selector-button{margin-right:12px;padding:7px 14px;border:1px solid var(--w-field);border-radius:6px;background:var(--w-surface);color:var(--w-ink);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}',
     '.wdab input[type=file]::file-selector-button:hover{background:var(--w-mute)}',
@@ -1178,10 +1181,9 @@
       '    <label for="' + p + '-file">Word document (.docx)</label>' +
       '    <input type="file" id="' + p + '-file" accept=".docx">' +
       '    <label style="margin-top:10px"><input type="checkbox" id="' + p + '-docx-fetch"> <span>Fetch the linked pictures and run the AI checks (1–2 minutes)</span></label>' +
-      '    <div id="' + p + '-docx-key-row" class="wdab-hidden">' +
-      '      <label for="' + p + '-docx-key" style="margin-top:6px">Receiver key</label>' +
-      '      <input type="password" id="' + p + '-docx-key" autocomplete="off">' +
-      '    </div>' +
+      '    <details class="wdab-more wdab-hidden" style="margin-top:8px" id="' + p + '-docx-key-row"><summary>Receiver key</summary>' +
+      '      <input type="password" id="' + p + '-docx-key" autocomplete="off" style="margin-top:6px">' +
+      '    </details>' +
       '    <div class="wdab-wa-info wdab-hidden" id="' + p + '-docx-info"></div>' +
       '  </div>' +
       '  <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
@@ -1278,6 +1280,8 @@
     // so a Word upload without a key behaves exactly as before.
     $('docx-key').value = receiverKey();
     $('docx-fetch').checked = !!receiverKey();
+    // Same as on the WhatsApp source: folded away once a key is stored
+    $('docx-key-row').open = !receiverKey();
     function syncDocxFetch() { $('docx-key-row').classList.toggle('wdab-hidden', !$('docx-fetch').checked); }
     $('docx-fetch').addEventListener('change', syncDocxFetch);
     $('docx-key').addEventListener('change', function () {
