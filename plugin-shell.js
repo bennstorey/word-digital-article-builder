@@ -802,7 +802,11 @@
   //   - everything else goes in one gallery at the end of the last section
   //     (two or more pictures; a single leftover stays in the Dossier).
   // Numbers on these file names are export numbers and are ignored.
-  var SECTION_CONFIDENCE = 0.7;
+  // 0.5, not the 0.7 used for chat links: the AI is told "a guess is below
+  // 0.5", and on the first real article (12 Oct) its sound matches — exhausts
+  // to the section on the engine note, cornering to handling — came in at
+  // 0.55–0.6. At 0.7 only one picture of 13 was placed.
+  var SECTION_CONFIDENCE = 0.5;
   function sectionPictures(entries, bundle) {
     var sel = bundle && bundle.selection;
     var images = orderedBundleImages(bundle || {});
