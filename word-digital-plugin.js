@@ -2295,6 +2295,16 @@ function pullQuoteNotes(meta, prefix) {
     return '<div>' + head + '</div>' + (must.length ? list(must) : '') +
       (ai.length ? '<details><summary>AI notes (' + ai.length + ')</summary>' + list(ai) + '</details>' : '');
   }
+  // What the receiver is doing with the latest export, in plain words — so an
+  // empty list is never mistaken for "it failed" while an export is still being
+  // prepared (pictures + AI take about 1–1½ minutes per new article).
+  function clockTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var today = new Date().toDateString() === d.toDateString();
+    return today ? t : d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + t;
+  }
   function exportStatusText(ex, hasArticles) {
     var pr = ex && ex.processing;
     if (pr) {
@@ -2597,7 +2607,9 @@ function pullQuoteNotes(meta, prefix) {
     '.wdab .wdab-row{margin-bottom:12px}',
     '.wdab label{display:block;font-size:13px;font-weight:500;color:var(--w-ink3);margin:0 0 4px}',
     '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid var(--w-field);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--w-ink);background:var(--w-surface)}',
-    '.wdab input[type=file]{width:100%;font-size:13px}',
+    '.wdab input[type=file]{width:100%;box-sizing:border-box;font-size:13px;color:var(--w-ink3);border:1px dashed var(--w-field);border-radius:6px;padding:6px;background:var(--w-surface)}',
+    '.wdab input[type=file]::file-selector-button{margin-right:12px;padding:7px 14px;border:1px solid var(--w-field);border-radius:6px;background:var(--w-surface);color:var(--w-ink);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}',
+    '.wdab input[type=file]::file-selector-button:hover{background:var(--w-mute)}',
     '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle;accent-color:var(--w-teal)}',
     '.wdab-row label input[type=checkbox]+span{font-weight:400;color:var(--w-ink2)}',
     '.wdab .wdab-feed input{border-color:var(--w-accent);background:var(--w-accent-soft)}',
@@ -2650,7 +2662,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '16c7286d';
+  var PLUGIN_BUILD = '150e6cd5';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2791,7 +2803,7 @@ function pullQuoteNotes(meta, prefix) {
       '    <input type="url" id="' + p + '-url" placeholder="https://www.topgear.com/…">' +
       '  </div>' +
       '  <div class="wdab-row">' +
-      '    <label for="' + p + '-type">Layout</label>' +
+      '    <label for="' + p + '-type">Article template</label>' +
       '    <select id="' + p + '-type">' +
       '      <option value="auto" selected>Auto-detect from the document</option>' +
       '      <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
@@ -3061,14 +3073,14 @@ function pullQuoteNotes(meta, prefix) {
         .concat(needsImport ? [{ id: 'import', label: 'Fetch the pictures again and run the AI checks', detail: 'Usually 1–2 minutes' }] : [])
         .concat(viaReceiverNow ? [{ id: 'receiver', label: 'Fetch the linked pictures and run the AI checks', detail: 'Usually 1–2 minutes' }] : [])
         .concat(source === 'url' ? [{ id: 'fetch', label: 'Fetch the article from topgear.com' }] : [{ id: 'doc', label: 'Read the Word document' }])
-        .concat([{ id: 'layout', label: 'Work out the layout' }]));
+        .concat([{ id: 'layout', label: 'Choose the article template' }]));
       $('load').classList.remove('wdab-hidden');
 
       // 'auto' reads the article type from the document itself, so nobody has
       // to open the Word file first. The editor can still pick one and re-parse.
       function showDetected(d) {
         if (!d) return;
-        $('type-note').textContent = 'Layout: ' + TYPE_LABELS[d.type] + ' — ' + d.reason;
+        $('type-note').textContent = 'Template: ' + TYPE_LABELS[d.type] + ' — ' + d.reason;
         $('type-note').classList.remove('wdab-hidden');
       }
       function parseDocHtml(html) {
@@ -3205,7 +3217,7 @@ function pullQuoteNotes(meta, prefix) {
             $('images-label').textContent = 'Also add ' + imgs.length + ' article image' +
               (imgs.length === 1 ? '' : 's') + ' to this Dossier';
             var note = placeable + ' of ' + imgs.length + ' will be placed in the article' +
-              ' (' + slotCount + ' image slot' + (slotCount === 1 ? '' : 's') + ' in this layout).';
+              ' (' + slotCount + ' image slot' + (slotCount === 1 ? '' : 's') + ' in this template).';
             if (ctlGalleries.slideshows) {
               note += ' The web galler' + (ctlGalleries.slideshows === 1 ? 'y becomes a slideshow' : 'ies become ' + ctlGalleries.slideshows + ' slideshows') +
                 ' (' + ctlGalleries.slides + ' pictures).';
