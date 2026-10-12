@@ -1679,6 +1679,9 @@ function placeComment(content, anchor, id) {
 // notes: [{ text, anchor, replies? }]. Returns { digital, placed: [{ id, via }] }.
 // Several notes landing on the same text are merged into one comment, since a
 // run can carry only one comment id.
+// Several notes landing on the same words are shown as one bulleted comment
+const bullet = t => /^• /m.test(t) ? t : '• ' + t;
+
 function addComments(digital, notes, userId) {
   if (!notes || !notes.length) return { digital, placed: [] };
   const content = digital.data.content || [];
@@ -1694,7 +1697,7 @@ function addComments(digital, notes, userId) {
     const stillUsed = new Set(JSON.stringify(content).match(/"comment":"[^"]+"/g) || []);
     let text = note.text;
     Object.keys(comments).forEach(k => {
-      if (!stillUsed.has('"comment":"' + k + '"') && k.startsWith('wa-')) { text = comments[k].text + '\n\n' + text; delete comments[k]; }
+      if (!stillUsed.has('"comment":"' + k + '"') && k.startsWith('wa-')) { text = bullet(comments[k].text) + '\n' + bullet(text); delete comments[k]; }
     });
     comments[id] = { id, userId: userId || '', created: now, modified: now, text, replies: note.replies || [] };
     placed.push({ id, via });
@@ -1718,9 +1721,9 @@ function emptySlotNotes(digital, missing, prefix) {
     notes.push({
       anchor: { index: i },
       text: (prefix || '') + (c.identifier === 'header-image'
-        ? 'No opening picture yet. Choose one that tells the story and works both as a centred square crop (Apple News feed) and as landscape — not the picture directly below it.'
-        : 'No picture in this frame yet.') +
-        (why ? ' From the chat: ' + why.note : ''),
+        ? 'No opener yet. Choose one that works square and landscape.'
+        : 'Empty frame: fill or delete.') +
+        (why ? ' Chat: ' + why.note : ''),
     });
   });
   return notes;
@@ -1731,7 +1734,7 @@ function emptySlotNotes(digital, missing, prefix) {
 function flaggedNotes(meta, prefix) {
   return (meta.flagged || []).map(f => ({
     anchor: { quote: f.text },
-    text: (prefix || '') + 'Editor instruction left in the copy — delete before publishing.' +
+    text: (prefix || '') + 'Editor instruction: delete before publishing.' +
       (f.hrefs && f.hrefs.length ? ' Link: ' + f.hrefs.join(' ') : ''),
   }));
 }
@@ -1739,7 +1742,7 @@ function flaggedNotes(meta, prefix) {
 function pullQuoteNotes(meta, prefix) {
   return (meta.pullQuotes || []).map(q => ({
     anchor: { quote: q.text },
-    text: (prefix || '') + 'Pull quote on the web page. Kept once as plain text — style it or delete it.',
+    text: (prefix || '') + 'Web pull quote: style or delete.',
   }));
 }
 

@@ -1576,6 +1576,9 @@ function placeComment(content, anchor, id) {
 // notes: [{ text, anchor, replies? }]. Returns { digital, placed: [{ id, via }] }.
 // Several notes landing on the same text are merged into one comment, since a
 // run can carry only one comment id.
+// Several notes landing on the same words are shown as one bulleted comment
+const bullet = t => /^• /m.test(t) ? t : '• ' + t;
+
 function addComments(digital, notes, userId) {
   if (!notes || !notes.length) return { digital, placed: [] };
   const content = digital.data.content || [];
@@ -1591,7 +1594,7 @@ function addComments(digital, notes, userId) {
     const stillUsed = new Set(JSON.stringify(content).match(/"comment":"[^"]+"/g) || []);
     let text = note.text;
     Object.keys(comments).forEach(k => {
-      if (!stillUsed.has('"comment":"' + k + '"') && k.startsWith('wa-')) { text = comments[k].text + '\n\n' + text; delete comments[k]; }
+      if (!stillUsed.has('"comment":"' + k + '"') && k.startsWith('wa-')) { text = bullet(comments[k].text) + '\n' + bullet(text); delete comments[k]; }
     });
     comments[id] = { id, userId: userId || '', created: now, modified: now, text, replies: note.replies || [] };
     placed.push({ id, via });
@@ -1615,9 +1618,9 @@ function emptySlotNotes(digital, missing, prefix) {
     notes.push({
       anchor: { index: i },
       text: (prefix || '') + (c.identifier === 'header-image'
-        ? 'No opening picture yet. Choose one that tells the story and works both as a centred square crop (Apple News feed) and as landscape — not the picture directly below it.'
-        : 'No picture in this frame yet.') +
-        (why ? ' From the chat: ' + why.note : ''),
+        ? 'No opener yet. Choose one that works square and landscape.'
+        : 'Empty frame: fill or delete.') +
+        (why ? ' Chat: ' + why.note : ''),
     });
   });
   return notes;
@@ -1628,7 +1631,7 @@ function emptySlotNotes(digital, missing, prefix) {
 function flaggedNotes(meta, prefix) {
   return (meta.flagged || []).map(f => ({
     anchor: { quote: f.text },
-    text: (prefix || '') + 'Editor instruction left in the copy — delete before publishing.' +
+    text: (prefix || '') + 'Editor instruction: delete before publishing.' +
       (f.hrefs && f.hrefs.length ? ' Link: ' + f.hrefs.join(' ') : ''),
   }));
 }
@@ -1636,7 +1639,7 @@ function flaggedNotes(meta, prefix) {
 function pullQuoteNotes(meta, prefix) {
   return (meta.pullQuotes || []).map(q => ({
     anchor: { quote: q.text },
-    text: (prefix || '') + 'Pull quote on the web page. Kept once as plain text — style it or delete it.',
+    text: (prefix || '') + 'Web pull quote: style or delete.',
   }));
 }
 
@@ -2329,8 +2332,20 @@ function pullQuoteNotes(meta, prefix) {
   // ─── Comments in the created article ──────────────────────────────────────
   // Notes become Digital editor comments (see addComments in the engine). They
   // carry the creating editor's user id; the prefix says who raised them.
-  var AI_PREFIX = 'WhatsApp AI: ';
-  var TOOL_PREFIX = 'Word → Digital: ';
+  // Comments are read at a glance (Benn, 2026-10-12): the problem and the
+  // fix, or one short fact. No paragraphs, no long justifications.
+  var AI_PREFIX = 'AI: ';
+  var TOOL_PREFIX = '';
+  // The first sentence of an AI answer, cut at a word, at most `max` characters
+  function brief(text, max) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim();
+    var first = t.match(/^.*?[.!?](?=\s|$)/);
+    if (first && first[0].length >= 20) t = first[0];
+    t = t.replace(/[.\s]+$/, '');
+    if (t.length <= max) return t;
+    return t.slice(0, max).replace(/\s+\S*$/, '') + '…';
+  }
+  var ALREADY_HANDLED = /feed headline|article headline|web gallery|^pics?:/i;
 
   function currentUserId() {
     try {
@@ -2348,24 +2363,24 @@ function pullQuoteNotes(meta, prefix) {
     review.forEach(function (q) {
       notes.push({
         anchor: { quote: q.quote, entry: q.entry },
-        text: AI_PREFIX + q.comment + (q.source && q.source !== 'the copy itself' ? '\n(' + q.source + ')' : ''),
+        text: AI_PREFIX + brief(q.comment, 160),
       });
     });
     var head = [];
     // (The opener note is written after placement — see openerNote.)
     (bundle.pictures || []).forEach(function (p) {
-      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') head.push('Pictures to fetch by hand (' + p.type + '): ' + p.href);
+      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') head.push('Fetch pictures by hand: ' + p.href);
     });
     (bundle.suggestedPictures || []).forEach(function (p) {
-      head.push('Possibly this article\'s pictures (' + Math.round(p.confidence * 100) + '% sure): ' + p.href + ' — ' + p.reason);
+      head.push('Possible pictures (' + Math.round(p.confidence * 100) + '%): ' + p.href);
     });
     var ins = bundle.instructions;
     if (ins) {
-      (ins.embeds || []).forEach(function (e) { head.push('Embed requested: ' + e.url + ' (' + e.where + ')'); });
-      if (ins.embargo) head.push('Embargo: ' + ins.embargo);
-      (ins.otherNotes || []).forEach(function (n) { head.push(n); });
+      (ins.embeds || []).forEach(function (e) { head.push('Embed: ' + e.url + (e.where ? ' (' + brief(e.where, 40) + ')' : '')); });
+      if (ins.embargo) head.push('Embargo: ' + brief(ins.embargo, 80));
+      (ins.otherNotes || []).forEach(function (n) { if (!ALREADY_HANDLED.test(n)) head.push(brief(n, 110)); });
     }
-    if (head.length) notes.push({ anchor: {}, text: AI_PREFIX + head.join('\n') });
+    head.forEach(function (h) { notes.push({ anchor: {}, text: h }); });
     return notes;
   }
 
@@ -2398,8 +2413,7 @@ function pullQuoteNotes(meta, prefix) {
       var aiRaw = r.aiEntry != null ? r.aiEntry : r.entry;
       var ai = aiRaw != null && String(aiRaw).match(/\d+/);
       if (n == null || !ai || Number(ai[0]) === n) return null;
-      return { anchor: { entry: n }, text: AI_PREFIX + 'Picture “' + r.file + '” is placed here because its file name says ' + n +
-        ', but it looks like entry ' + Number(ai[0]) + (r.reason ? ' (' + r.reason + ')' : '') + '. Check it is the right picture.' };
+      return { anchor: { entry: n }, text: 'File name says entry ' + n + '; AI thinks entry ' + Number(ai[0]) + '. Check the picture.' };
     }).filter(Boolean);
   }
 
@@ -2457,8 +2471,7 @@ function pullQuoteNotes(meta, prefix) {
       frames++;
       if (!best) return;
       filled++;
-      notes.push({ anchor: { crosshead: e.crosshead }, text: AI_PREFIX + 'Picture “' + best.file + '” placed above this crosshead' +
-        (best.reason ? ': ' + best.reason : '') + '. Swap it if another fits better.' });
+      notes.push({ anchor: { crosshead: e.crosshead }, text: AI_PREFIX + 'picture above chosen for this section' + (best.reason ? ' — ' + brief(best.reason, 80) : '') });
     });
     // A picture matched to the first section has no frame; un-take it
     var first = chosen[norm(heads[0].crosshead)];
@@ -2466,9 +2479,9 @@ function pullQuoteNotes(meta, prefix) {
 
     var left = images.filter(function (im) { return !taken[im.name]; }).length;
     if (frames) {
-      notes.push({ anchor: {}, text: TOOL_PREFIX + filled + ' of the ' + frames + ' picture frames above the crossheads are filled. ' +
-        (frames - filled ? 'Fill or delete the empty ones before publishing. ' : '') +
-        (left ? left + ' more picture' + (left === 1 ? ' is' : 's are') + ' in the Dossier, for the empty frames or a gallery.' : '') });
+      notes.push({ anchor: {}, text: 'Frames: ' + filled + ' of ' + frames + ' filled.' +
+        (frames - filled ? ' Fill or delete the empty ones.' : '') +
+        (left ? ' ' + left + ' spare picture' + (left === 1 ? '' : 's') + ' in the Dossier.' : '') });
     }
     return { entries: out, notes: notes, frames: frames, filled: filled };
   }
@@ -2538,12 +2551,11 @@ function pullQuoteNotes(meta, prefix) {
     if (placedId) {
       var c = created.filter(function (x) { return String(x.id) === String(placedId); })[0];
       var name = c ? nameOf(c.url) : String(placedId);
-      var why = sel && sel.hero === name && sel.heroReason ? ' — ' + sel.heroReason : '';
-      return { anchor: {}, text: (why ? AI_PREFIX : TOOL_PREFIX) + 'Opening picture: ' + name + why +
-        '. All ' + total + ' pictures are in the Dossier if you prefer another.' };
+      var why = sel && sel.hero === name && sel.heroReason ? ' — ' + brief(sel.heroReason, 80) : '';
+      return { anchor: {}, text: 'Opener' + (why ? ' (AI)' : '') + ': ' + name + why };
     }
     if (sel && sel.hero) {
-      return { anchor: {}, text: AI_PREFIX + 'Suggested ' + sel.hero + ' as the opener, but it sits directly below the header, so it was not used.' };
+      return { anchor: {}, text: 'No opener: the AI\'s pick (' + sel.hero + ') is the picture directly below. Choose another.' };
     }
     return null;
   }
@@ -2559,14 +2571,14 @@ function pullQuoteNotes(meta, prefix) {
     // Nothing placed at all: one note on the headline, not one per frame.
     if (frames > 2 && notes.length === frames) {
       var why = bundle && bundle.pictureStatus === 'waiting'
-        ? ' The writer\'s doc says: ' + ((bundle.doc && bundle.doc.picLineText) || 'no picture link given') + '.'
+        ? ' Doc says: ' + brief((bundle.doc && bundle.doc.picLineText) || 'no picture link', 60) + '.'
         : '';
-      notes = [{ anchor: {}, text: TOOL_PREFIX + 'No pictures placed yet — all ' + frames + ' picture frames are empty.' + why }];
+      notes = [{ anchor: {}, text: 'No pictures placed: all ' + frames + ' frames are empty.' + why }];
     }
     var emptyEntries = notes.map(function (n) { return n.text; }).join('\n');
     missing.forEach(function (m) {
       if (emptyEntries.indexOf(m.note) !== -1) return; // already said on the empty frame
-      notes.push({ anchor: { entry: m.entry }, text: AI_PREFIX + 'The chat says this picture was missing (' + m.note + '). Check the picture placed here.' });
+      notes.push({ anchor: { entry: m.entry }, text: 'Chat says this picture was missing (' + brief(m.note, 60) + '). Check it.' });
     });
     return notes.concat(numberConflictNotes(bundle));
   }
@@ -2608,7 +2620,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '1a58a443';
+  var PLUGIN_BUILD = '15d071a5';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);

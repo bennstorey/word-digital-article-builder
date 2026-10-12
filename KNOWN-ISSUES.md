@@ -403,3 +403,20 @@ came in at 0.5–0.6, so the 0.7 used for chat links placed almost nothing — a
 is otherwise left empty with the usual comment. Empty frames must be deleted
 before publishing. No gallery is built automatically; unplaced pictures stay in
 the Dossier and the editor adds a gallery where it belongs.
+
+## 13. Comments too long to read (FIXED)
+
+**Reported:** 2026-10-12 (Benn)
+**Status:** fixed in the build after `1a58a443`; the AI-side brevity needs the receiver deployed
+
+Benn's rule for every comment the tool writes: the problem and the suggested
+fix, or one short fact; a justification in a few words; never a paragraph.
+
+- Every fixed text is rewritten short ("Empty frame: fill or delete.").
+- AI answers pass through `brief()`: first sentence, cut at a word (80–160
+  characters depending on the note).
+- Notes that land on the same words become one bulleted comment.
+- Notes about things the tool already handles (feed headline, the "Web
+  gallery" / "PICS:" line) are dropped.
+- Prefixes shortened: "AI: " for the AI's notes, none for the tool's.
+- Receiver: the AI is asked for 10–20 words per answer, problem then fix.
