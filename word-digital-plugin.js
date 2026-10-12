@@ -2665,7 +2665,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '011ddc18';
+  var PLUGIN_BUILD = '0ad26df3';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -3259,6 +3259,8 @@ function pullQuoteNotes(meta, prefix) {
     if (onAction && $('action')) {
       $('action').addEventListener('click', function () { onAction(controller); });
     }
+
+    refreshParse(); // the button names the action for the source showing
 
     var controller = {
       $: $,

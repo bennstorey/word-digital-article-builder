@@ -1646,6 +1646,8 @@
       $('action').addEventListener('click', function () { onAction(controller); });
     }
 
+    refreshParse(); // the button names the action for the source showing
+
     var controller = {
       $: $,
       setStage: setStage,
