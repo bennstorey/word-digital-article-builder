@@ -2261,6 +2261,7 @@ function pullQuoteNotes(meta, prefix) {
 
     var must = [];
     if (b.statusNote) must.push(esc(brief(b.statusNote, 110)));
+    if (b.picturesArrivedAt && !n) must.push('Pictures arrived ' + when(b.picturesArrivedAt) + '. Re-import to fetch them.');
     if (b.imported) must.push('In Studio since ' + esc(String(b.imported.at || '').slice(0, 10)) + '. Re-import fetches the pictures and runs the AI again.');
     else if (b.builtByHand) {
       must.push('Drafted by hand, ' + when(b.builtByHand.ts) + ' · ' + link(b.builtByHand.href, 'open draft') +
@@ -2324,8 +2325,10 @@ function pullQuoteNotes(meta, prefix) {
     }
     if (last.error) return { failed: true, text: 'Export from ' + clockTime(last.startedAt) + ' failed (' + brief(last.error, 80) + '). Export again.' };
     var n = (last.newArticles || []).length;
+    var pics = last.picturesArrived || [];
     return { text: 'Last export ' + clockTime(last.finishedAt) + ': ' +
-      (n ? n + ' new (' + last.newArticles.join(', ') + ')' : 'nothing new') + '.' };
+      (n ? n + ' new (' + last.newArticles.join(', ') + ')' : pics.length ? 'no new articles' : 'nothing new') +
+      (pics.length ? '; pictures arrived for ' + pics.join(', ') + ' — re-import to fetch them' : '') + '.' };
   }
 
   // ─── Comments in the created article ──────────────────────────────────────
@@ -2665,7 +2668,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '0ad26df3';
+  var PLUGIN_BUILD = 'c83ba600';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -2987,7 +2990,10 @@ function pullQuoteNotes(meta, prefix) {
           var done = list.filter(function (b) { return b.imported; });
           var day = function (ts) { return String(ts || '').slice(0, 10); };
           var opt = function (b) {
-            var label = b.imported ? 'imported ' + day(b.imported.at)
+            // Pictures that came in after the article was made (or drafted by hand)
+            var newPics = b.picturesArrivedAt && (!b.imported || b.picturesArrivedAt > b.imported.at) && !b.imageCount;
+            var label = newPics ? 'pictures arrived, re-import'
+              : b.imported ? 'imported ' + day(b.imported.at)
               : b.builtByHand ? 'draft posted ' + day(b.builtByHand.ts)
               : (PICTURE_STATUS[b.pictureStatus] || b.pictureStatus);
             return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' + esc(label) + '</option>';
