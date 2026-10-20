@@ -1094,7 +1094,7 @@ async function parseFromUrl(articleUrl, type) {
   debug.nextDataFound = !!nextData;
   debug.articleFound  = !!article;
 
-  let meta, entries, imageUrls;
+  let meta, entries, imageUrls, imageEntries = null;
   let detected = null;
 
   if (article) {
@@ -1105,6 +1105,20 @@ async function parseFromUrl(articleUrl, type) {
     if (isListicle(article)) {
       const parsed = parseListicleItems(article);
       entries = parsed.entries;
+      // Which entry each picture belongs to. Placing by position alone went
+      // one frame out from the point where the hero is also an item's picture
+      // (the shared file is downloaded once), leaving the last frame empty
+      // (2026-10-20, "longest-range electric cars").
+      // Keyed by the address actually downloaded: the hero and an item can be
+      // the same file under two spellings, and only one copy is fetched.
+      imageEntries = {};
+      article.items.forEach((item, i) => {
+        const src = item.media && item.media.image && item.media.image.src;
+        if (!src || !entries[i]) return;
+        const url = articleImageUrl(src);
+        const got = imageUrls.find(u => u === url) || imageUrls.find(u => imageFileName(u) === imageFileName(url));
+        if (got) imageEntries[got] = entries[i].number;
+      });
       applyParsed(meta, parsed, debug);
       debug.listicle = true;
       if (type === 'auto') {
@@ -1137,7 +1151,7 @@ async function parseFromUrl(articleUrl, type) {
 
   debug.entriesFound = entries.length;
   debug.imagesFound  = imageUrls.length;
-  return { meta, entries, imageUrls, debug, detected, type: detected ? detected.type : type };
+  return { meta, entries, imageUrls, imageEntries, debug, detected, type: detected ? detected.type : type };
 }
 
 // ─── Template building ───────────────────────────────────────────────────
@@ -2668,7 +2682,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = 'c83ba600';
+  var PLUGIN_BUILD = '57240658';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -3124,6 +3138,10 @@ function pullQuoteNotes(meta, prefix) {
           type = r.type;
           showDetected(r.detected);
           state.imageUrls = r.imageUrls || [];
+          // A topgear.com list says which item each picture belongs to: place
+          // by entry, and the page's own main picture as the opener (it may
+          // also be an item's picture — then it is placed in both).
+          if (r.imageEntries && state.imageUrls.length) state.placement = { byUrl: r.imageEntries, heroUrl: state.imageUrls[0] };
           state.uploadedFilename = slugFromUrl(articleUrl);
           return { meta: r.meta, entries: r.entries };
         });

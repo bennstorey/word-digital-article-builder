@@ -443,3 +443,18 @@ fix, or one short fact; a justification in a few words; never a paragraph.
 - Buttons are pinned to the bottom of the dialog.
 
 Element ids are unchanged, so the logic underneath is the same as before.
+
+## 15. URL list: pictures one frame out from the hero's own item onwards (FIXED)
+
+**Reported:** 2026-10-20 (Benn, "longest-range electric cars", a 37-item countdown)
+**Status:** fixed in the build after `c83ba600`
+
+The page's main picture was also item 3's picture. The file is downloaded once,
+and the URL source placed pictures by position, so from item 3 on every frame
+took the next item's picture and item 1 was left empty (version 0.1 of the
+article). `parseFromUrl()` now returns `imageEntries` (downloaded address →
+entry number, matched by file name when the hero and the item spell the
+address differently), and the plug-in places URL list pictures by entry with
+the page's main picture as the opener, the same way it places WhatsApp lists.
+A shared picture is placed in both frames. Local check: 38 of 38 frames
+filled correctly.

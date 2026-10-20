@@ -1510,6 +1510,10 @@
           type = r.type;
           showDetected(r.detected);
           state.imageUrls = r.imageUrls || [];
+          // A topgear.com list says which item each picture belongs to: place
+          // by entry, and the page's own main picture as the opener (it may
+          // also be an item's picture — then it is placed in both).
+          if (r.imageEntries && state.imageUrls.length) state.placement = { byUrl: r.imageEntries, heroUrl: state.imageUrls[0] };
           state.uploadedFilename = slugFromUrl(articleUrl);
           return { meta: r.meta, entries: r.entries };
         });
