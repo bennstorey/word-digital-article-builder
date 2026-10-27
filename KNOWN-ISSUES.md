@@ -458,3 +458,33 @@ address differently), and the plug-in places URL list pictures by entry with
 the page's main picture as the opener, the same way it places WhatsApp lists.
 A shared picture is placed in both frames. Local check: 38 of 38 frames
 filled correctly.
+
+## 16. Article templates read from Studio, not only from the plug-in (BUILT, not yet seen in Studio)
+
+**Asked:** 2026-10-27 (Benn: "start with using templates from the system for the templates that we have")
+**Status:** built and checked locally; needs a run in Studio
+
+When an article is created, the plug-in now reads its article template from
+Studio by ID (`BRAND_DEFAULTS['3'].templates`), under the editor's own session:
+
+| Type | Studio template | ID |
+|---|---|---|
+| countdown | Ad hoc Apple-features-long numbered list 50-1 | 66075 |
+| ascending, snippet | Ad hoc Apple-features-long numbered list 1-50 | 67380 |
+| crosshead | Ad hoc Apple-features-generic-crossheads | 66074 |
+
+All are in dossier "2024-tg-templates" (29570). The created article is linked
+to its template (`C_CS_ARTICLE_TEMPLATE_ID`, `C_ARTICLE_TEMPLATE_NAME`) and
+takes the template's component set, Look and Feel and Twixl collection, so an
+edit to a template in Studio reaches the next article.
+
+- **Furniture:** the Follow and Newsletter blocks and the "Discover more" logo
+  are pointed at the shared pictures (91355 to 91358) by `useSharedFurniture()`,
+  as §2 established. Checked 2026-10-27: after that swap the three Studio
+  templates are identical to the built-in copies, so articles come out as before.
+- **Fallback:** if Studio can't be read, or the file isn't a usable template,
+  the built-in copy in `TEMPLATES` is used and the run's step list says so in
+  red ("Read the article template from Studio").
+- **Not yet:** the Check stage's frame count still uses the built-in copy; the
+  long-term review template (71375) has no builder yet; the web version has no
+  Studio access and keeps the built-in copies.

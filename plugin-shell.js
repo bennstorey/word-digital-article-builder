@@ -43,6 +43,16 @@
       componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
       lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
       twixlCollectionId: '102069',
+      // Article templates read from Studio when an article is built, so an
+      // edit to the template in Studio reaches the next article. All four in
+      // dossier "2024-tg-templates" (29570). The built-in copies in TEMPLATES
+      // are used only if Studio can't be read.
+      templates: {
+        countdown: '66075',  // Ad hoc Apple-features-long numbered list 50-1
+        ascending: '67380',  // Ad hoc Apple-features-long numbered list 1-50
+        snippet: '67380',    // Type 4 reuses the ascending layout
+        crosshead: '66074',  // Ad hoc Apple-features-generic-crossheads
+      },
     },
   };
 
@@ -222,11 +232,77 @@
     });
   }
 
+  // ─── Article templates from Studio ────────────────────────────────────────
+  // The template's native file, read under the editor's session like any
+  // other download. Studio's own template metadata (name, version, component
+  // set, Look and Feel, Twixl collection) goes onto the created article.
+  // Never fatal: if Studio can't be read the built-in copy is used and the
+  // dialog says so.
+  function fetchTransferFile(fileUrl) {
+    var url = fileUrl;
+    var ticket = getTicket();
+    if (ticket && !/[?&]ticket=/.test(url)) url += (url.indexOf('?') === -1 ? '?' : '&') + 'ticket=' + encodeURIComponent(ticket);
+    return fetch(url, { credentials: 'same-origin', headers: WW_APP_HEADER }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    });
+  }
+
+  // A template the builders can use: the components they fill must be there
+  function checkTemplate(t, type) {
+    var content = t && t.data && t.data.content;
+    if (!Array.isArray(content) || !content.length) throw new Error('not a digital article template');
+    var has = function (id) { return content.some(function (c) { return c.identifier === id; }); };
+    if (!has('header-image') || !has('title')) throw new Error('it has no header picture or title');
+    if (type === 'crosshead' ? !has('crosshead') : content.filter(function (c) { return c.identifier === 'image'; }).length < 2) {
+      throw new Error('it does not have the ' + (type === 'crosshead' ? 'crossheads' : 'numbered entries') + ' this article template needs');
+    }
+  }
+
+  function loadTemplate(type, dossier) {
+    var builtIn = function (info) { return { template: TEMPLATES[type], info: Object.assign({ source: 'built-in' }, info) }; };
+    return resolveDossierContext(dossier).then(function (ctx) {
+      var bd = BRAND_DEFAULTS[ctx.pubId];
+      var id = bd && bd.templates && bd.templates[type];
+      if (!id) return builtIn({ error: 'no Studio template set up for this brand' });
+      return callServer('GetObjects', {
+        IDs: [id], Lock: false, Rendition: 'native',
+        RequestInfo: ['MetaData'], HaveVersions: null, Areas: null, EditionId: null,
+      }).then(function (res) {
+        var obj = res.Objects && res.Objects[0];
+        var file = obj && (obj.Files || []).filter(function (f) { return f.FileUrl; })[0];
+        if (!file) throw new Error('Studio sent no file');
+        return fetchTransferFile(file.FileUrl).then(function (text) {
+          var t = JSON.parse(text);
+          checkTemplate(t, type);
+          var md = obj.MetaData;
+          var ex = {};
+          (md.ExtraMetaData || []).forEach(function (e) { ex[e.Property] = (e.Values || [])[0] || ''; });
+          return {
+            template: useSharedFurniture(t),
+            info: {
+              source: 'studio', id: String(id),
+              name: md.BasicMetaData.Name,
+              version: md.WorkflowMetaData && md.WorkflowMetaData.Version,
+              templateName: ex.C_ARTICLE_TEMPLATE_NAME || md.BasicMetaData.Name,
+              componentSet: ex.C_CS_COMPONENTSET, lookAndFeel: ex.C_CS_STYLEID, twixlCollectionId: ex.C_TW_COLLECTION_ID,
+            },
+          };
+        });
+      }).catch(function (e) {
+        console.warn('[word-digital] Studio template ' + id + ' not used:', e.message);
+        return builtIn({ id: String(id), error: e.message });
+      });
+    });
+  }
+
   // Create the digital article inside the given dossier.
   // Publication/Category are taken from the dossier; Targets are copied from
   // the dossier so the article lands on the same channel/issue. Component set,
-  // Look and Feel and Twixl collection come from BRAND_DEFAULTS.
-  function createArticleInDossier(digital, name, feedHeadline, dossier, nameLimit) {
+  // Look and Feel and Twixl collection come from the Studio template it was
+  // built from (tplInfo, from loadTemplate), else from BRAND_DEFAULTS; the
+  // article is linked to that template as Studio's own "new from template" does.
+  function createArticleInDossier(digital, name, feedHeadline, dossier, nameLimit, tplInfo) {
     var digitalJson = JSON.stringify(digital);
     // Unique component identifiers in order of first use (C_CS_DE_COMPONENT_NAMES)
     var componentNames = [];
@@ -284,11 +360,17 @@
                   extraMeta('C_CS_DE_COMPONENT_NAMES', [componentNames.join(',')]),
                 ];
                 if (feedHeadline) extra.push(extraMeta('C_HEADLINE', [feedHeadline]));
-                var bd = BRAND_DEFAULTS[pubId];
-                if (bd) {
-                  extra.push(extraMeta('C_CS_COMPONENTSET', [bd.componentSet]));
-                  extra.push(extraMeta('C_CS_STYLEID', [bd.lookAndFeel]));
-                  if (bd.twixlCollectionId) extra.push(extraMeta('C_TW_COLLECTION_ID', [bd.twixlCollectionId]));
+                var bd = BRAND_DEFAULTS[pubId] || {};
+                var st = tplInfo && tplInfo.source === 'studio' ? tplInfo : {};
+                var componentSet = st.componentSet || bd.componentSet;
+                var lookAndFeel = st.lookAndFeel || bd.lookAndFeel;
+                var twixl = st.twixlCollectionId || bd.twixlCollectionId;
+                if (componentSet) extra.push(extraMeta('C_CS_COMPONENTSET', [componentSet]));
+                if (lookAndFeel) extra.push(extraMeta('C_CS_STYLEID', [lookAndFeel]));
+                if (twixl) extra.push(extraMeta('C_TW_COLLECTION_ID', [twixl]));
+                if (st.id) {
+                  extra.push(extraMeta('C_CS_ARTICLE_TEMPLATE_ID', [st.id]));
+                  extra.push(extraMeta('C_ARTICLE_TEMPLATE_NAME', [st.templateName]));
                 }
                 return extra;
               })(),
@@ -1678,8 +1760,10 @@
           subtitleDeltas: $('subtitle').value === pm.subtitle ? pd.subtitle : null,
         };
         // created: [{ id, url }] from createImagesInDossier, in upload order.
-        function build(created) {
-          var template = deepClone(TEMPLATES[state.parsedData.type]);
+        // template: the article template read from Studio (loadTemplate);
+        // the built-in copy when none is given (the Check stage's preview).
+        function build(created, template) {
+          template = deepClone(template || TEMPLATES[state.parsedData.type]);
           // Crosshead article from WhatsApp: pictures the AI matched to a
           // section go under that section; the rest become a gallery.
           var sectioned = created && state.bundleKey && state.parsedData.type === 'crosshead'
@@ -1710,7 +1794,7 @@
           return placed;
         }
         return {
-          digital: build().digital, build: build, meta: meta, filename: state.uploadedFilename,
+          digital: build().digital, build: build, type: state.parsedData.type, meta: meta, filename: state.uploadedFilename,
           imageUrls: (state.imageUrls || []),
           fetchImage: state.fetchImage || null,
           bundleKey: state.bundleKey || null,
@@ -1772,8 +1856,9 @@
 
         // The server's name-length limit varies by install, so step down through
         // NAME_LIMITS rather than hard-coding a guess.
+        var tpl = null; // { template, info } from loadTemplate
         function attempt(digital, i) {
-          return createArticleInDossier(digital, name, result.meta.feedHeadline, dossier, NAME_LIMITS[i])
+          return createArticleInDossier(digital, name, result.meta.feedHeadline, dossier, NAME_LIMITS[i], tpl && tpl.info)
             .catch(function (err) {
               var tooLong = /S1026|too long|invalid characters/i.test(err.message || '');
               if (tooLong && i + 1 < NAME_LIMITS.length) return attempt(digital, i + 1);
@@ -1795,7 +1880,8 @@
           .concat(result.addImages ? [
             { id: 'images', label: 'Add ' + nPics + ' picture' + (nPics === 1 ? '' : 's') + ' to the Dossier' },
             { id: 'process', label: 'Wait for Studio to process the pictures' }] : [])
-          .concat([{ id: 'article', label: 'Build and create the article' }]));
+          .concat([{ id: 'template', label: 'Read the article template from Studio' },
+            { id: 'article', label: 'Build and create the article' }]));
         if (result.addImages && uploaded.key === imagesKey && uploaded.images && uploaded.images.created.length) {
           imagesStep = Promise.resolve(uploaded.images);
           run.done('images', 'Using the ' + uploaded.images.created.length + ' already added');
@@ -1817,7 +1903,13 @@
         // dossier so the components resolve. Never fatal.
         var furnitureStep = linkFurnitureToDossier(String(dossier.ID || dossier.Id));
 
-        furnitureStep
+        // Read quietly while the pictures upload (starting its row now would
+        // close the pictures' row); reported just before the article is built.
+        var templateStep = loadTemplate(result.type, dossier).catch(function (e) {
+          return { template: TEMPLATES[result.type], info: { source: 'built-in', error: e.message } };
+        }).then(function (t) { tpl = t; return t; });
+
+        Promise.all([furnitureStep, templateStep])
           .then(function () { return imagesStep; })
           .then(function (images) {
             // Don't build the article until Studio has finished ingesting the
@@ -1834,9 +1926,12 @@
             });
           })
           .then(function (images) {
+            run.start('template');
+            if (tpl.info.source === 'studio') run.done('template', '“' + brief(tpl.info.name, 60) + '”, version ' + tpl.info.version);
+            else run.failed('template', 'Used the copy built into the plug-in' + (tpl.info.error ? ': ' + brief(tpl.info.error, 80) : ''));
             run.start('article');
             var created = images ? images.created.filter(function (c) { return c.id; }) : [];
-            var built = result.build(created);
+            var built = result.build(created, tpl && tpl.template);
             return attempt(built.digital, 0).then(function (res) {
               return { res: res, images: images, placed: built.filled, slots: built.slots, comments: built.comments };
             });

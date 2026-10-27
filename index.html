@@ -1137,6 +1137,40 @@ const TYPE_LABELS = {
 // from each title and keeps the document's order. No separate template file.
 TEMPLATES.snippet = TEMPLATES.ascending;
 
+// The Follow and Newsletter blocks and the "Discover more" logo point at the
+// shared furniture pictures in the general-furniture dossier (52254), not at
+// the per-template copies a Studio template carries (most of those no longer
+// exist; KNOWN-ISSUES §2). Applied to a template read from Studio, this is
+// the only change: the Studio templates 66075, 67380 and 66074 were otherwise
+// identical to the copies above (checked 2026-10-27).
+const SHARED_FURNITURE = {
+  follow: { image: '91357', dark: '91358' },
+  newsletter: { image: '91356', dark: '91355' },
+  footerLogo: '91358',
+};
+function useSharedFurniture(template) {
+  const t = deepClone(template);
+  const tagline = c => ((c.content && c.content['apple-news-follow_tagline']) || []).map(o => o.insert || '').join('');
+  const walk = list => (list || []).forEach(c => {
+    if (c.identifier === 'apple-news-follow' && c.content && c.content.image) {
+      const f = /sign up|newsletter/i.test(tagline(c)) ? SHARED_FURNITURE.newsletter : SHARED_FURNITURE.follow;
+      c.content.image = Object.assign({}, c.content.image, { id: f.image });
+      c.data = Object.assign({}, c.data, { 'an-dark-mode-image': { id: f.dark } });
+    }
+    if (c.identifier === 'container' && c.containers) {
+      const main = c.containers.main || [];
+      // The "Discover more" footer: a logo picture above its subtitle
+      if (main[0] && main[0].identifier === 'image' && main[0].content && main[0].content.image &&
+          main.some(x => x.identifier === 'subtitle')) {
+        main[0].content.image = Object.assign({}, main[0].content.image, { id: SHARED_FURNITURE.footerLogo });
+      }
+      Object.values(c.containers).forEach(walk);
+    }
+  });
+  walk(t.data && t.data.content);
+  return t;
+}
+
 // An unnumbered list vs a crosshead article (a review's "What's this?"
 // sections look the same): the headline gives the count — "The 50 most
 // bonkers American cars" over ~50 bold items is a list; "First Drive: Geely
