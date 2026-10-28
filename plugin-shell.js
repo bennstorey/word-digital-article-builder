@@ -300,8 +300,8 @@
   // Publication/Category are taken from the dossier; Targets are copied from
   // the dossier so the article lands on the same channel/issue. Component set,
   // Look and Feel and Twixl collection come from the Studio template it was
-  // built from (tplInfo, from loadTemplate), else from BRAND_DEFAULTS; the
-  // article is linked to that template as Studio's own "new from template" does.
+  // built from (tplInfo, from loadTemplate), else from BRAND_DEFAULTS. The
+  // article is not linked to the template ID (see below).
   function createArticleInDossier(digital, name, feedHeadline, dossier, nameLimit, tplInfo) {
     var digitalJson = JSON.stringify(digital);
     // Unique component identifiers in order of first use (C_CS_DE_COMPONENT_NAMES)
@@ -368,10 +368,9 @@
                 if (componentSet) extra.push(extraMeta('C_CS_COMPONENTSET', [componentSet]));
                 if (lookAndFeel) extra.push(extraMeta('C_CS_STYLEID', [lookAndFeel]));
                 if (twixl) extra.push(extraMeta('C_TW_COLLECTION_ID', [twixl]));
-                if (st.id) {
-                  extra.push(extraMeta('C_CS_ARTICLE_TEMPLATE_ID', [st.id]));
-                  extra.push(extraMeta('C_ARTICLE_TEMPLATE_NAME', [st.templateName]));
-                }
+                // No C_CS_ARTICLE_TEMPLATE_ID / C_ARTICLE_TEMPLATE_NAME here: with
+                // them Studio treats this as "new from template" and stores the
+                // template's file instead of ours (article 97765, 2026-10-28).
                 return extra;
               })(),
             },

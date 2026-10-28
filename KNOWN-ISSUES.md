@@ -473,10 +473,15 @@ Studio by ID (`BRAND_DEFAULTS['3'].templates`), under the editor's own session:
 | ascending, snippet | Ad hoc Apple-features-long numbered list 1-50 | 67380 |
 | crosshead | Ad hoc Apple-features-generic-crossheads | 66074 |
 
-All are in dossier "2024-tg-templates" (29570). The created article is linked
-to its template (`C_CS_ARTICLE_TEMPLATE_ID`, `C_ARTICLE_TEMPLATE_NAME`) and
-takes the template's component set, Look and Feel and Twixl collection, so an
-edit to a template in Studio reaches the next article.
+All are in dossier "2024-tg-templates" (29570). The created article takes the
+template's component set, Look and Feel and Twixl collection, so an edit to a
+template in Studio reaches the next article.
+
+- **Not linked to the template ID (2026-10-28):** build 282729bf also sent
+  `C_CS_ARTICLE_TEMPLATE_ID` and `C_ARTICLE_TEMPLATE_NAME` on create. Studio
+  then stores the template's own file instead of the uploaded one: article 97765
+  came out byte-identical to 66074 (template furniture 72509–72512, no copy, no
+  pictures placed). Both properties are no longer sent.
 
 - **Furniture:** the Follow and Newsletter blocks and the "Discover more" logo
   are pointed at the shared pictures (91355 to 91358) by `useSharedFurniture()`,
