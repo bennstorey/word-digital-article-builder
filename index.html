@@ -278,6 +278,21 @@ function paras(html) {
     el.replaceWith(marker);
   });
   doc.querySelectorAll('script, style').forEach(el => el.remove());
+  // Labels typed as line breaks (Shift+Return) inside one Word paragraph —
+  // "Feed headline: ⏎ … ⏎ Article headline: ⏎ …" — become one paragraph per
+  // line, so each label and its value are read on their own (BMW 3 Series,
+  // 2026-10-29: the headline went into the feed headline, the byline into
+  // the standfirst). Only paragraphs holding a label are split.
+  doc.querySelectorAll('p').forEach(p => {
+    if (!p.querySelector('br') || !METADATA_PREFIXES.some(m => p.textContent.toLowerCase().includes(m.prefix.toLowerCase()))) return;
+    const lines = p.innerHTML.split(/<br\s*\/?>/i);
+    lines.forEach(html => {
+      const line = doc.createElement('p');
+      line.innerHTML = html;
+      p.before(line);
+    });
+    p.remove();
+  });
   // Innermost blocks only: <blockquote><p>…</p></blockquote> is one paragraph,
   // not the same text twice.
   // A block that wraps others and also has words of its own (a list item with
