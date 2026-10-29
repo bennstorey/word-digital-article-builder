@@ -491,8 +491,17 @@
     });
   }
 
+  // /image resizes to the house width (2500px, as WhatsApp pictures) on the
+  // Fly host; /proxy is the untouched original, used only while a server
+  // without /image is still deployed (404).
   function fetchViaProxy(u) {
-    return fetch(proxyUrl(u), { credentials: 'omit' }).then(function (r) {
+    var base = String(window.PROXY_BASE).replace(/\/$/, '');
+    return fetch(base + '/image?url=' + encodeURIComponent(u), { credentials: 'omit' }).then(function (r) {
+      if (r.status === 404) {
+        return fetch(proxyUrl(u), { credentials: 'omit' });
+      }
+      return r;
+    }).then(function (r) {
       if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
       return r.blob();
     });

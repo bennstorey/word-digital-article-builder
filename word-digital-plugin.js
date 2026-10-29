@@ -175,6 +175,21 @@ function paras(html) {
     el.replaceWith(marker);
   });
   doc.querySelectorAll('script, style').forEach(el => el.remove());
+  // Labels typed as line breaks (Shift+Return) inside one Word paragraph —
+  // "Feed headline: ⏎ … ⏎ Article headline: ⏎ …" — become one paragraph per
+  // line, so each label and its value are read on their own (BMW 3 Series,
+  // 2026-10-29: the headline went into the feed headline, the byline into
+  // the standfirst). Only paragraphs holding a label are split.
+  doc.querySelectorAll('p').forEach(p => {
+    if (!p.querySelector('br') || !METADATA_PREFIXES.some(m => p.textContent.toLowerCase().includes(m.prefix.toLowerCase()))) return;
+    const lines = p.innerHTML.split(/<br\s*\/?>/i);
+    lines.forEach(html => {
+      const line = doc.createElement('p');
+      line.innerHTML = html;
+      p.before(line);
+    });
+    p.remove();
+  });
   // Innermost blocks only: <blockquote><p>…</p></blockquote> is one paragraph,
   // not the same text twice.
   // A block that wraps others and also has words of its own (a list item with
@@ -2153,8 +2168,17 @@ function pullQuoteNotes(meta, prefix) {
     });
   }
 
+  // /image resizes to the house width (2500px, as WhatsApp pictures) on the
+  // Fly host; /proxy is the untouched original, used only while a server
+  // without /image is still deployed (404).
   function fetchViaProxy(u) {
-    return fetch(proxyUrl(u), { credentials: 'omit' }).then(function (r) {
+    var base = String(window.PROXY_BASE).replace(/\/$/, '');
+    return fetch(base + '/image?url=' + encodeURIComponent(u), { credentials: 'omit' }).then(function (r) {
+      if (r.status === 404) {
+        return fetch(proxyUrl(u), { credentials: 'omit' });
+      }
+      return r;
+    }).then(function (r) {
       if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
       return r.blob();
     });
@@ -2797,7 +2821,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '2a0d9098';
+  var PLUGIN_BUILD = '23d9b6a1';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
