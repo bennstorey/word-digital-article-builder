@@ -56,6 +56,9 @@ function setAuthor(header, name) {
   }
 }
 
+// _text_ between non-word characters; the capture group is the italic run.
+const UNDERSCORE_ITALIC = /(?<![\p{L}\p{N}_])_([^_\s](?:[^_]*[^_\s])?)_(?![\p{L}\p{N}_])/u;
+
 // Converts DOM nodes to deltas, preserving bold, italic and links through nesting.
 // opts.italicOnly: for headline contexts (titles, crossheads, metadata values) —
 // those components are already bold by template style, so only italic/links carry over.
@@ -68,9 +71,15 @@ function nodesToDeltas(nodes, opts = {}) {
       if (fmt.bold && !opts.italicOnly) attrs.bold = true;
       if (fmt.italic) attrs.italic = true;
       if (fmt.href) attrs.href = fmt.href;
-      ops.push(Object.keys(attrs).length
-        ? { insert: node.textContent, attributes: attrs }
-        : { insert: node.textContent });
+      const push = (text, a) => ops.push(Object.keys(a).length ? { insert: text, attributes: a } : { insert: text });
+      // Writers mark italics as _word_ in plain text (BMW 3 Series, 2026-10-29:
+      // "perhaps _the_ heartland car"). Underscores inside a word (file_name)
+      // and in link text are left alone.
+      const parts = fmt.href ? [node.textContent] : node.textContent.split(UNDERSCORE_ITALIC);
+      parts.forEach((text, i) => {
+        if (!text) return;
+        push(text, i % 2 ? Object.assign({}, attrs, { italic: true }) : attrs);
+      });
       return;
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
@@ -2821,7 +2830,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '23d9b6a1';
+  var PLUGIN_BUILD = '5c349239';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
