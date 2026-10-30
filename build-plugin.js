@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// Builds word-digital-plugin.js (Content Station SDK plug-in) from index.html
-// so the conversion engine has a single source of truth.
+// Builds dev/word-digital-plugin.js (Content Station SDK plug-in) from
+// index.html so the conversion engine has a single source of truth. Discovery
+// loads that file. The lab loads word-digital-plugin.js in the repo root, which
+// only publish-plugin.sh promote writes, so a build can never move the lab.
 //
 // Extracts everything between "const TEMPLATES" and the "── UI state" marker
 // (templates, parsers, builders — all pure browser JS), then wraps it in the
@@ -27,5 +29,7 @@ const crypto = require('crypto');
 const buildId = crypto.createHash('sha1').update(out).digest('hex').slice(0, 8);
 out = out.replace('__BUILD_ID__', buildId);
 
-fs.writeFileSync(path.join(root, 'word-digital-plugin.js'), out);
-console.log('wrote word-digital-plugin.js', fs.statSync(path.join(root, 'word-digital-plugin.js')).size, 'bytes');
+const dest = path.join(root, 'dev', 'word-digital-plugin.js');
+fs.mkdirSync(path.dirname(dest), { recursive: true });
+fs.writeFileSync(dest, out);
+console.log('wrote dev/word-digital-plugin.js', fs.statSync(dest).size, 'bytes, build', buildId);

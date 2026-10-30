@@ -34,27 +34,44 @@
 
   var DIGITAL_MIME = 'application/ww-digital+json';
 
-  // Per-brand defaults applied to created digital articles, keyed by
-  // Publication (Brand) id. GUIDs verified against existing articles on
-  // lab-studio.woodwing.cloud (all current TG AN+ articles carry these).
-  var BRAND_DEFAULTS = {
-    // Top Gear
-    '3': {
-      componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
-      lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
-      twixlCollectionId: '102069',
-      // Article templates read from Studio when an article is built, so an
-      // edit to the template in Studio reaches the next article. All four in
-      // dossier "2024-tg-templates" (29570). The built-in copies in TEMPLATES
-      // are used only if Studio can't be read.
-      templates: {
-        countdown: '66075',  // Ad hoc Apple-features-long numbered list 50-1
-        ascending: '67380',  // Ad hoc Apple-features-long numbered list 1-50
-        snippet: '67380',    // Type 4 reuses the ascending layout
-        crosshead: '66074',  // Ad hoc Apple-features-generic-crossheads
+  // What differs between the Studio servers this file runs on. The same file
+  // runs on all of them, so a version proven on Discovery reaches the lab as is.
+  // A brand id only means something on its own server: 3 is Top Gear on the lab
+  // and a test brand on Discovery. A server not listed gets no brand defaults.
+  //
+  // receiverWrites: the WhatsApp bundles are one inbox, shared by every server.
+  // Marking one imported drops it from the list for good, and a Word doc sent to
+  // the receiver lands in it too. So only the lab writes to it. Elsewhere the
+  // waiting bundles can be read and nothing changes.
+  var SERVER_SETTINGS = {
+    'lab-studio.woodwing.cloud': {
+      receiverWrites: true,
+      // Per-brand defaults applied to created digital articles, keyed by
+      // Publication (Brand) id. GUIDs verified against existing articles on
+      // lab-studio.woodwing.cloud (all current TG AN+ articles carry these).
+      brands: {
+        // Top Gear
+        '3': {
+          componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
+          lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
+          twixlCollectionId: '102069',
+          // Article templates read from Studio when an article is built, so an
+          // edit to the template in Studio reaches the next article. All four in
+          // dossier "2024-tg-templates" (29570). The built-in copies in TEMPLATES
+          // are used only if Studio can't be read.
+          templates: {
+            countdown: '66075',  // Ad hoc Apple-features-long numbered list 50-1
+            ascending: '67380',  // Ad hoc Apple-features-long numbered list 1-50
+            snippet: '67380',    // Type 4 reuses the ascending layout
+            crosshead: '66074',  // Ad hoc Apple-features-generic-crossheads
+          },
+        },
       },
     },
+    'discovery-studio.woodwing.cloud': { receiverWrites: false, brands: {} },
   };
+  var SERVER = SERVER_SETTINGS[window.location.hostname] || { receiverWrites: false, brands: {} };
+  var BRAND_DEFAULTS = SERVER.brands;
 
   // Word parsing dependency, loaded on demand and kept plugin-local per the
   // SDK guidance on managing external dependencies.
@@ -1372,7 +1389,8 @@
     // the AI checks. On by default only when a receiver key is already stored,
     // so a Word upload without a key behaves exactly as before.
     $('docx-key').value = receiverKey();
-    $('docx-fetch').checked = !!receiverKey();
+    $('docx-fetch').checked = SERVER.receiverWrites && !!receiverKey();
+    if (!SERVER.receiverWrites) $('docx-fetch').closest('label').classList.add('wdab-hidden');
     // Same as on the WhatsApp source: folded away once a key is stored
     $('docx-key-row').open = !receiverKey();
     function syncDocxFetch() { $('docx-key-row').classList.toggle('wdab-hidden', !$('docx-fetch').checked); }
@@ -1459,6 +1477,9 @@
           seenExport = j.export && j.export.last ? j.export.last.finishedAt : null;
           schedulePoll(busy);
           var list = j.bundles || [];
+          // Built-by-hand and imported bundles go through the receiver's
+          // re-import, which rewrites them. Not from a server that only reads.
+          if (!SERVER.receiverWrites) list = list.filter(function (b) { return !b.imported && !b.builtByHand; });
           // New first; then docs the chat shows were already built by hand
           // (BRS replied with an apple.news draft); then ones imported here.
           var waiting = list.filter(function (b) { return !b.imported && !b.builtByHand; });
@@ -1845,7 +1866,9 @@
         if (!el || BRAND_DEFAULTS[ctx.pubId]) return;
         el.innerHTML = '<strong>No digital styles for this brand.</strong> This Dossier is in “' +
           esc(ctx.pubName || ('brand ' + ctx.pubId)) + '”, which has no Look and Feel set up in this plug-in, ' +
-          'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.';
+          (Object.keys(BRAND_DEFAULTS).length
+            ? 'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.'
+            : 'so the article will be created without digital styles.');
         el.style.display = 'block';
       }).catch(function () { /* the warning is advisory; creation reports its own errors */ });
 
@@ -1949,7 +1972,7 @@
             var bmd = created && created.MetaData && created.MetaData.BasicMetaData;
             var newName = bmd ? bmd.Name : name;
             var out = { newName: newName, images: r.images, placed: r.placed, slots: r.slots, comments: r.comments };
-            if (!result.bundleKey) return out;
+            if (!result.bundleKey || !SERVER.receiverWrites) return out;
             // Tell the receiver this bundle is in Studio so a re-export never
             // offers it again. Never fatal — the article already exists.
             return receiverFetch('/bundles/' + result.bundleKey + '/imported', {

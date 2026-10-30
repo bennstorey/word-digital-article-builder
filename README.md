@@ -115,18 +115,24 @@ and auto-numbered by position rather than parsing to nothing.
 ## Files
 
 - `index.html` — standalone web version (also the single source of truth for the conversion engine)
-- `word-digital-plugin.js` — **generated** Content Station SDK plug-in for WoodWing Studio
-- `plugin-shell.js` — plug-in UI, Studio API integration and SDK wiring (template for the generated file)
-- `build-plugin.js` — extracts the conversion engine from `index.html` and produces `word-digital-plugin.js`
+- `word-digital-plugin.js` — **generated** Content Station SDK plug-in for WoodWing Studio; the lab loads this one, and it changes only on a promote
+- `dev/word-digital-plugin.js` — the same, for Discovery; every build writes here
+- `plugin-shell.js` — plug-in UI, Studio API integration and SDK wiring (template for the generated file). `SERVER_SETTINGS` at the top holds what differs by server: brand ids, styles and templates only mean something on their own server
+- `build-plugin.js` — extracts the conversion engine from `index.html` and produces `dev/word-digital-plugin.js`
+- `publish-plugin.sh` — publishes the dev file, and promotes it to the lab
 
-After changing `index.html` **or** `plugin-shell.js`, regenerate and deploy:
+After changing `index.html` **or** `plugin-shell.js`, commit the source, then publish for Discovery. When it is proven there, promote it to the lab, which copies that same file byte for byte:
 
 ```
-node build-plugin.js
-git add -A && git commit && git push   # GitHub Pages redeploys in ~1 minute
+sh publish-plugin.sh dev       # refuses if the push would change the lab's file
+sh publish-plugin.sh promote
 ```
+
+GitHub Pages redeploys in ~1 minute. A push also publishes `index.html`, so the standalone web page moves on `dev`.
 
 Studio users must hard-refresh (Cmd+Shift+R) to pick up a new plug-in version.
+
+**WhatsApp bundles are one inbox, shared by every server.** Marking a bundle imported drops it from the list for good, and a re-import rewrites it. A Word doc sent to the receiver lands in the same inbox. So only the lab writes to it: Discovery lists the waiting bundles, and can build from one but leaves it there, and on Discovery the option to fetch a Word doc's pictures through the receiver is hidden. Those bundles hold client copy and pictures, so building from a real one puts them on Discovery.
 
 ## Installing in WoodWing Studio (cloud, self-service)
 
@@ -134,7 +140,7 @@ The plug-in runs inside Studio's own page (same origin), so it needs no CORS cha
 
 1. Host this repo on GitHub Pages (or any HTTPS host). Current home: `https://bennstorey.github.io/word-digital-article-builder/`
 2. In the Studio Server **Management Console** go to **Integrations → Studio → Plug-ins → Studio** and click **Add new**.
-3. Enter the absolute URL of the plug-in file: `https://bennstorey.github.io/word-digital-article-builder/word-digital-plugin.js`, and make sure it is enabled.
+3. Enter the absolute URL of the plug-in file: `https://bennstorey.github.io/word-digital-article-builder/word-digital-plugin.js` on the lab, or `https://bennstorey.github.io/word-digital-article-builder/dev/word-digital-plugin.js` on Discovery, and make sure it is enabled.
 4. Refresh Studio.
 
 Note: `{SESSION_ID}` URL-app wildcards are deprecated since Studio 10.40 / Enterprise Server 10.7 — the SDK plug-in route is the supported integration path.
