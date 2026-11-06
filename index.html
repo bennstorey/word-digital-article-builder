@@ -244,7 +244,16 @@ function deltasAfterText(ops, prefix) {
     out.push(Object.assign({}, op, { insert: op.insert.slice(skip) }));
     skip = 0;
   }
-  return trimDeltas(out);
+  const value = trimDeltas(out);
+  // A label line set wholly in italics ("Sub headline: …") is the line's
+  // styling, not emphasis: the template styles the field itself.
+  if (value.length && value.every(o => o.attributes && o.attributes.italic)) {
+    value.forEach(o => {
+      delete o.attributes.italic;
+      if (!Object.keys(o.attributes).length) delete o.attributes;
+    });
+  }
+  return value;
 }
 
 function joinDeltas(parts) {
@@ -257,18 +266,38 @@ function joinDeltas(parts) {
 }
 
 // ─── Docx parsing ────────────────────────────────────────────────────────
+// The house labels are "Feed headline:", "Article headline:", "Article subhead:"
+// and "Words:"; writers also use the variants below (Mechatronik M SEC,
+// 2026-11-06: "Sub headline:", and "Author Tom Ford" with no colon).
 const METADATA_PREFIXES = [
-  { key: 'feedHeadline', prefix: 'Feed headline:' },
-  { key: 'title',        prefix: 'Article headline:' },
-  { key: 'subtitle',     prefix: 'Article subhead:' },
-  { key: 'author',       prefix: 'Words:' },
+  { key: 'feedHeadline', re: /^feed\s*headline\s*:/i },
+  { key: 'title',        re: /^(?:article\s*)?headline\s*:/i },
+  { key: 'subtitle',     re: /^(?:article\s*)?(?:sub[\s-]*head(?:line)?|standfirst)\s*:/i },
+  { key: 'author',       re: /^(?:words|author|byline|by)\s*:/i },
 ];
+// Anywhere in a paragraph: used to find labels run together with line breaks
+const HAS_META_LABEL = /(?:headline|sub[\s-]*head|standfirst|words|author|byline)\s*:/i;
+// A bold "Author" / "Words" followed by the name, no colon
+const BARE_AUTHOR = /^(?:author|words|byline)\s+(?=\S)/i;
 
-function matchMetaPrefix(text) {
-  for (const { key, prefix } of METADATA_PREFIXES) {
-    if (text.toLowerCase().startsWith(prefix.toLowerCase())) {
-      return { key, prefix, value: text.slice(prefix.length).trim() };
-    }
+function matchMetaPrefix(text, p) {
+  for (const { key, re } of METADATA_PREFIXES) {
+    const m = text.match(re);
+    if (!m) continue;
+    let value = text.slice(m[0].length).trim();
+    // "Feed headline: Article Headline: …": the second label is not copy
+    const inner = METADATA_PREFIXES.map(l => value.match(l.re)).find(Boolean);
+    if (inner) value = value.slice(inner[0].length).trim();
+    return { key, prefix: text.slice(0, text.length - value.length).trim(), value };
+  }
+  // Only when the bold run is the label word alone and a short name follows,
+  // so a crosshead such as "Words fail me" is never taken for a byline.
+  const lead = p && p.firstElementChild;
+  const bare = text.match(BARE_AUTHOR);
+  if (bare && lead && /^(strong|b)$/i.test(lead.tagName) && text.startsWith(lead.textContent.trim()) &&
+      /^(?:author|words|byline)$/i.test(lead.textContent.trim())) {
+    const value = text.slice(bare[0].length).trim();
+    if (value.split(/\s+/).length <= 6) return { key: 'author', prefix: text.slice(0, text.length - value.length).trim(), value };
   }
   return null;
 }
@@ -293,7 +322,7 @@ function paras(html) {
   // 2026-10-29: the headline went into the feed headline, the byline into
   // the standfirst). Only paragraphs holding a label are split.
   doc.querySelectorAll('p').forEach(p => {
-    if (!p.querySelector('br') || !METADATA_PREFIXES.some(m => p.textContent.toLowerCase().includes(m.prefix.toLowerCase()))) return;
+    if (!p.querySelector('br') || !HAS_META_LABEL.test(p.textContent)) return;
     const lines = p.innerHTML.split(/<br\s*\/?>/i);
     lines.forEach(html => {
       const line = doc.createElement('p');
@@ -483,7 +512,7 @@ function parseNumbered(html, type) {
         pending = take(first);
         continue;
       }
-      const match = matchMetaPrefix(text);
+      const match = matchMetaPrefix(text, p);
       if (match) {
         if (match.value === '') { pendingMetaKey = match.key; }
         else {
@@ -591,7 +620,7 @@ function parseCrosshead(html) {
       if (!shouldFlag(text)) {
         // Don't consume the value if it looks like a crosshead we've been waiting for
         const crosshead = extractCrosshead(p);
-        const isMeta = !!matchMetaPrefix(text);
+        const isMeta = !!matchMetaPrefix(text, p);
         if (!isMeta) {
           meta[pendingMetaKey] = text;
           meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
@@ -603,7 +632,7 @@ function parseCrosshead(html) {
     }
 
     // 2. Always check metadata FIRST — even bold lines can be metadata (e.g. "Words: Jack Rix")
-    const metaMatch = matchMetaPrefix(text);
+    const metaMatch = matchMetaPrefix(text, p);
     if (metaMatch) {
       if (metaMatch.value === '') { pendingMetaKey = metaMatch.key; }
       else {
