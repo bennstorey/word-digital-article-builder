@@ -1,0 +1,3753 @@
+/**
+ * Word & Web → Digital — WoodWing Studio plug-in
+ *
+ * Content Station SDK plug-in that converts Top Gear AN+ Word documents
+ * (.docx) into digital articles (.digital). Single entry point: a button in
+ * the Dossier toolbar that parses a Word doc and creates the digital article
+ * directly inside the current Dossier via the workflow API (upload through
+ * the Transfer Server, CreateObjects with a 'Contained' relation, C_HEADLINE
+ * set from the feed headline, component set / Look and Feel / Twixl id from
+ * BRAND_DEFAULTS). The standalone web version — index.html on GitHub Pages —
+ * offers a .digital file download when no Dossier context is wanted.
+ *
+ * GENERATED FILE — do not edit directly. The conversion engine is extracted
+ * from index.html by build-plugin.js; edit there and rebuild.
+ *
+ * Registration (Studio Server Management Console):
+ *   Integrations → Studio → Plug-ins → Studio → Add new → URL of this file.
+ */
+(function () {
+  'use strict';
+
+  if (typeof ContentStationSdk === 'undefined') {
+    console.error('[word-digital] ContentStationSdk not available — plug-in not loaded in a Studio context.');
+    return;
+  }
+
+  // ─── Conversion engine (generated from index.html) ────────────────────────
+  // The plug-in runs on Studio's origin, so /proxy must be absolute.
+  // Set this to your deployed Fly app before shipping.
+  window.PROXY_BASE = window.PROXY_BASE || 'https://topgear-web-word-digital.fly.dev';
+
+  const TEMPLATES = {
+  countdown: {"version":"2.4","data":{"content":[{"content":{},"identifier":"header-image","styles":{},"data":{"an-image-role":"photo"},"id":"doc-1jj1hvk1o0"},{"content":{},"id":"doc-1jgpus9k50","identifier":"title","styles":{"text-align":"_align-middle"}},{"content":{"title":[]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t2"},{"content":{"name":[]},"identifier":"author","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t3"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih890"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"50"},{"insert":" Xxxx"}]},"id":"doc-1jgpumpn20","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih892"},{"content":{"apple-news-follow_tagline":[{"insert":"For more content follow this channel"}],"link":[{"insert":"FOLLOW","attributes":{"href":"https://apple.news/TRtxUc-x1TtSqnoPE8MyWFA?subscribe=1"}}],"image":{"id":"91357","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"91358"}},"id":"doc-1jhtp4fs90"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih893"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih894"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih895"},{"content":{"text":[{"insert":"49","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpumtrb0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih897"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih898"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih899"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8910"},{"content":{"text":[{"insert":"48","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun0sn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8912"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8913"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8914"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8915"},{"content":{"text":[{"insert":"47","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun3hk0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8917"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8918"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8919"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8920"},{"content":{"text":[{"insert":"46","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun6ch0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8922"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8923"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8924"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8925"},{"content":{"text":[{"insert":"45","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpun9dp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8927"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8928"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8929"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8930"},{"content":{"text":[{"insert":"44","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunc360","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8932"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8933"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8934"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8935"},{"content":{"text":[{"insert":"43","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunhei0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8937"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8938"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8939"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8940"},{"content":{"text":[{"insert":"42","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunk2d0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8942"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8943"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8944"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8945"},{"content":{"text":[{"insert":"41","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunmpp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8947"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8948"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8949"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8950"},{"content":{"text":[{"insert":"40","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunphh0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8952"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8953"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8954"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8955"},{"content":{"text":[{"insert":"39","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpunth40","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8957"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8958"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8959"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8960"},{"content":{"text":[{"insert":"38","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuo0cq0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8962"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8963"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8964"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8965"},{"content":{"text":[{"insert":"37","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuo4tr0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8967"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8968"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8969"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8970"},{"content":{"text":[{"insert":"36","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuo7q10","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8972"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8973"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8974"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8975"},{"content":{"text":[{"insert":"35","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuoaii0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8977"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8978"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8979"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8980"},{"content":{"text":[{"insert":"34","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuodkc0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8982"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8983"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8984"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8985"},{"content":{"text":[{"insert":"33","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuoh9q0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8987"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8988"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8989"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8990"},{"content":{"text":[{"insert":"32","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuokp90","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8992"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8993"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8994"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih8995"},{"content":{"text":[{"insert":"31","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuondt0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih8997"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih8998"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih8999"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89100"},{"content":{"text":[{"insert":"30","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuoq210","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89102"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89103"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89104"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89105"},{"content":{"text":[{"insert":"29","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuosis0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89107"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89108"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89109"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89110"},{"content":{"text":[{"insert":"28","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuov970","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89112"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89113"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89114"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89115"},{"content":{"text":[{"insert":"27","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpup1oc0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89117"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89118"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89119"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89120"},{"content":{"text":[{"insert":"26","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpup4sp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89122"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89123"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89124"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89125"},{"content":{"text":[{"insert":"25","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpup7hl0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89127"},{"content":{"apple-news-follow_tagline":[{"insert":"Sign up to the TopGear Newsletter"}],"link":[{"insert":"SIGN UP","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup"}}],"image":{"id":"91356","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"91355"}},"id":"doc-1jhtp4fs91"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89128"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89129"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89130"},{"content":{"text":[{"insert":"24","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupans0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89132"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89133"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89134"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89135"},{"content":{"text":[{"insert":"23","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupdst0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89137"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89138"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89139"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89140"},{"content":{"text":[{"insert":"22","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx2"}]},"id":"doc-1jgpupgln0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89142"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89143"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89144"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89145"},{"content":{"text":[{"insert":"21","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupjgs0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89147"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89148"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89149"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89150"},{"content":{"text":[{"insert":"20","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuplti0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89152"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89153"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89154"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89155"},{"content":{"text":[{"insert":"19","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupojg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89157"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89158"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89159"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89160"},{"content":{"text":[{"insert":"18","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuprqs0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89162"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89163"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89164"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89165"},{"content":{"text":[{"insert":"17","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpupuo30","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89167"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89168"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89169"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89170"},{"content":{"text":[{"insert":"16","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuq1vg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89172"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89173"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89174"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89175"},{"content":{"text":[{"insert":"15","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuq4n00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89177"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89178"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89179"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89180"},{"content":{"text":[{"insert":"14","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuq7i40","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89182"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89183"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89184"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89185"},{"content":{"text":[{"insert":"13","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqaio0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89187"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1ih89188"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1ih89189"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1ih89190"},{"content":{"text":[{"insert":"12","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqdap0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1ih89192"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa783"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e0"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e1"},{"content":{"text":[{"insert":"11","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqfvd0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e3"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e4"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e5"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e6"},{"content":{"text":[{"insert":"10","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuqirn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e8"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e9"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e10"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e11"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"9"},{"insert":" Xxxx"}]},"id":"doc-1jgpuqlmf0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e13"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e14"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e15"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e16"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"8"},{"insert":" Xxxx"}]},"id":"doc-1jgpuqoit0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e18"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e19"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e20"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e21"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"7"},{"insert":" Xxxx"}]},"id":"doc-1jgpuqr820","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e23"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e24"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e25"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e26"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"6"},{"insert":" Xxxx"}]},"id":"doc-1jgpuquui0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e28"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e29"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e30"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e31"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"5"},{"insert":" Xxxx"}]},"id":"doc-1jgpur1gb0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e33"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e34"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e35"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e36"},{"content":{"text":[{"insert":"4","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpur4j90","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e38"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e39"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e40"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e41"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"3"},{"insert":" Xxxx"}]},"id":"doc-1jgpur8l80","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e43"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e44"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e45"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e46"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"2"},{"insert":" Xxxx"}]},"id":"doc-1jgpurbdp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e48"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcp1jb8e49"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e50"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcp1jb8e51"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"1"},{"insert":" Xxxx"}]},"id":"doc-1jgpure9f0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e53"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcp1jb8e54"},{"content":{},"identifier":"footer","styles":{"style":"_option1"},"id":"doc-1i1hesi1t7"},{"content":{"html":"<iframe allow=\"autoplay *; encrypted-media *; fullscreen *; clipboard-write\" frameborder=\"0\" height=\"450\" style=\"width:100%;max-width:660px;overflow:hidden;border-radius:10px;\" sandbox=\"allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation\" src=\"https://embed.podcasts.apple.com/us/podcast/top-gear-magazine/id1614649540\"></iframe>"},"id":"doc-1jflpkntf0","identifier":"podcast","styles":{}},{"content":{},"identifier":"container","styles":{"style":"_option14"},"containers":{"main":[{"content":{"image":{"id":"91358","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content","inside-caption":"_caption-none","style":"_option7"},"id":"doc-1is9kes3t12"},{"content":{"title":[{"insert":"Discover more","attributes":{"color":"#79d6f2"}}]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1is9kes3t13"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t14"},{"content":{"text":[{"insert":"Buy the magazine","attributes":{"href":"https://www.buysubscriptions.com/print/bbc-top-gear-magazine-subscription?promo=TGFMEV&utm_medium=brandsite&utm_source=topgear.com&utm_campaign=5for5_tgfmev&utm_content=footer-menu&style=brand","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t15"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t16"},{"content":{"text":[{"insert":"Visit our website","attributes":{"href":"https://www.topgear.com/","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t17"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t18"},{"content":{"text":[{"insert":"Listen to our podcast","attributes":{"href":"https://podcasts.apple.com/gb/podcast/top-gear-magazine/id1614649540","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t19"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t20"},{"content":{"text":[{"insert":"Watch films on YouTube","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t21"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t22"},{"content":{"text":[{"insert":"Sign up for our free newsletter","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t23"},{"content":{"text":[{"insert":"   "}]},"identifier":"body","styles":{},"id":"doc-1is9kes3t24"},{"content":{},"identifier":"container","styles":{"style":"_option15"},"containers":{"main":[{"content":{"text":[{"insert":"A","attributes":{"href":"https://www.facebook.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t26"},{"content":{"text":[{"insert":"C","attributes":{"href":"https://x.com/bbc_topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t27"},{"content":{"text":[{"insert":"D","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t28"},{"content":{"text":[{"insert":"E","attributes":{"href":"https://www.instagram.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t29"},{"content":{"text":[{"insert":"F","attributes":{"color":"#102935","href":"https://www.tiktok.com/@topgear?is_from_webapp=1&sender_device=pc"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t30"}]},"inlineStyles":{"background-color":"rgb(121, 214, 242)"},"data":{"an-content-display":"collection"},"id":"doc-1is9kes3t25"}]},"inlineStyles":{"background-color":"rgb(0, 39, 48)"},"id":"doc-1is9kes3t11"}]}},
+  ascending: {"version":"2.4","data":{"content":[{"content":{},"identifier":"header-image","styles":{},"data":{"an-image-role":"photo"},"id":"doc-1jj1hv1ft0"},{"content":{},"id":"doc-1jgpv33pe0","identifier":"title","styles":{"text-align":"_align-middle"}},{"content":{"title":[]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t2"},{"content":{"name":[]},"identifier":"author","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t3"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa780"},{"content":{"text":[{"attributes":{"color":"#ff3f63"},"insert":"01"},{"insert":" Xxxx"}]},"id":"doc-1jgpuu24b0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa782"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa783"},{"content":{"apple-news-follow_tagline":[{"insert":"For more content follow this channel"}],"link":[{"insert":"FOLLOW","attributes":{"href":"https://apple.news/TRtxUc-x1TtSqnoPE8MyWFA?subscribe=1"}}],"image":{"id":"91357","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"91358"}},"id":"doc-1jhtpfbqq0"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa784"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa785"},{"content":{"text":[{"insert":"02","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuu7hg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa787"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa788"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa789"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7810"},{"content":{"text":[{"insert":"03","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuua8n0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7812"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7813"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7814"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7815"},{"content":{"text":[{"insert":"04","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuf0a0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7817"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7818"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7819"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7820"},{"content":{"text":[{"insert":"05","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuhlf0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7822"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7823"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7824"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7825"},{"content":{"text":[{"insert":"06","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuk360","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7827"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7828"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7829"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7830"},{"content":{"text":[{"insert":"07","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuumm00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7832"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7833"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7834"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7835"},{"content":{"text":[{"insert":"08","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuupru0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7837"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7838"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7839"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7840"},{"content":{"text":[{"insert":"09","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuusi00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7842"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7843"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7844"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7845"},{"content":{"text":[{"insert":"10","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuuv0t0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7847"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7848"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7849"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7850"},{"content":{"text":[{"insert":"11","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuv1jn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7852"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7853"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7854"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7855"},{"content":{"text":[{"insert":"12","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuv4350","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7857"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7858"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7859"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7860"},{"content":{"text":[{"insert":"13","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuv8o80","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7862"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7863"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7864"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7865"},{"content":{"text":[{"insert":"14","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvbdd0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7867"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7868"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7869"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7870"},{"content":{"text":[{"insert":"15","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvdul0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7872"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7873"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7874"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7875"},{"content":{"text":[{"insert":"16","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvgfk0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7877"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7878"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7879"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7880"},{"content":{"text":[{"insert":"17","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvj6s0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7882"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7883"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7884"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7885"},{"content":{"text":[{"insert":"18","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvlns0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7887"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7888"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7889"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7890"},{"content":{"text":[{"insert":"19","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvovp0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7892"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7893"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7894"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa7895"},{"content":{"text":[{"insert":"20","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvrfr0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa7897"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa7898"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa7899"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78100"},{"content":{"text":[{"insert":"21","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpuvu180","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78102"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78103"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78104"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78105"},{"content":{"text":[{"insert":"22","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv013d0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78107"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78108"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78109"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78110"},{"content":{"text":[{"insert":"23","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv05n20","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78112"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78113"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78114"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78115"},{"content":{"text":[{"insert":"24","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv08bi0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78117"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78118"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78119"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78120"},{"content":{"text":[{"insert":"25","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0avu0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78122"},{"content":{"apple-news-follow_tagline":[{"insert":"Sign up to the TopGear Newsletter"}],"link":[{"insert":"SIGN UP","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup"}}],"image":{"id":"91356","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"91355"}},"id":"doc-1jhtpfbqq1"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78123"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78124"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78125"},{"content":{"text":[{"insert":"26","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0dgu0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78127"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78128"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78129"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78130"},{"content":{"text":[{"insert":"27","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0ha50","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78132"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78133"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78134"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78135"},{"content":{"text":[{"insert":"28","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0k6j0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78137"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78138"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78139"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcousa78140"},{"content":{"text":[{"insert":"29","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0mrk0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcousa78142"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcousa78143"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcousa78144"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q0"},{"content":{"text":[{"insert":"30","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0pjd0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q2"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q3"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q4"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q5"},{"content":{"text":[{"insert":"31","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0s370","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q7"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q8"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q9"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q10"},{"content":{"text":[{"insert":"32","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv0upl0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q12"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q13"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q14"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q15"},{"content":{"text":[{"insert":"33","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv11970","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q17"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q18"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q19"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q20"},{"content":{"text":[{"insert":"34","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv140f0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q22"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q23"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q24"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q25"},{"content":{"text":[{"insert":"35","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv16ls0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q27"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q28"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q29"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q30"},{"content":{"text":[{"insert":"36","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1ec70","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q32"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q33"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q34"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q35"},{"content":{"text":[{"insert":"37","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1gqg0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q37"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q38"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q39"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q40"},{"content":{"text":[{"insert":"38","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1jft0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q42"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q43"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q44"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q45"},{"content":{"text":[{"insert":"39","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1m190","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q47"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q52"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q53"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q54"},{"content":{"text":[{"insert":"40","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1otj0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q56"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q57"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q58"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q59"},{"content":{"text":[{"insert":"41","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1r5o0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q61"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q62"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q63"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q64"},{"content":{"text":[{"insert":"42","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv1vbn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q66"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q67"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q68"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q69"},{"content":{"text":[{"insert":"43","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv24120","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q71"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q72"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q73"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q74"},{"content":{"text":[{"insert":"44","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv26h00","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q76"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q77"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q78"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q79"},{"content":{"text":[{"insert":"45","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv29lq0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q81"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q82"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q83"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q84"},{"content":{"text":[{"insert":"46","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2c9t0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q86"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q87"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q88"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q89"},{"content":{"text":[{"insert":"47","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2emn0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q91"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q92"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q93"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q94"},{"content":{"text":[{"insert":"48","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2h5k0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q96"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q97"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q98"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q99"},{"content":{"text":[{"insert":"49","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2jo60","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q101"},{"content":{"text":[{"insert":"  "}]},"identifier":"body","styles":{},"id":"doc-1jcouru7q102"},{"content":{},"identifier":"separator","styles":{"style":"_option1"},"id":"doc-1jcouru7q103"},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1jcouru7q104"},{"content":{"text":[{"insert":"50","attributes":{"color":"#ff3f63"}},{"insert":" Xxxx"}]},"id":"doc-1jgpv2ovt0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jcouru7q106"},{"content":{},"identifier":"footer","styles":{"style":"_option1"},"id":"doc-1i1hesi1t7"},{"content":{"html":"<iframe allow=\"autoplay *; encrypted-media *; fullscreen *; clipboard-write\" frameborder=\"0\" height=\"450\" style=\"width:100%;max-width:660px;overflow:hidden;border-radius:10px;\" sandbox=\"allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation\" src=\"https://embed.podcasts.apple.com/us/podcast/top-gear-magazine/id1614649540\"></iframe>"},"id":"doc-1jflpilaj0","identifier":"podcast","styles":{}},{"content":{},"identifier":"container","styles":{"style":"_option14"},"containers":{"main":[{"content":{"image":{"id":"91358","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content","inside-caption":"_caption-none","style":"_option7"},"id":"doc-1is9kes3t12"},{"content":{"title":[{"insert":"Discover more","attributes":{"color":"#79d6f2"}}]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1is9kes3t13"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t14"},{"content":{"text":[{"insert":"Buy the magazine","attributes":{"href":"https://www.buysubscriptions.com/print/bbc-top-gear-magazine-subscription?promo=TGFMEV&utm_medium=brandsite&utm_source=topgear.com&utm_campaign=5for5_tgfmev&utm_content=footer-menu&style=brand","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t15"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t16"},{"content":{"text":[{"insert":"Visit our website","attributes":{"href":"https://www.topgear.com/","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t17"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t18"},{"content":{"text":[{"insert":"Listen to our podcast","attributes":{"href":"https://podcasts.apple.com/gb/podcast/top-gear-magazine/id1614649540","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t19"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t20"},{"content":{"text":[{"insert":"Watch films on YouTube","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t21"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t22"},{"content":{"text":[{"insert":"Sign up for our free newsletter","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t23"},{"content":{"text":[{"insert":"   "}]},"identifier":"body","styles":{},"id":"doc-1is9kes3t24"},{"content":{},"identifier":"container","styles":{"style":"_option15"},"containers":{"main":[{"content":{"text":[{"insert":"A","attributes":{"href":"https://www.facebook.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t26"},{"content":{"text":[{"insert":"C","attributes":{"href":"https://x.com/bbc_topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t27"},{"content":{"text":[{"insert":"D","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t28"},{"content":{"text":[{"insert":"E","attributes":{"href":"https://www.instagram.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t29"},{"content":{"text":[{"insert":"F","attributes":{"color":"#102935","href":"https://www.tiktok.com/@topgear?is_from_webapp=1&sender_device=pc"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t30"}]},"inlineStyles":{"background-color":"rgb(121, 214, 242)"},"data":{"an-content-display":"collection"},"id":"doc-1is9kes3t25"}]},"inlineStyles":{"background-color":"rgb(0, 39, 48)"},"id":"doc-1is9kes3t11"}]}},
+  crosshead: {"version":"2.4","data":{"content":[{"content":{},"id":"doc-1jj1hqqba0","identifier":"header-image","styles":{},"data":{"an-image-role":"photo"}},{"content":{},"id":"doc-1jblfrog80","identifier":"title","styles":{"text-align":"_align-middle"}},{"content":{"title":[]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t2"},{"content":{"name":[]},"identifier":"author","styles":{"text-align":"_align-middle"},"id":"doc-1i1hesi1t3"},{"content":{},"id":"doc-1jflpepua0","identifier":"body","styles":{"style":"_option8"}},{"content":{"text":[{"insert":"[[Main Style Crosshead]]"}]},"id":"doc-1jgpu5gmr0","identifier":"title","styles":{"style":"_option2"}},{"content":{"text":[{"insert":"[[Alternate style Crosshead]]"}]},"id":"doc-1jblfshc20","identifier":"crosshead","styles":{}},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1i1hesi1t4"},{"content":{"apple-news-follow_tagline":[{"insert":"For more content follow this channel"}],"link":[{"insert":"FOLLOW","attributes":{"href":"https://apple.news/TRtxUc-x1TtSqnoPE8MyWFA?subscribe=1"}}],"image":{"id":"91357","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"91358"}},"id":"doc-1jhtp4ak40"},{"content":{"text":[]},"identifier":"title","styles":{"style":"_option2"},"id":"doc-1jj1hs2gn0"},{"content":{"text":[]},"identifier":"crosshead","styles":{},"id":"doc-1jj1hs2gn1"},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jj1hs2gn2"},{"content":{"text":[]},"identifier":"title","styles":{"style":"_option2"},"id":"doc-1jj1hs4mm0"},{"content":{"text":[]},"identifier":"crosshead","styles":{},"id":"doc-1jj1hs4mm1"},{"content":{"text":[]},"identifier":"body","styles":{"style":"_option1"},"id":"doc-1jj1hs4mm2"},{"content":{"text":[{"insert":"  "}]},"id":"doc-1jblfsl5c0","identifier":"body","styles":{}},{"content":{"text":[{"insert":"SCORE: "},{"insert":"X/10","attributes":{"color":"#ff3f63"}}]},"id":"doc-1jhqibg5l0","identifier":"title","styles":{"style":"_option3"}},{"content":{},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content"},"data":{"an-image-role":"photo"},"id":"doc-1i1hesi1t5"},{"content":{},"identifier":"footer","styles":{"style":"_option1"},"id":"doc-1i1hesi1t7"},{"content":{"apple-news-follow_tagline":[{"insert":"Sign up to the TopGear Newsletter"}],"link":[{"insert":"SIGN UP","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup"}}],"image":{"id":"91356","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"apple-news-follow","styles":{},"data":{"an-dark-mode-image":{"id":"91355"}},"id":"doc-1jhtp4ak41"},{"content":{"html":"<iframe allow=\"autoplay *; encrypted-media *; fullscreen *; clipboard-write\" frameborder=\"0\" height=\"450\" style=\"width:100%;max-width:660px;overflow:hidden;border-radius:10px;\" sandbox=\"allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation\" src=\"https://embed.podcasts.apple.com/us/podcast/top-gear-magazine/id1614649540\"></iframe>"},"id":"doc-1jflpfeof0","identifier":"podcast","styles":{}},{"content":{},"identifier":"container","styles":{"style":"_option14"},"containers":{"main":[{"content":{"image":{"id":"91358","focuspoint":{"x":0.5,"y":0.5},"cropper":false}},"identifier":"image","styles":{"fitting":"_fit-frame-height-to-content","inside-caption":"_caption-none","style":"_option7"},"id":"doc-1is9kes3t12"},{"content":{"title":[{"insert":"Discover more","attributes":{"color":"#79d6f2"}}]},"identifier":"subtitle","styles":{"text-align":"_align-middle"},"id":"doc-1is9kes3t13"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t14"},{"content":{"text":[{"insert":"Buy the magazine","attributes":{"href":"https://www.buysubscriptions.com/print/bbc-top-gear-magazine-subscription?promo=TGFMEV&utm_medium=brandsite&utm_source=topgear.com&utm_campaign=5for5_tgfmev&utm_content=footer-menu&style=brand","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t15"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t16"},{"content":{"text":[{"insert":"Visit our website","attributes":{"href":"https://www.topgear.com/","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t17"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t18"},{"content":{"text":[{"insert":"Listen to our podcast","attributes":{"href":"https://podcasts.apple.com/gb/podcast/top-gear-magazine/id1614649540","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t19"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t20"},{"content":{"text":[{"insert":"Watch films on YouTube","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t21"},{"content":{},"identifier":"separator","styles":{"style":"_option7"},"id":"doc-1is9kes3t22"},{"content":{"text":[{"insert":"Sign up for our free newsletter","attributes":{"href":"https://www.topgear.com/newsletter-signup?utm_source=UK&utm_medium=homepage&utm_campaign=newsletter_signup","color":"#ffffff"}}]},"identifier":"body","styles":{"style":"_option7","text-align":"_align-middle"},"id":"doc-1is9kes3t23"},{"content":{"text":[{"insert":"   "}]},"identifier":"body","styles":{},"id":"doc-1is9kes3t24"},{"content":{},"identifier":"container","styles":{"style":"_option15"},"containers":{"main":[{"content":{"text":[{"insert":"A","attributes":{"href":"https://www.facebook.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t26"},{"content":{"text":[{"insert":"C","attributes":{"href":"https://x.com/bbc_topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t27"},{"content":{"text":[{"insert":"D","attributes":{"href":"https://www.youtube.com/user/TopGear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t28"},{"content":{"text":[{"insert":"E","attributes":{"href":"https://www.instagram.com/topgear","color":"#102935"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t29"},{"content":{"text":[{"insert":"F","attributes":{"color":"#102935","href":"https://www.tiktok.com/@topgear?is_from_webapp=1&sender_device=pc"}}]},"identifier":"crosshead","styles":{"style":"_option6"},"id":"doc-1is9kes3t30"}]},"inlineStyles":{"background-color":"rgb(121, 214, 242)"},"data":{"an-content-display":"collection"},"id":"doc-1is9kes3t25"}]},"inlineStyles":{"background-color":"rgb(0, 39, 48)"},"id":"doc-1is9kes3t11"}]}}
+};
+
+// ─── Utilities ────────────────────────────────────────────────────────────
+const genId = () => 'doc-' + Math.random().toString(36).slice(2, 12);
+const deepClone = o => JSON.parse(JSON.stringify(o));
+
+function setArticleTitle(header, text, deltas) {
+  const c = header.find(c => c.identifier === 'title');
+  if (c) c.content = { text: deltas && deltas.length ? deepClone(deltas) : (text ? [{ insert: text }] : []) };
+}
+function setSubtitle(header, text, deltas) {
+  const c = header.find(c => c.identifier === 'subtitle');
+  if (c) c.content = { title: deltas && deltas.length ? deepClone(deltas) : (text ? [{ insert: text }] : []) };
+}
+function setAuthor(header, name) {
+  const c = header.find(c => c.identifier === 'author');
+  if (c) {
+    c.content = name
+      ? { name: [{ insert: 'Words:', attributes: { bold: true } }, { insert: ' ' + name }] }
+      : { name: [] };
+  }
+}
+
+// _text_ between non-word characters; the capture group is the italic run.
+const UNDERSCORE_ITALIC = /(?<![\p{L}\p{N}_])_([^_\s](?:[^_]*[^_\s])?)_(?![\p{L}\p{N}_])/u;
+
+// Converts DOM nodes to deltas, preserving bold, italic and links through nesting.
+// opts.italicOnly: for headline contexts (titles, crossheads, metadata values) —
+// those components are already bold by template style, so only italic/links carry over.
+function nodesToDeltas(nodes, opts = {}) {
+  const ops = [];
+  function walk(node, fmt) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (!node.textContent) return;
+      const attrs = {};
+      if (fmt.bold && !opts.italicOnly) attrs.bold = true;
+      if (fmt.italic) attrs.italic = true;
+      if (fmt.href) attrs.href = fmt.href;
+      const push = (text, a) => ops.push(Object.keys(a).length ? { insert: text, attributes: a } : { insert: text });
+      // Writers mark italics as _word_ in plain text (BMW 3 Series, 2026-10-29:
+      // "perhaps _the_ heartland car"). Underscores inside a word (file_name)
+      // and in link text are left alone.
+      const parts = fmt.href ? [node.textContent] : node.textContent.split(UNDERSCORE_ITALIC);
+      parts.forEach((text, i) => {
+        if (!text) return;
+        push(text, i % 2 ? Object.assign({}, attrs, { italic: true }) : attrs);
+      });
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = node.tagName.toLowerCase();
+    // Non-text embeds carry no copy — skip so alt/caption text isn't inlined
+    if (tag === 'img' || tag === 'figure' || tag === 'script' || tag === 'style') return;
+    // A line break inside a paragraph (a Word soft return, or the web's spec
+    // lines "Price: …<br>Powertrain: …") stays a line break.
+    if (tag === 'br') { ops.push({ insert: '\n' }); return; }
+    const next = Object.assign({}, fmt);
+    if (tag === 'strong' || tag === 'b') next.bold = true;
+    if (tag === 'em' || tag === 'i') next.italic = true;
+    if (tag === 'a' && node.getAttribute('href')) next.href = absoluteHref(node.getAttribute('href'));
+    for (const child of node.childNodes) walk(child, next);
+  }
+  for (const node of nodes) walk(node, {});
+  return ops;
+}
+
+// Web body HTML uses site-relative hrefs; .digital needs them absolute.
+// Absolute and mailto/tel links (as Word produces) pass through untouched.
+function absoluteHref(href) {
+  if (!href) return href;
+  if (/^(https?:|mailto:|tel:|#)/i.test(href)) return href;
+  return 'https://www.topgear.com' + (href.startsWith('/') ? href : '/' + href);
+}
+
+const deltasToText = ops => (ops || []).map(o => o.insert).join('');
+
+// Intro/lead paragraphs are carried as { ops, flagged } so the builders can tell
+// editor instructions from real copy. Bare delta runs are still accepted.
+const partOps     = part => (part && part.ops) ? part.ops : (part || []);
+const partFlagged = part => !!(part && part.flagged);
+const mkPart      = (ops, flagged) => ({ ops: ops, flagged: !!flagged });
+
+function paraToDeltas(para, opts) {
+  return nodesToDeltas(para.childNodes, opts);
+}
+
+// Trim outer whitespace of a delta run without touching inner spacing
+function trimDeltas(ops) {
+  const out = ops.map(o => Object.assign({}, o)).filter(o => o.insert);
+  while (out.length && !out[0].insert.trim()) out.shift();
+  if (out.length) out[0].insert = out[0].insert.replace(/^\s+/, '');
+  while (out.length && !out[out.length - 1].insert.trim()) out.pop();
+  if (out.length) out[out.length - 1].insert = out[out.length - 1].insert.replace(/\s+$/, '');
+  return out;
+}
+
+// Deltas for the text that follows `prefix` in a paragraph (e.g. a metadata value)
+function deltasAfterText(ops, prefix) {
+  const full = ops.map(o => o.insert).join('');
+  const idx = full.toLowerCase().indexOf(prefix.toLowerCase());
+  if (idx === -1) return null;
+  let skip = idx + prefix.length;
+  const out = [];
+  for (const op of ops) {
+    if (skip >= op.insert.length) { skip -= op.insert.length; continue; }
+    out.push(Object.assign({}, op, { insert: op.insert.slice(skip) }));
+    skip = 0;
+  }
+  const value = trimDeltas(out);
+  // A label line set wholly in italics ("Sub headline: …") is the line's
+  // styling, not emphasis: the template styles the field itself.
+  if (value.length && value.every(o => o.attributes && o.attributes.italic)) {
+    value.forEach(o => {
+      delete o.attributes.italic;
+      if (!Object.keys(o.attributes).length) delete o.attributes;
+    });
+  }
+  return value;
+}
+
+function joinDeltas(parts) {
+  const result = [];
+  parts.forEach((part, i) => {
+    if (i > 0) result.push({ insert: '\n\n' });
+    result.push(...part);
+  });
+  return result;
+}
+
+// ─── Docx parsing ────────────────────────────────────────────────────────
+// The house labels are "Feed headline:", "Article headline:", "Article subhead:"
+// and "Words:"; writers also use the variants below (Mechatronik M SEC,
+// 2026-11-06: "Sub headline:", and "Author Tom Ford" with no colon).
+const METADATA_PREFIXES = [
+  { key: 'feedHeadline', re: /^feed\s*headline\s*:/i },
+  { key: 'title',        re: /^(?:article\s*)?headline\s*:/i },
+  { key: 'subtitle',     re: /^(?:article\s*)?(?:sub[\s-]*head(?:line)?|standfirst)\s*:/i },
+  { key: 'author',       re: /^(?:words|author|byline|by)\s*:/i },
+];
+// Anywhere in a paragraph: used to find labels run together with line breaks
+const HAS_META_LABEL = /(?:headline|sub[\s-]*head|standfirst|words|author|byline)\s*:/i;
+// A bold "Author" / "Words" followed by the name, no colon
+const BARE_AUTHOR = /^(?:author|words|byline)\s+(?=\S)/i;
+
+function matchMetaPrefix(text, p) {
+  for (const { key, re } of METADATA_PREFIXES) {
+    const m = text.match(re);
+    if (!m) continue;
+    let value = text.slice(m[0].length).trim();
+    // "Feed headline: Article Headline: …": the second label is not copy
+    const inner = METADATA_PREFIXES.map(l => value.match(l.re)).find(Boolean);
+    if (inner) value = value.slice(inner[0].length).trim();
+    return { key, prefix: text.slice(0, text.length - value.length).trim(), value };
+  }
+  // Only when the bold run is the label word alone and a short name follows,
+  // so a crosshead such as "Words fail me" is never taken for a byline.
+  const lead = p && p.firstElementChild;
+  const bare = text.match(BARE_AUTHOR);
+  if (bare && lead && /^(strong|b)$/i.test(lead.tagName) && text.startsWith(lead.textContent.trim()) &&
+      /^(?:author|words|byline)$/i.test(lead.textContent.trim())) {
+    const value = text.slice(bare[0].length).trim();
+    if (value.split(/\s+/).length <= 6) return { key: 'author', prefix: text.slice(0, text.length - value.length).trim(), value };
+  }
+  return null;
+}
+
+// Some docs style crossheads/metadata as Word headings rather than bold paragraphs,
+// so headings must be walked too — mammoth emits them as <h1>–<h6>.
+function paras(html) {
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  // Embedded JSON is data, not copy. A topgear.com gallery block is swapped
+  // for a marker, so it keeps its place among the paragraphs.
+  doc.querySelectorAll('script[type="application/json"]').forEach(el => {
+    const urls = galleryUrls(el.textContent);
+    if (!urls.length) return;
+    const marker = doc.createElement('div');
+    marker.setAttribute(GALLERY_ATTR, JSON.stringify(urls));
+    el.replaceWith(marker);
+  });
+  doc.querySelectorAll('script, style').forEach(el => el.remove());
+  // Labels typed as line breaks (Shift+Return) inside one Word paragraph —
+  // "Feed headline: ⏎ … ⏎ Article headline: ⏎ …" — become one paragraph per
+  // line, so each label and its value are read on their own (BMW 3 Series,
+  // 2026-10-29: the headline went into the feed headline, the byline into
+  // the standfirst). Only paragraphs holding a label are split.
+  doc.querySelectorAll('p').forEach(p => {
+    if (!p.querySelector('br') || !HAS_META_LABEL.test(p.textContent)) return;
+    const lines = p.innerHTML.split(/<br\s*\/?>/i);
+    lines.forEach(html => {
+      const line = doc.createElement('p');
+      line.innerHTML = html;
+      p.before(line);
+    });
+    p.remove();
+  });
+  // Innermost blocks only: <blockquote><p>…</p></blockquote> is one paragraph,
+  // not the same text twice.
+  // A block that wraps others and also has words of its own (a list item with
+  // a nested list) is kept, so nothing is dropped.
+  const ownText = el => Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+  return Array.from(doc.querySelectorAll(BLOCKS)).filter(el => !el.querySelector(BLOCKS) || ownText(el));
+}
+const GALLERY_ATTR = 'data-wd-gallery';
+const BLOCKS = 'p, h1, h2, h3, h4, h5, h6, blockquote, li, [' + GALLERY_ATTR + ']';
+
+// A web gallery, as it arrives inside the body of a topgear.com article:
+// { component: 'Carousel' | 'InlineGallery', props: { media: [{ image: { src } }] } }
+function galleryUrls(json) {
+  let block;
+  try { block = JSON.parse(json); } catch { return []; }
+  const media = block && block.props && block.props.media;
+  if (!Array.isArray(media)) return [];
+  return media.map(m => m && m.image && m.image.src).filter(src => typeof src === 'string' && src).map(articleImageUrl);
+}
+// A gallery among the body paragraphs is carried as { gallery: [urls] } and
+// built as a slideshow where it sat. Only the crosshead layout places them.
+const galleryOf = p => p.hasAttribute(GALLERY_ATTR) ? JSON.parse(p.getAttribute(GALLERY_ATTR)) : null;
+// A single picture placed in the copy travels the same way, as { picture: url }.
+const isGalleryPart = part => !!(part && (part.gallery || part.picture));
+const mediaComp = part => part.picture ? pictureComp(part.picture) : slideshowComp(part.gallery);
+
+// A web pull quote: a line lifted from the article and shown large. It is kept
+// once, in place, as plain body text, and listed so the editor can style it or
+// take it out.
+const isPullQuote = p => !!p.closest('blockquote');
+const pullQuoteEntry = text => ({ text });
+
+// Lines that read as editor instructions rather than article copy.
+// These are NOT dropped: they are recorded in meta.flagged for the review box
+// and still placed inline as body text where they appeared, so nothing is lost.
+const FLAG_PREFIXES = ['pics:', 'web gallery', 'imbed ', 'imbedded', 'embed ', 'embargo'];
+function shouldFlag(text) {
+  const lower = text.toLowerCase();
+  return FLAG_PREFIXES.some(p => lower.startsWith(p)) || /^https?:\/\/\S+$/.test(text);
+}
+
+// A flagged line as recorded in meta.flagged. The hrefs matter: "Web gallery"
+// is often the visible text of a link whose target is the picture folder.
+function flagEntry(p, text) {
+  const hrefs = Array.from(p.querySelectorAll('a[href]')).map(a => a.getAttribute('href'));
+  return { text, hrefs: hrefs.filter((h, i) => h && hrefs.indexOf(h) === i) };
+}
+
+// Returns { crosshead, remainingBody } if paragraph is (or starts with) bold, else null.
+// Handles:
+//   - Fully bold paragraph  →  crosshead = full text, remainingBody = ''
+//   - Paragraph starting with bold  →  crosshead = bold part, remainingBody = rest
+function extractCrosshead(para) {
+  const text = para.textContent.trim();
+  if (!text) return null;
+  const headlineDeltas = () => trimDeltas(paraToDeltas(para, { italicOnly: true }));
+  const firstStrong = para.querySelector('strong, b');
+  if (!firstStrong) {
+    // Heading elements are crossheads even without explicit bold runs
+    if (/^H[1-6]$/.test(para.tagName)) {
+      return { crosshead: text, crossheadDeltas: headlineDeltas(), remainingBody: '', remainingDeltas: [] };
+    }
+    return null;
+  }
+  const strongText = firstStrong.textContent.trim();
+  if (!strongText) return null;
+  // Fully bold
+  if (strongText === text) {
+    return { crosshead: text, crossheadDeltas: headlineDeltas(), remainingBody: '', remainingDeltas: [] };
+  }
+  // A spec block is not a heading: bold labels with values, either
+  // "Price: £120,000" (the colon outside the bold) or several labelled lines
+  // in one paragraph. It stays body text, labels bold, one line each.
+  const labels = para.querySelectorAll('strong, b').length;
+  if (/^\s*:/.test(text.slice(strongText.length)) || (labels > 1 && para.querySelector('br'))) return null;
+  // Starts with bold (mixed paragraph: bold question + plain answer)
+  const firstEl = para.firstElementChild;
+  if (firstEl && (firstEl.tagName === 'STRONG' || firstEl.tagName === 'B')) {
+    const rest = [];
+    let past = false;
+    for (const child of para.childNodes) {
+      if (child === firstEl) { past = true; continue; }
+      if (past) rest.push(child);
+    }
+    return {
+      crosshead: strongText,
+      crossheadDeltas: trimDeltas(nodesToDeltas([firstStrong], { italicOnly: true })),
+      remainingBody: text.slice(strongText.length).trim(),
+      remainingDeltas: nodesToDeltas(rest),
+    };
+  }
+  return null;
+}
+
+// Rich version of a numbered-entry name ("12. Route 66" minus the "12. ")
+function entryNameDeltas(p) {
+  const ops = paraToDeltas(p, { italicOnly: true });
+  const m = deltasToText(ops).match(/^\s*\d+[.:\s]\s*/);
+  return m ? deltasAfterText(ops, m[0]) : trimDeltas(ops);
+}
+
+// Word's automatic numbering ("1." typed by Word, not the writer) never reaches
+// the text: mammoth emits each numbered heading as its own <ol><li>, because
+// the body copy between them breaks the list. Seen in "51 Worst Cars" and
+// "Ugliest F1 cars" (a single decimal list starting at 1, so the document
+// reads 1 → N). An <ol> item followed by ordinary paragraphs is an entry
+// heading, numbered by position. Needs three or more, so a short numbered list
+// inside the copy is left alone.
+function wordListEntries(ps) {
+  const heads = ps.filter((p, i) => {
+    if (p.tagName !== 'LI' || !p.parentElement || p.parentElement.tagName !== 'OL') return false;
+    const next = ps.slice(i + 1).find(q => q.textContent.trim());
+    return !next || next.tagName !== 'LI';
+  });
+  const map = new Map();
+  if (heads.length >= 3) heads.forEach((p, i) => map.set(p, i + 1));
+  return map;
+}
+
+function parseNumbered(html, type) {
+  const ENTRY_RE = /^(\d+)\.\s+(.+)$/;
+  const meta = { feedHeadline: '', title: '', subtitle: '', author: '',
+                 flagged: [], leadParts: [], deltas: {} };
+  const entries = [];
+  let inEntries = false;
+  let pending = null;
+  let pendingMetaKey = null;
+
+  const ps = paras(html);
+  const listNumbers = wordListEntries(ps);
+  // An entry heading: typed "18. Name", or a Word-numbered list item. The
+  // Word item has no typed number, so its name is taken whole ("1972 Eifelland"
+  // must keep its year).
+  const entryFrom = (p, text) => {
+    const m = text.match(ENTRY_RE);
+    if (m) return { number: parseInt(m[1]), name: m[2], nameDeltas: entryNameDeltas(p), bodyParts: [] };
+    if (listNumbers.has(p)) return { number: listNumbers.get(p), name: text, nameDeltas: trimDeltas(paraToDeltas(p, { italicOnly: true })), bodyParts: [] };
+    return null;
+  };
+
+  // A Word heading between numbered entries is a section heading ("Dealer
+  // discounts" above entries 11–62). It travels on the entry that follows it,
+  // so sorting and counting the entries is unaffected.
+  let section = null;
+  let leadHeading = null;
+  const isHeading = p => /^H[1-6]$/.test(p.tagName);
+  const sectionFrom = (p, text) => ({ name: text, nameDeltas: trimDeltas(paraToDeltas(p, { italicOnly: true })) });
+  const take = entry => { if (section) { entry.sectionBefore = section; section = null; } return entry; };
+  // A heading with no entry after it is kept as copy, never dropped
+  const keepStraySection = () => {
+    if (section && pending) pending.bodyParts.push(section.nameDeltas, ...(section.bodyParts || []));
+    section = null;
+  };
+
+  for (const p of ps) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+
+    if (!inEntries) {
+      // Multi-line metadata: previous line was a label with no value
+      if (pendingMetaKey) {
+        if (!shouldFlag(text) && !entryFrom(p, text)) {
+          meta[pendingMetaKey] = text;
+          meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
+          pendingMetaKey = null;
+          continue;
+        }
+        pendingMetaKey = null;
+      }
+
+      const first = entryFrom(p, text);
+      if (first) {
+        inEntries = true;
+        // A heading directly above the first entry opens the first section
+        if (leadHeading && meta.leadParts[meta.leadParts.length - 1] === leadHeading.part) {
+          meta.leadParts.pop();
+          section = leadHeading.section;
+        }
+        pending = take(first);
+        continue;
+      }
+      const match = matchMetaPrefix(text, p);
+      if (match) {
+        if (match.value === '') { pendingMetaKey = match.key; }
+        else {
+          meta[match.key] = match.value;
+          meta.deltas[match.key] = deltasAfterText(paraToDeltas(p, { italicOnly: true }), match.prefix);
+        }
+      } else {
+        // Not metadata and not an entry heading. Never dropped: kept as body
+        // copy at the point it appeared, and flagged if it reads like an
+        // editor instruction so it can be reviewed before publishing.
+        var isInstr = shouldFlag(text);
+        if (isInstr) meta.flagged.push(flagEntry(p, text));
+        const deltas = trimDeltas(paraToDeltas(p));
+        if (deltas.length) {
+          const part = mkPart(deltas, isInstr);
+          meta.leadParts.push(part);
+          leadHeading = isHeading(p) && !isInstr ? { part, section: sectionFrom(p, text) } : null;
+        }
+      }
+    } else {
+      const next = entryFrom(p, text);
+      if (next) {
+        if (pending) entries.push(pending);
+        pending = take(next);
+      } else if (isHeading(p) && !shouldFlag(text)) {
+        keepStraySection();
+        section = sectionFrom(p, text);
+      } else if (section) {
+        // Copy under a section heading, before its first entry
+        if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
+        const deltas = trimDeltas(paraToDeltas(p));
+        if (deltas.length) (section.bodyParts = section.bodyParts || []).push(deltas);
+      } else {
+        if (shouldFlag(text)) meta.flagged.push(flagEntry(p, text));
+        if (pending) {
+          const deltas = trimDeltas(paraToDeltas(p));
+          if (deltas.length) pending.bodyParts.push(deltas);
+        }
+      }
+    }
+  }
+  keepStraySection();
+  if (pending) entries.push(pending);
+
+  // Some countdown docs are written with bold entry names and no "1. " prefix,
+  // so ENTRY_RE never matches and the whole article would come through as one
+  // undifferentiated run of body copy. Fall back to the crosshead parser and
+  // number the entries by position instead.
+  if (entries.length === 0) {
+    const byBold = parseCrosshead(html);
+    const m = byBold.meta;
+    // Editor instructions are often bold too ("PICS: To come"), which would
+    // otherwise become entry 1 and shift every number. Pull them out of the
+    // entry list — their copy still travels as lead paragraphs.
+    const leadFromFlagged = [];
+    const realEntries = byBold.entries.filter(e => {
+      if (!shouldFlag(e.crosshead || '')) return true;
+      if (e.crossheadDeltas && e.crossheadDeltas.length) leadFromFlagged.push(e.crossheadDeltas);
+      leadFromFlagged.push(...(e.bodyParts || []));
+      return false;
+    });
+
+    if (realEntries.length > 1) {
+      const total = realEntries.length;
+      // Type 4 keeps section headings as sections; the numbered types number
+      // every crosshead by position, as before.
+      const numbered = type === 'snippet' ? toSnippetEntries(realEntries) : realEntries.map((e, i) => ({
+        number: type === 'countdown' ? total - i : i + 1,
+        name: e.crosshead,
+        nameDeltas: e.crossheadDeltas,
+        bodyParts: e.bodyParts,
+      }));
+      // Keep whatever metadata the crosshead pass recognised. Its intro
+      // paragraphs and any pulled-out instructions become lead copy, so
+      // everything still appears above entry 1 rather than disappearing.
+      m.leadParts = (m.introParts || [])
+        .concat(leadFromFlagged)
+        .concat(m.leadParts || []);
+      m.introParts = [];
+      m.autoNumbered = true;
+      return { meta: m, entries: numbered };
+    }
+  }
+
+  return { meta, entries };
+}
+
+function parseCrosshead(html) {
+  const meta = { feedHeadline: '', title: '', subtitle: '', author: '', intro: '', score: '',
+                 flagged: [], leadParts: [], deltas: {}, introParts: [] };
+  const entries = [];
+  let inContent = false;
+  let curCrosshead = null;
+  let curCrossheadDeltas = null;
+  let curHeading = false; // the current crosshead came from a Word heading (h1–h6), not a bold paragraph
+  let curBodyParts = [];
+  let pendingMetaKey = null;
+
+  for (const p of paras(html)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+
+    // 1. Multi-line metadata: previous line was a label with no value
+    if (pendingMetaKey) {
+      if (!shouldFlag(text)) {
+        // Don't consume the value if it looks like a crosshead we've been waiting for
+        const crosshead = extractCrosshead(p);
+        const isMeta = !!matchMetaPrefix(text, p);
+        if (!isMeta) {
+          meta[pendingMetaKey] = text;
+          meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
+          pendingMetaKey = null;
+          continue;
+        }
+      }
+      pendingMetaKey = null;
+    }
+
+    // 2. Always check metadata FIRST — even bold lines can be metadata (e.g. "Words: Jack Rix")
+    const metaMatch = matchMetaPrefix(text, p);
+    if (metaMatch) {
+      if (metaMatch.value === '') { pendingMetaKey = metaMatch.key; }
+      else {
+        meta[metaMatch.key] = metaMatch.value;
+        meta.deltas[metaMatch.key] = deltasAfterText(paraToDeltas(p, { italicOnly: true }), metaMatch.prefix);
+      }
+      continue;
+    }
+
+    // 3. Editor instructions and bare URLs are flagged, not skipped — they fall
+    //    through to the body handling below so the copy stays where it was.
+    //    They are often bold, so they must not be read as crossheads: an
+    //    instruction promoted to a crosshead would open a spurious section.
+    const isInstruction = shouldFlag(text);
+    if (isInstruction) meta.flagged.push(flagEntry(p, text));
+
+    // 3.5. Detect score line (e.g. "SCORE: 7/10") — must run before crosshead detection
+    if (/^score:\s*\d/i.test(text)) {
+      meta.score = text;
+      continue;
+    }
+
+    // 4. Detect crosshead (fully bold, or starts with bold)
+    const crosshead = isInstruction ? null : extractCrosshead(p);
+    if (crosshead) {
+      if (inContent && curCrosshead !== null) {
+        entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts, heading: curHeading });
+      }
+      inContent = true;
+      curCrosshead = crosshead.crosshead;
+      curCrossheadDeltas = crosshead.crossheadDeltas;
+      curHeading = /^H[1-6]$/.test(p.tagName);
+      curBodyParts = crosshead.remainingDeltas && crosshead.remainingDeltas.length
+        ? [crosshead.remainingDeltas]
+        : [];
+    } else {
+      // Plain body text
+      if (inContent) {
+        if (curCrosshead !== null) {
+          const deltas = paraToDeltas(p);
+          if (deltas.length) curBodyParts.push(deltas);
+        }
+      } else {
+        meta.intro = meta.intro ? meta.intro + '\n\n' + text : text;
+        meta.introParts.push(mkPart(trimDeltas(paraToDeltas(p)), isInstruction));
+      }
+    }
+  }
+  if (curCrosshead !== null) entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts, heading: curHeading });
+  return { meta, entries };
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOURCE ADAPTER: topgear.com URL
+// Everything above is shared with the .docx path. Below is only how a live web
+// article is fetched and turned into the same { meta, entries } shape.
+// Requires the proxy in server.js (topgear.com sends no CORS headers).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Where /proxy lives. '' means same-origin (served by server.js). A Studio
+// plug-in runs on Studio's origin, so it sets this to the deployed proxy URL.
+// Same-origin when a host that provides /proxy is serving this page (server.js
+// locally, or the Fly app). Anywhere else — notably GitHub Pages — fall back to
+// the deployed proxy, since topgear.com can't be fetched from the browser.
+window.PROXY_BASE = window.PROXY_BASE || (function () {
+  var h = location.hostname;
+  var selfHosted = h === 'localhost' || h === '127.0.0.1' || /(^|\.)topgear-web-word-digital\.fly\.dev$/.test(h);
+  return selfHosted ? '' : 'https://topgear-web-word-digital.fly.dev';
+})();
+
+
+// ─── __NEXT_DATA__ parsing ─────────────────────────────────────────────────
+function extractNextData(html) {
+  const m = html.match(/<script[^>]+id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+function findArticleInNextData(nextData) {
+  const pp = nextData?.props?.pageProps;
+  const candidates = [
+    pp?.article,
+    pp?.data?.article,
+    pp?.initialData?.article,
+    pp?.content,
+    pp?.pageData?.article,
+  ];
+  return candidates.find(c => c && (c.title || c.headline)) ?? null;
+}
+
+function extractMetaFromNextData(article) {
+  // author may be a string or an object with a title/name field
+  const authorRaw = article.author;
+  const author = typeof authorRaw === 'string'
+    ? authorRaw
+    : (authorRaw?.title || authorRaw?.name || (article.authors && article.authors[0]?.name) || article.byline || '');
+  const title = article.title || article.headline || '';
+  return {
+    // Web articles carry a single headline, so C_HEADLINE takes the same text
+    // (docx articles get theirs from an explicit "Feed headline:" line).
+    feedHeadline: title,
+    title:    title,
+    subtitle: article.standfirst || article.subtitle || article.subTitle
+              || article.headline || article.teaser || article.kicker || '',
+    author,
+    intro:    '',
+    score:    '',
+    deltas:   {},
+    flagged:  [],
+    introParts: [],
+    leadParts:  [],
+  };
+}
+
+// TopGear listicle: items array with { title, body (HTML), media }
+// A list can be grouped under section headings: "The 40 Best Used EV Bargains"
+// is 40 bold car names under 8 Word headings for the price bands ("Up to
+// £5,000"…). When a doc mixes Word headings and bold names, the headings are
+// the sections and the bold names are the items. A doc that uses only one kind
+// has no sections — those are all items.
+function isSectionHeading(entry, entries) {
+  return !!entry.heading && entries.some(e => !e.heading);
+}
+
+// Crosshead-shaped entries → Type 4 entries: items numbered by position (the
+// number is never shown), section headings carried as { section: true }.
+function toSnippetEntries(crossheadEntries) {
+  let n = 0;
+  // The list layouts have a frame per item and no slideshow, so a gallery's
+  // pictures go to the Dossier and the frames instead.
+  const text = e => (e.bodyParts || []).filter(part => !isGalleryPart(part));
+  return crossheadEntries.map(e => isSectionHeading(e, crossheadEntries)
+    ? { section: true, number: null, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: text(e) }
+    : { number: ++n, name: e.crosshead || '', nameDeltas: e.crossheadDeltas || [], bodyParts: text(e) });
+}
+
+// Type 4 from crosshead-shaped copy: each crosshead is an item, numbered by
+// position (the number is never shown); copy before the first item stays as lead.
+function snippetFromCrossheads(parsed) {
+  return Object.assign({}, parsed, {
+    entries: toSnippetEntries(parsed.entries),
+    leadParts: (parsed.leadParts || []).concat(parsed.introParts || []).filter(part => !isGalleryPart(part)),
+    introParts: [],
+  });
+}
+
+function isListicle(article) {
+  return Array.isArray(article.items) && article.items.length > 0;
+}
+
+function parseListicleItems(article) {
+  const base = 'https://www.topgear.com';
+  const reversed = article.reversedList;
+  const total = article.items.length;
+
+  const flagged = [];
+  const entries = article.items.map((item, i) => {
+    const number = reversed ? (total - i) : (i + 1);
+    const name   = (item.title || '').trim();
+    // body is HTML — keep bold/italic/links and one component per paragraph
+    const bodyParts = [];
+    for (const p of paras(item.body || '')) {
+      const text = p.textContent.trim();
+      if (!text) continue;
+      const deltas = trimDeltas(paraToDeltas(p));
+      if (!deltas.length) continue;
+      if (shouldFlag(text)) flagged.push(flagEntry(p, text));
+      bodyParts.push(deltas);
+    }
+    // Item titles can carry italics (model names), so keep them rich too
+    const nameDoc = new DOMParser().parseFromString('<div>' + (item.title || '') + '</div>', 'text/html');
+    const nameDeltas = trimDeltas(nodesToDeltas(nameDoc.body.firstChild.childNodes, { italicOnly: true }));
+    // Carry the item name as a crosshead too, so a listicle URL still builds
+    // correctly if the user picks Type 3 (crosshead) rather than Type 1/2.
+    return { number, name, nameDeltas, crosshead: name, crossheadDeltas: nameDeltas, bodyParts };
+  });
+  return { entries, flagged };
+}
+
+// Collect every image the article carries, whatever its contentType.
+// Covers: hero, listicle items, carousel/gallery slides, and inline body images.
+// Inline body pictures are served as a resized derivative
+// (/sites/default/files/styles/<style>/public/<path>?itok=…); the original is
+// the same path without the style part.
+function fullSizeImage(url) {
+  return url.replace(/\/sites\/default\/files\/styles\/[^/]+\/public\//, '/sites/default/files/').split('?')[0];
+}
+const articleImageUrl = src => fullSizeImage(src.startsWith('http') ? src : 'https://www.topgear.com' + src);
+const imageFileName = url => decodeURIComponent(url.split('?')[0].split('/').pop()).toLowerCase();
+
+function extractArticleImages(article) {
+  const urls = [];
+  const add = src => {
+    if (!src || typeof src !== 'string') return;
+    const abs = articleImageUrl(src);
+    // The opener comes back as headerImage and again as the first carousel
+    // slide: same file name, another folder. Only the opener is matched by
+    // name — two different pictures elsewhere may share one.
+    if (urls.includes(abs) || (urls.length && imageFileName(abs) === imageFileName(urls[0]))) return;
+    urls.push(abs);
+  };
+
+  // Main hero image (big reads repeat it as headerImage)
+  add(article.image && article.image.src);
+  add(typeof article.headerImage === 'string' ? article.headerImage : article.headerImage && article.headerImage.src);
+
+  // Listicle: per-item images
+  (article.items || []).forEach(item => add(item.media && item.media.image && item.media.image.src));
+
+  // garageReview / review / news: carousel + gallery slides
+  ['carousel', 'gallery', 'images', 'media'].forEach(key => {
+    const list = article[key];
+    if (!Array.isArray(list)) return;
+    list.forEach(slide => {
+      if (!slide) return;
+      add(slide.image && slide.image.src);
+      add(slide.src);
+    });
+  });
+
+  // The body, in reading order: inline pictures, and the galleries, which
+  // arrive as embedded JSON — { component: 'Carousel' | 'InlineGallery',
+  // props: { media: [{ type: 'image', image: { src } }] } }.
+  if (typeof article.body === 'string' && /<img|<script/.test(article.body)) {
+    const d = new DOMParser().parseFromString('<div>' + article.body + '</div>', 'text/html');
+    d.querySelectorAll('img, script[type="application/json"]').forEach(el => {
+      if (el.tagName === 'IMG') { add(el.getAttribute('src')); return; }
+      galleryUrls(el.textContent).forEach(add);
+    });
+  }
+
+  add(typeof article.footerImage === 'string' ? article.footerImage : article.footerImage && article.footerImage.src);
+
+  return urls;
+}
+
+// ─── DOM scraping fallback ─────────────────────────────────────────────────
+function extractImagesFromDoc(doc, baseUrl) {
+  const urls = new Set();
+  doc.querySelectorAll('img').forEach(img => {
+    const src = img.dataset.src || img.dataset.lazySrc || img.getAttribute('data-original') || img.src || '';
+    if (!src || src.startsWith('data:') || src.length < 10) return;
+    try {
+      const abs = new URL(src, baseUrl || 'https://www.topgear.com').href;
+      if (abs.startsWith('https://')) urls.add(abs.split('?')[0]);
+    } catch {}
+  });
+  // Also check srcset
+  doc.querySelectorAll('[srcset]').forEach(el => {
+    el.getAttribute('srcset').split(',').forEach(entry => {
+      const urlPart = entry.trim().split(/\s+/)[0];
+      try {
+        const abs = new URL(urlPart, 'https://www.topgear.com').href;
+        if (abs.startsWith('https://')) urls.add(abs.split('?')[0]);
+      } catch {}
+    });
+  });
+  return Array.from(urls).filter(u => /\.(jpg|jpeg|png|webp|gif)/i.test(u));
+}
+
+function scrapeFromDom(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const title =
+    doc.querySelector('h1')?.textContent?.trim() ||
+    doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+  const standfirst =
+    doc.querySelector('[class*="standfirst"]')?.textContent?.trim() ||
+    doc.querySelector('[class*="subtitle"]')?.textContent?.trim() ||
+    doc.querySelector('[class*="intro"]')?.textContent?.trim() ||
+    doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  const author =
+    doc.querySelector('[class*="byline"] a')?.textContent?.trim() ||
+    doc.querySelector('[class*="author"] a')?.textContent?.trim() ||
+    doc.querySelector('[rel="author"]')?.textContent?.trim() ||
+    doc.querySelector('meta[name="author"]')?.getAttribute('content') || '';
+  const bodyEl =
+    doc.querySelector('[class*="article-body"]') ||
+    doc.querySelector('[class*="article__body"]') ||
+    doc.querySelector('article') ||
+    doc.querySelector('main') || null;
+  const images = extractImagesFromDoc(doc, 'https://www.topgear.com');
+  return { title, standfirst, author, bodyEl, images };
+}
+
+// Nothing is ever discarded: every paragraph either becomes an entry heading or
+// is pushed as a body part at the position it occurred. Paragraphs that read as
+// editor instructions are still included, but recorded in `flagged` for review.
+function parseNumberedFromHtml(htmlString) {
+  const ENTRY_RE = /^(\d+)[.:\s]\s*(.+)$/;
+  const entries = [];
+  const leadParts = [];
+  const flagged = [];
+  let pending = null;
+
+  for (const p of paras(htmlString)) {
+    const text = p.textContent.trim();
+    if (!text) continue;
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+
+    const heading = /^H[1-6]$/.test(p.tagName) ? p.textContent.trim() : null;
+    const m = (heading || text).match(ENTRY_RE);
+    if (m) {
+      if (pending) entries.push(pending);
+      pending = {
+        number: parseInt(m[1], 10),
+        name: m[2].trim(),
+        nameDeltas: entryNameDeltas(p),
+        bodyParts: [],
+      };
+      continue;
+    }
+
+    if (shouldFlag(text)) flagged.push(flagEntry(p, text));
+    if (pending) pending.bodyParts.push(deltas);
+    else leadParts.push(mkPart(deltas, shouldFlag(text)));
+  }
+  if (pending) entries.push(pending);
+  return { entries, leadParts, flagged };
+}
+
+function parseCrossheadFromHtml(htmlString) {
+  const entries = [];
+  const introParts = [];
+  const flagged = [];
+  const pullQuotes = [];
+  let curCrosshead = null;
+  let curCrossheadDeltas = null;
+  let curBodyParts = [];
+  let curHeading = false;
+  let inContent = false;
+  let score = '';
+
+  const flush = () => {
+    if (curCrosshead !== null) {
+      entries.push({ crosshead: curCrosshead, crossheadDeltas: curCrossheadDeltas, bodyParts: curBodyParts, heading: curHeading });
+    }
+  };
+
+  for (const p of paras(htmlString)) {
+    const gallery = galleryOf(p);
+    if (gallery) {
+      if (inContent) curBodyParts.push({ gallery });
+      else introParts.push({ ops: [], flagged: true, gallery });
+      continue;
+    }
+    const text = p.textContent.trim();
+    if (!text) continue;
+
+    // Score line (e.g. "SCORE: 7/10") — must run before crosshead detection
+    if (/^score:\s*\d/i.test(text)) { score = text; continue; }
+
+    const crosshead = isPullQuote(p) ? null : extractCrosshead(p);
+    if (crosshead) {
+      flush();
+      inContent = true;
+      curCrosshead = crosshead.crosshead;
+      curCrossheadDeltas = crosshead.crossheadDeltas;
+      curHeading = /^H[1-6]$/.test(p.tagName);
+      curBodyParts = crosshead.remainingDeltas.length ? [crosshead.remainingDeltas] : [];
+      continue;
+    }
+
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+    if (shouldFlag(text)) flagged.push(flagEntry(p, text));
+    if (isPullQuote(p)) pullQuotes.push(pullQuoteEntry(text));
+
+    if (inContent) curBodyParts.push(deltas);
+    else introParts.push(mkPart(deltas, shouldFlag(text) || isPullQuote(p)));
+  }
+  flush();
+  return { entries, introParts, flagged, pullQuotes, score };
+}
+
+// Straight prose with no crossheads, numbering or bold leads (e.g. garageReview
+// long-term reports). Every paragraph becomes its own body component.
+function parseProseFromHtml(htmlString) {
+  const parts = [];
+  const flagged = [];
+  const pullQuotes = [];
+  for (const p of paras(htmlString)) {
+    const gallery = galleryOf(p);
+    if (gallery) { parts.push({ gallery }); continue; }
+    const text = p.textContent.trim();
+    if (!text) continue;
+    const deltas = trimDeltas(paraToDeltas(p));
+    if (!deltas.length) continue;
+    if (shouldFlag(text)) flagged.push(flagEntry(p, text));
+    if (isPullQuote(p)) pullQuotes.push(pullQuoteEntry(text));
+    parts.push(deltas);
+  }
+  if (!parts.some(part => !isGalleryPart(part))) return { entries: [], flagged, pullQuotes };
+  return { entries: [{ crosshead: '', crossheadDeltas: [], number: 1, name: '', nameDeltas: [], bodyParts: parts }], flagged, pullQuotes };
+}
+
+// Runs the parser for the chosen type, falling back to prose when the article
+// has no crossheads or numbering. Text is never discarded by any branch.
+function parseBody(bodyHtml, type) {
+  if (!bodyHtml) return { entries: [], flagged: [] };
+  const parsed = type === 'crosshead' ? parseCrossheadFromHtml(bodyHtml)
+    : type === 'snippet' ? snippetFromCrossheads(parseCrossheadFromHtml(bodyHtml))
+    : parseNumberedFromHtml(bodyHtml);
+
+  if (parsed.entries.length) return parsed;
+
+  // A feature with no crossheads at all (a big read) is all intro: the first
+  // paragraph takes the styled opening and the rest follow as body.
+  if (type === 'crosshead' && (parsed.introParts || []).some(part => !partFlagged(part))) return parsed;
+  // No entries matched. Anything the parser gathered as intro/lead is real copy,
+  // so re-run as prose rather than emitting an article with no body.
+  const prose = parseProseFromHtml(bodyHtml);
+  // Only the crosshead layout builds slideshows
+  if (type !== 'crosshead') prose.entries.forEach(e => { e.bodyParts = e.bodyParts.filter(part => !isGalleryPart(part)); });
+  prose.proseFallback = prose.entries.length > 0;
+  return prose;
+}
+
+// Copies parser output onto meta and records what happened for the debug box
+function applyParsed(meta, parsed, debugInfo) {
+  meta.introParts = parsed.introParts || [];
+  meta.leadParts  = parsed.leadParts || [];
+  meta.flagged    = parsed.flagged || [];
+  meta.pullQuotes = parsed.pullQuotes || [];
+  if (parsed.score) meta.score = parsed.score;
+  if (meta.introParts.length && !meta.intro) {
+    meta.intro = meta.introParts.filter(function (x) { return !isGalleryPart(x); })
+      .map(function (x) { return deltasToText(partOps(x)); }).join('\n\n');
+  }
+  if (parsed.proseFallback) debugInfo.proseFallback = true;
+  debugInfo.flaggedCount = meta.flagged.length;
+}
+
+function proxyUrl(targetUrl) {
+  return String(window.PROXY_BASE).replace(/\/$/, '') + '/proxy?url=' + encodeURIComponent(targetUrl);
+}
+
+async function fetchWithProxy(targetUrl) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 25000);
+  try {
+    const resp = await fetch(proxyUrl(targetUrl), { signal: controller.signal });
+    clearTimeout(tid);
+    if (resp.ok) return await resp.text();
+    // The proxy's own refusals come with a short reason in the body (400/403);
+    // anything else is topgear.com's answer, passed through.
+    const why = resp.status === 400 || resp.status === 403 ? (await resp.text().catch(() => '')).slice(0, 120) : '';
+    throw Object.assign(new Error(
+      resp.status === 404 ? 'topgear.com has no page at that address (404). Check the link is complete.'
+      : why ? 'The address was not accepted: ' + why + '.'
+      : 'topgear.com answered HTTP ' + resp.status + ' for that address.'), { fromProxy: true });
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === 'AbortError') throw new Error('Fetching the article timed out after 25 seconds. Try again.');
+    if (e.fromProxy) throw new Error('Could not fetch the article. ' + e.message);
+    // A network-level failure: the proxy itself could not be reached.
+    const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    throw new Error('Could not reach the article proxy (' + e.message + ').' +
+      (local ? ' Make sure server.js is running (node server.js) and you opened http://localhost:3456.' : ' Check your connection and try again.'));
+  }
+}
+
+// ─── Image ZIP download ────────────────────────────────────────────────────
+async function downloadImagesAsZip(imageUrls, slug) {
+  const zipStatusEl = document.getElementById('zipStatus');
+  const downloadImagesBtn = document.getElementById('downloadImagesBtn');
+  downloadImagesBtn.disabled = true;
+
+  zipStatusEl.classList.remove('hidden');
+  zipStatusEl.textContent = 'Starting download…';
+
+  const zip = new JSZip();
+  const folder = zip.folder('images');
+  let done = 0;
+  let failed = 0;
+
+  for (const [i, url] of imageUrls.entries()) {
+    try {
+      const proxied = proxyUrl(url);
+      const resp = await fetch(proxied, { signal: AbortSignal.timeout(25000) });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const buf = await resp.arrayBuffer();
+      const ext = url.split('.').pop().split('?')[0].toLowerCase() || 'jpg';
+      folder.file('image-' + String(i + 1).padStart(2, '0') + '.' + ext, buf);
+      done++;
+    } catch {
+      failed++;
+    }
+    zipStatusEl.textContent = 'Downloading ' + (done + failed) + ' / ' + imageUrls.length + ' images…';
+  }
+
+  zipStatusEl.textContent = 'Building ZIP…';
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slug + '-images.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  zipStatusEl.textContent = done + ' image' + (done !== 1 ? 's' : '') + ' downloaded'
+    + (failed > 0 ? ' (' + failed + ' failed).' : '.');
+  downloadImagesBtn.disabled = false;
+}
+
+// A topgear.com article address as people paste it → the one form the proxy
+// accepts (https, www.topgear.com, no tracking junk). The proxy answers 400 to
+// an address with no scheme or with http://, which is how most pastes from a
+// phone or a chat arrive ("www.topgear.com/car-news/…").
+function normaliseArticleUrl(input) {
+  let v = String(input == null ? '' : input).trim().replace(/^<|>$/g, '');
+  if (!v) throw new Error('Paste a topgear.com article address first.');
+  if (/^\/\//.test(v)) v = 'https:' + v;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) v = 'https://' + v;
+  let u;
+  try { u = new URL(v); } catch { throw new Error('That doesn\'t look like a web address: “' + String(input).trim().slice(0, 80) + '”.'); }
+  const host = u.hostname.toLowerCase().replace(/^(www|m|amp)\./, '');
+  if (host !== 'topgear.com') {
+    throw new Error('This source only reads topgear.com articles — that address is on ' + u.hostname + '.');
+  }
+  u.protocol = 'https:';
+  u.hostname = 'www.topgear.com';
+  u.port = '';
+  u.hash = '';
+  u.search = ''; // utm_…, fbclid and the like: article pages don't use the query
+  return u.toString();
+}
+
+function slugFromUrl(url) {
+  try { url = normaliseArticleUrl(url); } catch { /* fall through to the default */ }
+  try {
+    const parts = new URL(url).pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1] || 'topgear-article';
+  } catch { return 'topgear-article'; }
+}
+
+// Unified entry point for the URL source. Returns the same { meta, entries }
+// shape as parseNumbered/parseCrosshead, plus imageUrls which only the web
+// source can supply, so the builders and UI stay source-agnostic.
+// ─── Article type detection ─────────────────────────────────────────────────
+// So nobody has to open the Word doc first to know which template to pick.
+// Three or more "N. Name" lines make it a numbered list; the direction most
+// steps take between them decides countdown (50 → 1) or ascending (1 → 50) —
+// by majority, so an ascending list with a second section restarting at 1
+// still reads as ascending. Anything else is a crosshead article.
+const TYPE_LABELS = {
+  countdown: 'Type 1 — numbered countdown',
+  ascending: 'Type 2 — numbered ascending',
+  crosshead: 'Type 3 — crosshead / generic',
+  snippet: 'Type 4 — snippet list (unnumbered)',
+};
+
+// Type 4 uses the ascending (1 → 50) layout; buildNumbered drops the number
+// from each title and keeps the document's order. No separate template file.
+TEMPLATES.snippet = TEMPLATES.ascending;
+
+// The Follow and Newsletter blocks and the "Discover more" logo point at the
+// shared furniture pictures in the general-furniture dossier (52254), not at
+// the per-template copies a Studio template carries (most of those no longer
+// exist; KNOWN-ISSUES §2). Applied to a template read from Studio, this is
+// the only change: the Studio templates 66075, 67380 and 66074 were otherwise
+// identical to the copies above (checked 2026-10-27).
+const SHARED_FURNITURE = {
+  follow: { image: '91357', dark: '91358' },
+  newsletter: { image: '91356', dark: '91355' },
+  footerLogo: '91358',
+};
+function useSharedFurniture(template) {
+  const t = deepClone(template);
+  const tagline = c => ((c.content && c.content['apple-news-follow_tagline']) || []).map(o => o.insert || '').join('');
+  const walk = list => (list || []).forEach(c => {
+    if (c.identifier === 'apple-news-follow' && c.content && c.content.image) {
+      const f = /sign up|newsletter/i.test(tagline(c)) ? SHARED_FURNITURE.newsletter : SHARED_FURNITURE.follow;
+      c.content.image = Object.assign({}, c.content.image, { id: f.image });
+      c.data = Object.assign({}, c.data, { 'an-dark-mode-image': { id: f.dark } });
+    }
+    if (c.identifier === 'container' && c.containers) {
+      const main = c.containers.main || [];
+      // The "Discover more" footer: a logo picture above its subtitle
+      if (main[0] && main[0].identifier === 'image' && main[0].content && main[0].content.image &&
+          main.some(x => x.identifier === 'subtitle')) {
+        main[0].content.image = Object.assign({}, main[0].content.image, { id: SHARED_FURNITURE.footerLogo });
+      }
+      Object.values(c.containers).forEach(walk);
+    }
+  });
+  walk(t.data && t.data.content);
+  return t;
+}
+
+// An unnumbered list vs a crosshead article (a review's "What's this?"
+// sections look the same): the headline gives the count — "The 50 most
+// bonkers American cars" over ~50 bold items is a list; "First Drive: Geely
+// Starray" is an article. Question-style crossheads also mean an article.
+function looksLikeSnippetList(itemNames, title) {
+  const n = parseInt(((title || '').match(/\b(\d{1,3})\b/) || [])[1], 10);
+  if (!(n >= 3) || itemNames.length < 3) return null;
+  const questions = itemNames.filter(t => /\?\s*$/.test(t)).length;
+  if (questions > itemNames.length / 3) return null;
+  return Math.abs(itemNames.length - n) <= 1 ? n : null;
+}
+
+function detectTypeFromNumbers(nums) {
+  if (nums.length < 3) {
+    return { type: 'crosshead', reason: nums.length ? `only ${nums.length} numbered line${nums.length === 1 ? '' : 's'}` : 'no numbered entries' };
+  }
+  let up = 0, down = 0;
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > nums[i - 1]) up++;
+    else if (nums[i] < nums[i - 1]) down++;
+  }
+  const type = down > up ? 'countdown' : 'ascending';
+  return { type, reason: `${nums.length} numbered entries, ${nums[0]} → ${nums[nums.length - 1]}` };
+}
+
+// hints.title: the headline, when the caller already has it (URL path).
+function detectArticleType(html, hints = {}) {
+  const ps = paras(html);
+  const nums = ps
+    .map(p => p.textContent.trim().match(/^(\d+)\.\s+\S/))
+    .filter(Boolean)
+    .map(m => parseInt(m[1], 10));
+  if (nums.length < 3) {
+    // Word's own numbering: one list counting up from 1, so ascending.
+    const listed = wordListEntries(ps).size;
+    if (listed >= 3) return { type: 'ascending', reason: `Word numbered list, 1 → ${listed}` };
+    // Unnumbered list: bold item names, with the headline giving the count.
+    const byBold = parseCrosshead(html);
+    const real = byBold.entries.filter(e => e.crosshead && !shouldFlag(e.crosshead));
+    const sections = real.filter(e => isSectionHeading(e, real)).length;
+    const items = real.filter(e => !isSectionHeading(e, real)).map(e => e.crosshead);
+    const n = looksLikeSnippetList(items, hints.title || byBold.meta.title || byBold.meta.feedHeadline);
+    if (n) {
+      return { type: 'snippet', reason: `${items.length} unnumbered items` + (sections ? ` in ${sections} sections` : '') + `; the headline says ${n}` };
+    }
+  }
+  return detectTypeFromNumbers(nums);
+}
+
+// type may be 'auto'; the result carries the type actually used and why.
+async function parseFromUrl(articleUrl, type) {
+  articleUrl = normaliseArticleUrl(articleUrl);
+  const html = await fetchWithProxy(articleUrl);
+  const debug = {};
+
+  const nextData = extractNextData(html);
+  const article  = nextData ? findArticleInNextData(nextData) : null;
+  debug.nextDataFound = !!nextData;
+  debug.articleFound  = !!article;
+
+  let meta, entries, imageUrls, imageEntries = null;
+  let detected = null;
+
+  if (article) {
+    meta = extractMetaFromNextData(article);
+    imageUrls = extractArticleImages(article);
+    debug.contentType = article.contentType || '';
+
+    if (isListicle(article)) {
+      const parsed = parseListicleItems(article);
+      entries = parsed.entries;
+      // Which entry each picture belongs to. Placing by position alone went
+      // one frame out from the point where the hero is also an item's picture
+      // (the shared file is downloaded once), leaving the last frame empty
+      // (2026-10-20, "longest-range electric cars").
+      // Keyed by the address actually downloaded: the hero and an item can be
+      // the same file under two spellings, and only one copy is fetched.
+      imageEntries = {};
+      article.items.forEach((item, i) => {
+        const src = item.media && item.media.image && item.media.image.src;
+        if (!src || !entries[i]) return;
+        const url = articleImageUrl(src);
+        const got = imageUrls.find(u => u === url) || imageUrls.find(u => imageFileName(u) === imageFileName(url));
+        if (got) imageEntries[got] = entries[i].number;
+      });
+      applyParsed(meta, parsed, debug);
+      debug.listicle = true;
+      if (type === 'auto') {
+        detected = article.numberedList === false
+          ? { type: 'snippet', reason: `topgear.com list of ${entries.length}, not numbered` }
+          : { type: article.reversedList ? 'countdown' : 'ascending',
+              reason: `topgear.com list of ${entries.length}${article.reversedList ? ', counting down' : ''}` };
+      }
+    } else {
+      const bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
+      debug.bodyHtmlLength = bodyHtml.length;
+      if (type === 'auto') { detected = detectArticleType(bodyHtml, { title: meta.title || meta.feedHeadline }); type = detected.type; }
+      const parsed = parseBody(bodyHtml, type);
+      entries = parsed.entries;
+      applyParsed(meta, parsed, debug);
+    }
+  } else {
+    debug.fallback = true;
+    const scraped = scrapeFromDom(html);
+    meta = { feedHeadline: scraped.title, title: scraped.title, subtitle: scraped.standfirst,
+             author: scraped.author, intro: '', score: '', deltas: {},
+             flagged: [], introParts: [], leadParts: [] };
+    const bodyHtml = scraped.bodyEl ? scraped.bodyEl.innerHTML : '';
+    if (type === 'auto') { detected = detectArticleType(bodyHtml); type = detected.type; }
+    const parsed = parseBody(bodyHtml, type);
+    entries = parsed.entries;
+    applyParsed(meta, parsed, debug);
+    imageUrls = scraped.images;
+  }
+
+  debug.entriesFound = entries.length;
+  debug.imagesFound  = imageUrls.length;
+  return { meta, entries, imageUrls, imageEntries, debug, detected, type: detected ? detected.type : type };
+}
+
+// ─── Template building ───────────────────────────────────────────────────
+// Splits a numbered run into sections wherever the numbering restarts, e.g.
+// "73 EVs on sale" followed by "What else is on the way?" numbered 1-23.
+//
+// The direction is taken from the document's own numbering, not from the
+// template: a Type 1 countdown doc is often written 1..42 and only *displayed*
+// 42..1, so assuming the template's direction would split every entry.
+function sectionizeEntries(entries) {
+  if (!entries || entries.length < 3) return [(entries || []).slice()];
+  let dir = 0;
+  for (let i = 1; i < entries.length && dir === 0; i++) {
+    dir = Math.sign(entries[i].number - entries[i - 1].number);
+  }
+  if (dir === 0) return [entries.slice()];
+
+  const sections = [];
+  let current = [];
+  let prev = null;
+  entries.forEach(function (e) {
+    if (prev !== null && Math.sign(e.number - prev) === -dir && current.length) {
+      sections.push(current);
+      current = [];
+    }
+    current.push(e);
+    prev = e.number;
+  });
+  if (current.length) sections.push(current);
+  return sections;
+}
+
+function buildNumbered(template, meta, entries, type) {
+  const c = deepClone(template).data.content;
+
+  // Header: first 4 components [header-image, title, subtitle, author]
+  const header = c.slice(0, 4);
+  setArticleTitle(header, meta.title, meta.titleDeltas);
+  setSubtitle(header, meta.subtitle, meta.subtitleDeltas);
+  setAuthor(header, meta.author);
+  header.forEach(comp => { comp.id = genId(); });
+
+  // Footer: everything from the 'footer' component onwards
+  const footerIdx = c.findIndex(comp => comp.identifier === 'footer');
+  const footer = deepClone(c.slice(footerIdx));
+  footer.forEach(comp => { comp.id = genId(); });
+
+  // Channel apple-news-follow: first one in the first entry block (indices 4–12)
+  const channelFollow = deepClone(c.slice(4, 13).find(comp => comp.identifier === 'apple-news-follow'));
+
+  // Canonical entry: second entry in the template (clean, no apple-news-follow)
+  // Find second 'image' component (first entry starts at 4, second entry starts after first separator)
+  const firstSepIdx = c.findIndex((comp, i) => i > 4 && comp.identifier === 'separator');
+  const secondEntryStart = firstSepIdx + 1;
+  const secondSepIdx = c.findIndex((comp, i) => i > secondEntryStart && comp.identifier === 'separator');
+  const canonical = deepClone(c.slice(secondEntryStart, secondSepIdx + 1));
+  // canonical = [image, title, body(_option1), body(spacer), separator]
+
+  // For type 1 countdown: apple goes after body (index 2 in canonical), splice at 3
+  // For type 2 ascending and type 4 snippet: after spacer (index 3), splice at 4
+  const appleInsertAt = type === 'countdown' ? 3 : 4;
+
+  // Sort entries
+  // A document may run several numbered sections, each restarting at 1 (e.g.
+  // "73 EVs on sale" followed by "What else is on the way?" numbered 1-23).
+  // Sorting the whole run flat would interleave them and pull the two entry 1s
+  // together, so split at each restart, sort within a section, and keep the
+  // sections in document order.
+  // Type 4 snippet lists have no real numbers: keep the document's order.
+  const ordered = type === 'snippet' ? entries.slice() : [].concat.apply([], sectionizeEntries(entries).map(function (section) {
+    return section.sort((a, b) => type === 'countdown' ? b.number - a.number : a.number - b.number);
+  }));
+
+  const result = [...header];
+
+  // Copy that appeared before the first numbered entry is kept in place, as
+  // plain body components between the header and entry 1 — never dropped.
+  (meta.leadParts || []).forEach(part => {
+    result.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
+  });
+
+  // Numbered lists carry a section heading on the entry that followed it in
+  // the doc. Each entry belongs to the latest heading above it, and the
+  // heading is shown where the displayed order enters that section — so a
+  // countdown, shown in reverse, still has each heading above its own group.
+  const sectionOf = new Map();
+  let docSection = null;
+  entries.forEach(e => { if (e.sectionBefore) docSection = e.sectionBefore; sectionOf.set(e, docSection); });
+  let shownSection = null;
+
+  let firstItemDone = false;
+  ordered.forEach((entry) => {
+    const sec = sectionOf.get(entry);
+    if (sec && sec !== shownSection) {
+      result.push({ identifier: 'crosshead', styles: {}, id: genId(),
+        content: { text: sec.nameDeltas && sec.nameDeltas.length ? deepClone(sec.nameDeltas) : [{ insert: sec.name }] } });
+      (sec.bodyParts || []).forEach(deltas => {
+        result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+      });
+      shownSection = sec;
+    }
+    // A section heading (Type 4): the crosshead template's alternate-style
+    // heading, with any copy under it, and no picture frame of its own.
+    if (entry.section) {
+      result.push({ identifier: 'crosshead', styles: {}, id: genId(),
+        content: { text: entry.nameDeltas && entry.nameDeltas.length ? deepClone(entry.nameDeltas) : [{ insert: entry.name }] } });
+      (entry.bodyParts || []).forEach(deltas => {
+        result.push({ identifier: 'body', styles: {}, content: { text: deltas }, id: genId() });
+      });
+      return;
+    }
+    const group = deepClone(canonical);
+
+    // Update title component (keep the template's coloured number op; NBSP separates number and name)
+    const titleComp = group.find(comp => comp.identifier === 'title');
+    if (type === 'snippet' && titleComp) {
+      // Type 4: the item name alone, in the title's normal style — the
+      // ascending template's title minus its coloured number and the space.
+      titleComp.content = { text: entry.nameDeltas && entry.nameDeltas.length ? deepClone(entry.nameDeltas) : [{ insert: entry.name }] };
+    } else if (titleComp && titleComp.content && titleComp.content.text && titleComp.content.text.length >= 2) {
+      const numberOp = titleComp.content.text[0];
+      numberOp.insert = type === 'ascending'
+        ? String(entry.number).padStart(2, '0')
+        : String(entry.number);
+      titleComp.content.text = entry.nameDeltas && entry.nameDeltas.length
+        ? [numberOp, { insert: '\u00A0' }, ...deepClone(entry.nameDeltas)]
+        : [numberOp, { insert: '\u00A0' + entry.name }];
+    }
+
+    // Update body (description = has style _option1)
+    const bodyCompIdx = group.findIndex(comp =>
+      comp.identifier === 'body' && comp.styles && comp.styles.style === '_option1'
+    );
+    const bodyComp = group[bodyCompIdx];
+    if (bodyComp) bodyComp.content = { text: entry.bodyParts[0] || [] };
+
+    // Fresh IDs
+    group.forEach(comp => { comp.id = genId(); });
+
+    // Splice in extra body paragraphs (plain styles) after the first body
+    const extraBodies = (entry.bodyParts || []).slice(1).map(deltas => ({
+      identifier: 'body', styles: {}, content: { text: deltas }, id: genId()
+    }));
+    group.splice(bodyCompIdx + 1, 0, ...extraBodies);
+
+    // Insert apple-news-follow after the first entry (offset by extra
+    // paragraphs) — the first real entry, not a section heading before it.
+    if (!firstItemDone && channelFollow) {
+      const af = deepClone(channelFollow);
+      af.id = genId();
+      group.splice(appleInsertAt + extraBodies.length, 0, af);
+    }
+    firstItemDone = true;
+
+    result.push(...group);
+  });
+
+  result.push(...footer);
+  return { version: template.version, data: { content: result } };
+}
+
+// A web gallery as Top Gear's slideshow component (shape taken from a
+// published TG article). Each slide starts as { image: { src } } — the web
+// address — and placeGalleries() swaps it for the Studio Image object once
+// the pictures exist. Nothing with a `src` slide may be saved.
+function slideshowComp(urls) {
+  const fit = { fitting: '_fit-frame-height-to-content' };
+  return {
+    identifier: 'slideshow', id: genId(), styles: Object.assign({}, fit), content: {},
+    containers: { slideshow: urls.map(src => ({
+      identifier: 'image', id: genId(), styles: Object.assign({}, fit),
+      content: { image: { src } }, data: { 'an-image-role': 'photo' },
+    })) },
+  };
+}
+
+// A single picture in the copy. It is held under its own name until the
+// pictures exist, so the template's fixed frames (opener, closing picture) are
+// counted and filled without it; placeGalleries() then makes it a real image
+// component, or leaves it out.
+function pictureComp(src) {
+  return { identifier: PICTURE_HOLD, id: genId(), src };
+}
+const PICTURE_HOLD = 'wd-picture';
+// { picture: PICTURE_EMPTY } is a frame left empty for the editor to fill
+const PICTURE_EMPTY = 'empty';
+
+// created: [{ id, url }] for the pictures now in the Dossier (or none). A
+// slide whose picture was not created is left out; a slideshow with no slides
+// is removed. A slide for the opener — dropped from the download list because
+// it repeats the header picture — is matched by file name.
+function placeGalleries(digital, created) {
+  const made = (created || []).filter(c => c && c.id && c.url);
+  const idFor = src => {
+    const hit = made.find(c => c.url === src) || made.find(c => imageFileName(c.url) === imageFileName(src));
+    return hit ? String(hit.id) : null;
+  };
+  let slideshows = 0, slides = 0, dropped = 0, pictures = 0, empty = 0;
+  digital.data.content = (digital.data.content || []).filter(comp => {
+    if (comp.identifier === PICTURE_HOLD) {
+      const frame = comp.src === PICTURE_EMPTY;
+      const id = frame ? null : idFor(comp.src);
+      // With no pictures at all (a download, or "add images" off) there are
+      // no frames; a picture that failed to arrive leaves its frame empty.
+      if (!id && !made.length) { dropped++; return false; }
+      delete comp.src;
+      Object.assign(comp, { identifier: 'image', styles: { fitting: '_fit-frame-height-to-content' },
+        content: id ? { image: { id, focuspoint: { x: 0.5, y: 0.5 }, cropper: false } } : {}, data: { 'an-image-role': 'photo' } });
+      if (id) pictures++; else empty++;
+      return true;
+    }
+    if (comp.identifier !== 'slideshow' || !comp.containers || !Array.isArray(comp.containers.slideshow)) return true;
+    comp.containers.slideshow = comp.containers.slideshow.filter(slide => {
+      const img = slide.content && slide.content.image;
+      if (!img || !img.src) return true;
+      const id = idFor(img.src);
+      if (!id) { dropped++; return false; }
+      slide.content = { image: { id } };
+      slides++;
+      return true;
+    });
+    if (!comp.containers.slideshow.length) return false;
+    slideshows++;
+    return true;
+  });
+  return { digital, slideshows, slides, pictures, empty, dropped };
+}
+
+// What the crosshead layout would put in slideshows, for the form's note.
+function gallerySummary(digital) {
+  const shows = (digital.data.content || []).filter(c => c.identifier === 'slideshow');
+  return { slideshows: shows.length, slides: shows.reduce((n, c) => n + c.containers.slideshow.length, 0) };
+}
+
+function buildCrosshead(template, meta, entries) {
+  const c = deepClone(template).data.content;
+
+  const header = deepClone(c.slice(0, 4));
+  setArticleTitle(header, meta.title, meta.titleDeltas);
+  setSubtitle(header, meta.subtitle, meta.subtitleDeltas);
+  setAuthor(header, meta.author);
+  header.forEach(comp => { comp.id = genId(); });
+
+  // Articles that open straight on a crosshead have no intro — drop the component.
+  // Multi-paragraph intros (including whole articles without any crossheads, e.g.
+  // "First Look" prose pieces) become one component per paragraph: the first keeps
+  // the template's intro styling, the rest are plain body components.
+  const channelFollow = deepClone(c[8]);
+  channelFollow.id = genId();
+
+  const introComps = [];
+  if (meta.intro) {
+    const parts = meta.introParts && meta.introParts.length
+      ? meta.introParts
+      : [mkPart([{ insert: meta.intro }], false)];
+    // The template's intro component is styled (drop cap / lead-in), so it must
+    // hold the article's real opening paragraph. Editor instructions keep their
+    // position but render as plain body components, never as the styled lead.
+    const firstRealIdx = parts.findIndex(part => !partFlagged(part));
+    parts.forEach((part, i) => {
+      if (isGalleryPart(part)) { introComps.push(mediaComp(part)); return; }
+      if (i === firstRealIdx) {
+        const introBody = deepClone(c[4]);
+        introBody.id = genId();
+        introBody.content = { text: partOps(part) };
+        introComps.push(introBody);
+      } else {
+        introComps.push({ identifier: 'body', styles: {}, content: { text: partOps(part) }, id: genId() });
+      }
+    });
+  }
+
+  // The channel FOLLOW block goes directly after the article's first paragraph:
+  // after the first intro paragraph when there is an intro, otherwise after the
+  // first crosshead section (matching the reference articles).
+  let followPlaced = false;
+  if (introComps.length) {
+    introComps.splice(1, 0, deepClone(channelFollow));
+    followPlaced = true;
+  }
+
+  // Canonical section = indices 9–11: [title, crosshead, body]
+  const canonical = deepClone(c.slice(9, 12));
+
+  // Fixed tail: spacer(15), score-title(16), image(17), footer onwards(18+)
+  const spacer = deepClone(c[15]);
+  const scoreTitle = deepClone(c[16]);
+  const reviewImage = deepClone(c[17]);
+  const footerComps = deepClone(c.slice(18));
+
+  const result = [...header, ...introComps];
+
+  entries.forEach((entry, i) => {
+    // Filter out the crosshead component — questions go in title(_option2) per reference structure
+    const group = deepClone(canonical).filter(comp => comp.identifier !== 'crosshead');
+
+    const titleComp = group.find(comp => comp.identifier === 'title');
+    if (titleComp) {
+      titleComp.content = {
+        text: entry.crossheadDeltas && entry.crossheadDeltas.length
+          ? deepClone(entry.crossheadDeltas)
+          : (entry.crosshead ? [{ insert: entry.crosshead }] : [])
+      };
+    }
+
+    // The first paragraph takes the template's body component; the rest are
+    // plain body components, and a gallery is a slideshow where it sat.
+    const parts = entry.bodyParts || [];
+    const firstText = parts.findIndex(part => !isGalleryPart(part));
+    const bodyComp = group.find(comp => comp.identifier === 'body');
+    if (bodyComp) bodyComp.content = { text: firstText >= 0 ? parts[firstText] : [] };
+
+    group.forEach(comp => { comp.id = genId(); });
+
+    const rest = parts.map((part, idx) => isGalleryPart(part) ? mediaComp(part)
+      : (idx === firstText && bodyComp) ? bodyComp
+      : { identifier: 'body', styles: {}, content: { text: part }, id: genId() });
+    const lead = group.filter(comp => comp !== bodyComp || firstText < 0 && !parts.length);
+
+    result.push(...lead, ...rest);
+
+    if (i === 0 && !followPlaced) result.push(deepClone(channelFollow));
+  });
+
+  // The template ships a placeholder "SCORE: X/10". Only keep the component when
+  // the document actually carried a score — otherwise drop it, rather than
+  // leaving the placeholder for someone to notice and delete by hand.
+  const tail = meta.score
+    ? [spacer, scoreTitle, reviewImage]
+    : [spacer, reviewImage];
+  if (meta.score) scoreTitle.content = { text: [{ insert: meta.score }] };
+  tail.forEach(comp => {
+    comp.id = genId();
+    result.push(comp);
+  });
+  footerComps.forEach(comp => { comp.id = genId(); result.push(comp); });
+
+  return { version: template.version, data: { content: result } };
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────
+// Studio Digital editor comments (format 2.2+): a text run carries
+// attributes.comment = <id>, and the root-level `comments` object holds
+// { id, userId, created, modified, text, replies }. Comments attach to text
+// only — an image component has none — so a note about an image frame goes on
+// the first text after it (an entry's own title, or the headline for the
+// header image). Checked on the lab 2026-09-25: the server keeps both parts
+// through save and re-download.
+
+// Text fields of a component: every content member that is a delta array.
+function textFields(comp) {
+  return Object.entries(comp.content || {}).filter(([, v]) => Array.isArray(v) && v.some(op => typeof op.insert === 'string'));
+}
+const opsText = ops => ops.map(op => typeof op.insert === 'string' ? op.insert : '').join('');
+
+// Marks [start, end) of a delta array with the comment id, splitting runs at the edges.
+function markRange(ops, start, end, id) {
+  const out = [];
+  let pos = 0;
+  for (const op of ops) {
+    if (typeof op.insert !== 'string') { out.push(op); continue; }
+    const a = pos, b = pos + op.insert.length;
+    pos = b;
+    if (b <= start || a >= end) { out.push(op); continue; }
+    const cut = [Math.max(start, a) - a, Math.min(end, b) - a];
+    if (cut[0] > 0) out.push({ ...op, insert: op.insert.slice(0, cut[0]) });
+    out.push({ ...op, insert: op.insert.slice(cut[0], cut[1]), attributes: { ...(op.attributes || {}), comment: id } });
+    if (cut[1] < op.insert.length) out.push({ ...op, insert: op.insert.slice(cut[1]) });
+  }
+  return out;
+}
+
+// Comments one whole text field (trailing/leading whitespace left unmarked).
+function markField(comp, field, id) {
+  const text = opsText(comp.content[field]);
+  const start = text.search(/\S/);
+  if (start < 0) return false;
+  comp.content[field] = markRange(comp.content[field], start, text.trimEnd().length, id);
+  return true;
+}
+
+// The title directly after each entry picture, in order: entry N's title.
+function entryTitles(content) {
+  return content.map((c, i) => (c.identifier === 'image' && content[i + 1] && content[i + 1].identifier === 'title') ? content[i + 1] : null).filter(Boolean);
+}
+
+function firstTextField(comp) {
+  const f = textFields(comp).find(([, ops]) => opsText(ops).trim());
+  return f ? f[0] : null;
+}
+
+// Anchors, tried in order until one lands:
+//   { quote }      exact phrase anywhere in the article (first occurrence)
+//   { entry }      the title of numbered entry N
+//   { crosshead }  a title/crosshead whose text matches
+//   { index }      the first text after component index i (image frames)
+//   headline       always last: the article's first title
+function placeComment(content, anchor, id) {
+  anchor = anchor || {};
+  if (anchor.quote) {
+    const q = anchor.quote.trim();
+    for (const comp of content) {
+      for (const [field, ops] of textFields(comp)) {
+        const k = opsText(ops).indexOf(q);
+        if (k >= 0) { comp.content[field] = markRange(ops, k, k + q.length, id); return 'quote'; }
+      }
+    }
+  }
+  // The entry may arrive as 15, "15" or "15: F90" — the first number is the entry.
+  const entryNum = anchor.entry != null && (String(anchor.entry).match(/\d+/) || [])[0];
+  if (entryNum) {
+    const re = new RegExp('^\\s*0*' + entryNum + '(?!\\d)');
+    // Numbered titles carry the number; a Type 4 snippet list's don't, so
+    // there "entry 15" is the 15th item title (the title after each picture).
+    const comp = content.find(c => c.identifier === 'title' && textFields(c).some(([, ops]) => re.test(opsText(ops)))) ||
+      entryTitles(content)[Number(entryNum) - 1];
+    if (comp && markField(comp, firstTextField(comp), id)) return 'entry';
+  }
+  if (anchor.crosshead) {
+    const want = anchor.crosshead.trim().toLowerCase();
+    const comp = content.find(c => (c.identifier === 'title' || c.identifier === 'crosshead') &&
+      textFields(c).some(([, ops]) => opsText(ops).trim().toLowerCase() === want));
+    if (comp && markField(comp, firstTextField(comp), id)) return 'crosshead';
+  }
+  if (anchor.index != null) {
+    const after = content.slice(anchor.index + 1).find(c => c.identifier !== 'apple-news-follow' && firstTextField(c));
+    const before = content.slice(0, anchor.index).reverse().find(c => firstTextField(c));
+    const comp = after || before;
+    if (comp && markField(comp, firstTextField(comp), id)) return 'near-frame';
+  }
+  const head = content.find(c => c.identifier === 'title' && firstTextField(c)) || content.find(c => firstTextField(c));
+  if (head && markField(head, firstTextField(head), id)) return 'headline';
+  return null;
+}
+
+// notes: [{ text, anchor, replies? }]. Returns { digital, placed: [{ id, via }] }.
+// Several notes landing on the same text are merged into one comment, since a
+// run can carry only one comment id.
+// Several notes landing on the same words are shown as one bulleted comment
+const bullet = t => /^• /m.test(t) ? t : '• ' + t;
+
+function addComments(digital, notes, userId) {
+  if (!notes || !notes.length) return { digital, placed: [] };
+  const content = digital.data.content || [];
+  const now = new Date().toISOString();
+  const comments = Object.assign({}, digital.comments || {});
+  const placed = [];
+  notes.forEach(note => {
+    const id = 'wa-' + genId();
+    const via = placeComment(content, note.anchor, id);
+    if (!via) return;
+    // If the whole range was already commented, markRange replaced that id:
+    // fold the earlier note into this one rather than orphan it.
+    const stillUsed = new Set(JSON.stringify(content).match(/"comment":"[^"]+"/g) || []);
+    let text = note.text;
+    Object.keys(comments).forEach(k => {
+      if (!stillUsed.has('"comment":"' + k + '"') && k.startsWith('wa-')) { text = bullet(comments[k].text) + '\n' + bullet(text); delete comments[k]; }
+    });
+    comments[id] = { id, userId: userId || '', created: now, modified: now, text, replies: note.replies || [] };
+    placed.push({ id, via });
+  });
+  return { digital: Object.assign({}, digital, { comments }), placed };
+}
+
+// One note per image/header-image slot left empty after images are placed.
+// `missing` ([{ entry, note }], from the chat) adds the reason where known.
+function emptySlotNotes(digital, missing, prefix) {
+  const content = digital.data.content || [];
+  const notes = [];
+  content.forEach((c, i) => {
+    if ((c.identifier !== 'image' && c.identifier !== 'header-image') || (c.content && c.content.image)) return;
+    const title = content.slice(i + 1).find(x => x.identifier === 'title');
+    // Numbered titles carry their number; snippet titles don't, so use the
+    // frame's position among entry pictures instead.
+    const typed = title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
+    const num = typed || (c.identifier === 'image' ? String(content.slice(0, i + 1).filter(x => x.identifier === 'image').length) : null);
+    const why = num && (missing || []).find(m => (String(m.entry).match(/\d+/) || [])[0] === num);
+    notes.push({
+      anchor: { index: i },
+      text: (prefix || '') + (c.identifier === 'header-image'
+        ? 'No opener yet. Choose one that works square and landscape.'
+        : 'Empty frame: fill or delete.') +
+        (why ? ' Chat: ' + why.note : ''),
+    });
+  });
+  return notes;
+}
+
+// Flagged editor-instruction lines become comments on themselves, so they are
+// visible in Studio's Comments panel and not only in the converter's review box.
+function flaggedNotes(meta, prefix) {
+  return (meta.flagged || []).map(f => ({
+    anchor: { quote: f.text },
+    text: (prefix || '') + 'Editor instruction: delete before publishing.' +
+      (f.hrefs && f.hrefs.length ? ' Link: ' + f.hrefs.join(' ') : ''),
+  }));
+}
+
+function pullQuoteNotes(meta, prefix) {
+  return (meta.pullQuotes || []).map(q => ({
+    anchor: { quote: q.text },
+    text: (prefix || '') + 'Web pull quote: style or delete.',
+  }));
+}
+
+
+  // ─── End conversion engine ────────────────────────────────────────────────
+
+  var DIGITAL_MIME = 'application/ww-digital+json';
+
+  // What differs between the Studio servers this file runs on. The same file
+  // runs on all of them, so a version proven on Discovery reaches the lab as is.
+  // A brand id only means something on its own server: 3 is Top Gear on the lab
+  // and a test brand on Discovery. A server not listed gets no brand defaults.
+  //
+  // receiverWrites: the WhatsApp bundles are one inbox, shared by every server.
+  // Marking one imported drops it from the list for good, and a Word doc sent to
+  // the receiver lands in it too. So only the lab writes to it. Elsewhere the
+  // waiting bundles can be read and nothing changes.
+  var SERVER_SETTINGS = {
+    'lab-studio.woodwing.cloud': {
+      receiverWrites: true,
+      // Per-brand defaults applied to created digital articles, keyed by
+      // Publication (Brand) id. GUIDs verified against existing articles on
+      // lab-studio.woodwing.cloud (all current TG AN+ articles carry these).
+      brands: {
+        // Top Gear
+        '3': {
+          componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
+          lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
+          twixlCollectionId: '102069',
+          // Article templates read from Studio when an article is built, so an
+          // edit to the template in Studio reaches the next article. All four in
+          // dossier "2024-tg-templates" (29570). The built-in copies in TEMPLATES
+          // are used only if Studio can't be read.
+          templates: {
+            countdown: '66075',  // Ad hoc Apple-features-long numbered list 50-1
+            ascending: '67380',  // Ad hoc Apple-features-long numbered list 1-50
+            snippet: '67380',    // Type 4 reuses the ascending layout
+            crosshead: '66074',  // Ad hoc Apple-features-generic-crossheads
+          },
+        },
+      },
+    },
+    'discovery-studio.woodwing.cloud': {
+      receiverWrites: false,
+      brands: {
+        // Content copy test. Read from a digital article in this brand; that
+        // article has no Look and Feel, so none is set here.
+        '3': { componentSet: '81193f98-097e-4043-b8b1-d33c1c2c02c4' },
+      },
+    },
+  };
+  var SERVER = SERVER_SETTINGS[window.location.hostname] || { receiverWrites: false, brands: {} };
+  var BRAND_DEFAULTS = SERVER.brands;
+
+  // Word parsing dependency, loaded on demand and kept plugin-local per the
+  // SDK guidance on managing external dependencies.
+  var mammothPromise = null;
+  function loadMammoth() {
+    if (window.mammoth) return Promise.resolve(window.mammoth);
+    if (!mammothPromise) {
+      mammothPromise = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js';
+        s.onload = function () { resolve(window.mammoth); };
+        s.onerror = function () {
+          mammothPromise = null;
+          reject(new Error('Could not load the Word parser (mammoth.js). Check that cdn.jsdelivr.net is reachable.'));
+        };
+        document.head.appendChild(s);
+      });
+    }
+    return mammothPromise;
+  }
+
+  // ─── Studio Server API (same origin — session comes from ticket or cookie) ─
+  function getTicket() {
+    try {
+      var info = ContentStationSdk.getInfo();
+      return (info && info.Ticket) || '';
+    } catch (e) { return ''; }
+  }
+
+  function serverIndexUrl() {
+    var rel = (window.csConfig && window.csConfig.serverUrl) || '../server/index.php';
+    return new URL(rel, window.location.href).href;
+  }
+
+  function transferUrl() {
+    try {
+      var fs = ContentStationSdk.getInfo().ServerInfo.FeatureSet || [];
+      for (var i = 0; i < fs.length; i++) {
+        if (fs[i].Key === 'FileUploadUrl' && fs[i].Value) return fs[i].Value;
+      }
+    } catch (e) { /* fall through */ }
+    return serverIndexUrl().replace(/index\.php.*$/, 'transferindex.php');
+  }
+
+  // Studio uses cookie-based sessions on current Studio Server versions:
+  // requests authenticate via the session cookie plus the X-WoodWing-Application
+  // header (CSRF guard), with Ticket set to null in the payload. On older
+  // ticket-based setups getInfo().Ticket is populated and used instead.
+  var WW_APP_HEADER = { 'X-WoodWing-Application': 'Content Station' };
+
+  function callServer(method, params) {
+    params.Ticket = getTicket() || null;
+    return fetch(serverIndexUrl() + '?protocol=JSON', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, WW_APP_HEADER),
+      body: JSON.stringify({ method: method, id: '1', params: [params], jsonrpc: '2.0' }),
+    }).then(function (r) {
+      if (!r.ok) throw new Error(method + ' failed: HTTP ' + r.status);
+      return r.json();
+    }).then(function (j) {
+      if (j.error) {
+        console.error('[word-digital] ' + method + ' error response:', j.error);
+        var e = j.error;
+        var parts = [];
+        if (e.message) parts.push(e.message);
+        if (e.data && e.data.detail && e.data.detail !== e.message) parts.push(e.data.detail);
+        if (e.code) parts.push('(code ' + e.code + ')');
+        throw new Error(method + ' failed: ' + (parts.join(' — ') || JSON.stringify(e)));
+      }
+      // Some services report per-object failures in Reports with an otherwise
+      // successful envelope — treat those as errors too.
+      if (j.result && j.result.Reports && j.result.Reports.length &&
+          (!j.result.Objects || !j.result.Objects.length)) {
+        console.error('[word-digital] ' + method + ' reports:', j.result.Reports);
+        var msgs = j.result.Reports.map(function (rep) {
+          return (rep.Entries || []).map(function (en) { return en.Message || ''; }).join(' ') || rep.BelongsTo && rep.BelongsTo.Id || '';
+        }).filter(Boolean);
+        throw new Error(method + ' failed: ' + (msgs.join(' | ') || 'server returned error reports'));
+      }
+      return j.result;
+    });
+  }
+
+  function guid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  // Upload to the Transfer Server the way Studio itself does: client-side
+  // fileguid, PUT to transferindex.php, and the PUT URL doubles as the
+  // Attachment FileUrl in CreateObjects.
+  function uploadToTransferServer(content, mime) {
+    var type = mime || DIGITAL_MIME;
+    var url = transferUrl() + '?fileguid=' + guid() + '&ww-app=' + encodeURIComponent('Content+Station');
+    var ticket = getTicket();
+    if (ticket) url += '&ticket=' + encodeURIComponent(ticket);
+    url += '&format=' + encodeURIComponent(type);
+    return fetch(url, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: Object.assign({ 'Content-Type': type }, WW_APP_HEADER),
+      body: content,
+    }).then(function (r) {
+      if (!r.ok) throw new Error('File upload to Transfer Server failed: HTTP ' + r.status);
+      return url;
+    });
+  }
+
+  // Studio object names are made web-safe: letters, digits, spaces, "-", "_"
+  // and "." only. Studio rejects more than the documented / \ : * ? " < > | —
+  // "These are the UK's top…" failed with S1026 at every length (2026-10-06),
+  // so this is an allow-list, not a block-list. Only the object's name is
+  // changed; the headline inside the article keeps its punctuation.
+  //   UK's → UKs · café → cafe · £5,000 → 5000 · R&D → R and D · 50–1 → 50-1
+  // The server's name-length limit varies by install (60 has been seen to
+  // fail), so the name is cut on a word boundary and retried shorter.
+  function webSafeName(name) {
+    var out = String(name == null ? '' : name).replace(/\u2026|\.{2,}/g, ' '); // … and ... → a space
+    if (out.normalize) out = out.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); // é → e
+    return out
+      .replace(/[\u2018\u2019\u02bc\u0060\u00b4']/g, '')    // apostrophes: UK's → UKs
+      .replace(/[\u201c\u201d"]/g, '')                        // quote marks
+      .replace(/[\u2013\u2014\u2212]/g, '-')                  // en/em dash, minus
+      .replace(/&/g, ' and ')
+      .replace(/(\d),(?=\d{3}\b)/g, '$1')                     // 5,000 → 5000
+      .replace(/[^A-Za-z0-9 ._-]+/g, ' ')                      // everything else
+      .replace(/\s+/g, ' ')
+      .replace(/^[ ._-]+|[ ._-]+$/g, '');                      // no leading/trailing punctuation
+  }
+
+  function sanitizeObjectName(name, maxLen) {
+    var out = webSafeName(name);
+    var limit = maxLen || NAME_LIMITS[0];
+    if (out.length > limit) {
+      out = out.slice(0, limit);
+      var cut = out.lastIndexOf(' ');
+      if (cut > limit * 0.5) out = out.slice(0, cut);
+    }
+    return out.replace(/[ ._-]+$/, '') || 'Untitled article';
+  }
+
+  // Tried in order when the server rejects a name as too long (S1026).
+  var NAME_LIMITS = [60, 40, 25];
+
+  function extraMeta(property, values) {
+    return { __classname__: 'ExtraMetaData', Property: property, Values: values };
+  }
+
+  // Brand/Category/Targets for a dossier — shared by the article and image
+  // creation paths so both land in the same place with the same targets.
+  function resolveDossierContext(dossier) {
+    var pubId = String(dossier.PublicationId || (dossier.Publication && dossier.Publication.Id) || '');
+    var catId = String(dossier.CategoryId || (dossier.Category && dossier.Category.Id) || '');
+    var dossierId = String(dossier.ID || dossier.Id);
+    return callServer('GetObjects', {
+      IDs: [dossierId], Lock: false, Rendition: 'none',
+      RequestInfo: ['Targets', 'MetaData'], HaveVersions: null, Areas: null, EditionId: null,
+    }).then(function (res) {
+      var obj = res.Objects && res.Objects[0];
+      var targets = [];
+      var pubName = (dossier.Publication && dossier.Publication.Name) || '';
+      if (obj) {
+        targets = obj.Targets || [];
+        var bm = obj.MetaData && obj.MetaData.BasicMetaData;
+        if (bm) {
+          pubId = pubId || String((bm.Publication && bm.Publication.Id) || '');
+          catId = catId || String((bm.Category && bm.Category.Id) || '');
+          pubName = pubName || (bm.Publication && bm.Publication.Name) || '';
+        }
+      }
+      return { pubId: pubId, pubName: pubName, catId: catId, dossierId: dossierId, targets: targets };
+    });
+  }
+
+  // ─── Article templates from Studio ────────────────────────────────────────
+  // The template's native file, read under the editor's session like any
+  // other download. Studio's own template metadata (name, version, component
+  // set, Look and Feel, Twixl collection) goes onto the created article.
+  // Never fatal: if Studio can't be read the built-in copy is used and the
+  // dialog says so.
+  function fetchTransferFile(fileUrl) {
+    var url = fileUrl;
+    var ticket = getTicket();
+    if (ticket && !/[?&]ticket=/.test(url)) url += (url.indexOf('?') === -1 ? '?' : '&') + 'ticket=' + encodeURIComponent(ticket);
+    return fetch(url, { credentials: 'same-origin', headers: WW_APP_HEADER }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    });
+  }
+
+  // A template the builders can use: the components they fill must be there
+  function checkTemplate(t, type) {
+    var content = t && t.data && t.data.content;
+    if (!Array.isArray(content) || !content.length) throw new Error('not a digital article template');
+    var has = function (id) { return content.some(function (c) { return c.identifier === id; }); };
+    if (!has('header-image') || !has('title')) throw new Error('it has no header picture or title');
+    if (type === 'crosshead' ? !has('crosshead') : content.filter(function (c) { return c.identifier === 'image'; }).length < 2) {
+      throw new Error('it does not have the ' + (type === 'crosshead' ? 'crossheads' : 'numbered entries') + ' this article template needs');
+    }
+  }
+
+  function loadTemplate(type, dossier) {
+    var builtIn = function (info) { return { template: TEMPLATES[type], info: Object.assign({ source: 'built-in' }, info) }; };
+    return resolveDossierContext(dossier).then(function (ctx) {
+      var bd = BRAND_DEFAULTS[ctx.pubId];
+      var id = bd && bd.templates && bd.templates[type];
+      if (!id) return builtIn({ error: 'no Studio template set up for this brand' });
+      return callServer('GetObjects', {
+        IDs: [id], Lock: false, Rendition: 'native',
+        RequestInfo: ['MetaData'], HaveVersions: null, Areas: null, EditionId: null,
+      }).then(function (res) {
+        var obj = res.Objects && res.Objects[0];
+        var file = obj && (obj.Files || []).filter(function (f) { return f.FileUrl; })[0];
+        if (!file) throw new Error('Studio sent no file');
+        return fetchTransferFile(file.FileUrl).then(function (text) {
+          var t = JSON.parse(text);
+          checkTemplate(t, type);
+          var md = obj.MetaData;
+          var ex = {};
+          (md.ExtraMetaData || []).forEach(function (e) { ex[e.Property] = (e.Values || [])[0] || ''; });
+          return {
+            template: useSharedFurniture(t),
+            info: {
+              source: 'studio', id: String(id),
+              name: md.BasicMetaData.Name,
+              version: md.WorkflowMetaData && md.WorkflowMetaData.Version,
+              templateName: ex.C_ARTICLE_TEMPLATE_NAME || md.BasicMetaData.Name,
+              componentSet: ex.C_CS_COMPONENTSET, lookAndFeel: ex.C_CS_STYLEID, twixlCollectionId: ex.C_TW_COLLECTION_ID,
+            },
+          };
+        });
+      }).catch(function (e) {
+        console.warn('[word-digital] Studio template ' + id + ' not used:', e.message);
+        return builtIn({ id: String(id), error: e.message });
+      });
+    });
+  }
+
+  // Create the digital article inside the given dossier.
+  // Publication/Category are taken from the dossier; Targets are copied from
+  // the dossier so the article lands on the same channel/issue. Component set,
+  // Look and Feel and Twixl collection come from the Studio template it was
+  // built from (tplInfo, from loadTemplate), else from BRAND_DEFAULTS. The
+  // article is not linked to the template ID (see below).
+  function createArticleInDossier(digital, name, feedHeadline, dossier, nameLimit, tplInfo) {
+    var digitalJson = JSON.stringify(digital);
+    // Unique component identifiers in order of first use (C_CS_DE_COMPONENT_NAMES)
+    var componentNames = [];
+    (digital.data.content || []).forEach(function (comp) {
+      if (comp.identifier && componentNames.indexOf(comp.identifier) === -1) componentNames.push(comp.identifier);
+    });
+    var pubId = String(dossier.PublicationId || (dossier.Publication && dossier.Publication.Id) || '');
+    var catId = String(dossier.CategoryId || (dossier.Category && dossier.Category.Id) || '');
+    var dossierId = String(dossier.ID || dossier.Id);
+
+    var dossierTargets = [];
+    return resolveDossierContext(dossier).then(function (ctx) {
+      dossierTargets = ctx.targets;
+      pubId = ctx.pubId; catId = ctx.catId;
+      return callServer('GetStates', {
+        ID: null,
+        Publication: { Id: pubId, __classname__: 'Publication' },
+        Issue: null,
+        Section: catId ? { Id: catId, __classname__: 'Category' } : null,
+        Type: 'Article',
+      });
+    }).then(function (res) {
+      var states = (res && res.States) || [];
+      if (!states.length) throw new Error('No workflow statuses available for Articles in this Brand/Category');
+      var state = states[0];
+      return uploadToTransferServer(digitalJson).then(function (fileUrl) {
+        return callServer('CreateObjects', {
+          Lock: false, Autonaming: true,
+          Objects: [{
+            __classname__: 'Object',
+            MetaData: {
+              __classname__: 'MetaData',
+              BasicMetaData: {
+                __classname__: 'BasicMetaData',
+                ID: null, DocumentID: null,
+                Name: sanitizeObjectName(name, nameLimit),
+                Type: 'Article',
+                Publication: { Id: pubId, __classname__: 'Publication' },
+                Category: { Id: catId, __classname__: 'Category' },
+                ContentSource: null,
+              },
+              RightsMetaData: null,
+              SourceMetaData: null,
+              ContentMetaData: {
+                __classname__: 'ContentMetaData',
+                Format: DIGITAL_MIME,
+              },
+              WorkflowMetaData: {
+                __classname__: 'WorkflowMetaData',
+                State: { Id: state.Id, __classname__: 'State' },
+              },
+              ExtraMetaData: (function () {
+                var extra = [
+                  extraMeta('C_CS_FILEFORMATVERSION', [digital.version || '2.4']),
+                  extraMeta('C_CS_DE_COMPONENT_NAMES', [componentNames.join(',')]),
+                ];
+                if (feedHeadline) extra.push(extraMeta('C_HEADLINE', [feedHeadline]));
+                var bd = BRAND_DEFAULTS[pubId] || {};
+                var st = tplInfo && tplInfo.source === 'studio' ? tplInfo : {};
+                var componentSet = st.componentSet || bd.componentSet;
+                var lookAndFeel = st.lookAndFeel || bd.lookAndFeel;
+                var twixl = st.twixlCollectionId || bd.twixlCollectionId;
+                if (componentSet) extra.push(extraMeta('C_CS_COMPONENTSET', [componentSet]));
+                if (lookAndFeel) extra.push(extraMeta('C_CS_STYLEID', [lookAndFeel]));
+                if (twixl) extra.push(extraMeta('C_TW_COLLECTION_ID', [twixl]));
+                // No C_CS_ARTICLE_TEMPLATE_ID / C_ARTICLE_TEMPLATE_NAME here: with
+                // them Studio treats this as "new from template" and stores the
+                // template's file instead of ours (article 97765, 2026-10-28).
+                return extra;
+              })(),
+            },
+            Relations: [{
+              __classname__: 'Relation',
+              Parent: dossierId, Child: null, Type: 'Contained',
+              Placements: null, ParentVersion: null, ChildVersion: null,
+              Geometry: null, Rating: null, Targets: null,
+            }],
+            Pages: null,
+            Files: [{
+              __classname__: 'Attachment',
+              Rendition: 'native',
+              Type: DIGITAL_MIME,
+              Content: null, FilePath: null,
+              FileUrl: fileUrl,
+              EditionId: null, ContentSourceFileLink: null, ContentSourceProxyLink: null,
+            }],
+            Messages: null, Elements: null,
+            Targets: dossierTargets,
+            Renditions: null, MessageList: null, ObjectLabels: null, Operations: null,
+          }],
+        });
+      });
+    });
+  }
+
+  // ─── Images into the dossier ──────────────────────────────────────────────
+  // Article images are fetched through the proxy (topgear.com sends no CORS
+  // headers), uploaded to the Transfer Server exactly like the .digital file,
+  // then created as Image objects contained in the same dossier.
+
+  var IMAGE_MIME_BY_EXT = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+    gif: 'image/gif', webp: 'image/webp', avif: 'image/avif',
+  };
+
+  function imageNameFromUrl(u) {
+    var base = '';
+    try { base = decodeURIComponent(new URL(u).pathname.split('/').pop() || ''); }
+    catch (e) { base = String(u).split('/').pop() || ''; }
+    // Drupal sometimes bakes a path parameter into the stored filename, e.g.
+    // "_V2A0009V2.jpg;jsessionid=null_1.jpg". Studio rejects the ';' / '=' in an
+    // object name (S1026), so keep only what precedes the first ';'.
+    base = base.split(';')[0];
+    return base || 'image';
+  }
+
+  // Last-resort name when Studio still rejects the cleaned one: letters, digits,
+  // spaces, '-' and '_' only, falling back to a positional name.
+  function safeImageName(u, index) {
+    var n = imageNameFromUrl(u).replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[^A-Za-z0-9 _-]+/g, '_').replace(/_+/g, '_').replace(/^[_ ]+|[_ ]+$/g, '')
+      .slice(0, 40);
+    return n || ('topgear-image-' + (index + 1));
+  }
+
+  function imageMimeFromUrl(u, blobType) {
+    if (blobType && blobType.indexOf('image/') === 0) return blobType;
+    var ext = (imageNameFromUrl(u).split('.').pop() || '').toLowerCase();
+    return IMAGE_MIME_BY_EXT[ext] || 'image/jpeg';
+  }
+
+  // Creates one Image object. Returns the created object's Id.
+  function createImageObject(blob, url, ctx, state, nameOverride) {
+    var mime = imageMimeFromUrl(url, blob.type);
+    var name = nameOverride || imageNameFromUrl(url).replace(/\.[a-z0-9]+$/i, '');
+    return uploadToTransferServer(blob, mime).then(function (fileUrl) {
+      return callServer('CreateObjects', {
+        Lock: false, Autonaming: true,
+        Objects: [{
+          __classname__: 'Object',
+          MetaData: {
+            __classname__: 'MetaData',
+            BasicMetaData: {
+              __classname__: 'BasicMetaData',
+              ID: null, DocumentID: null,
+              Name: sanitizeObjectName(name),
+              Type: 'Image',
+              Publication: { Id: ctx.pubId, __classname__: 'Publication' },
+              Category: { Id: ctx.catId, __classname__: 'Category' },
+              ContentSource: null,
+            },
+            RightsMetaData: null, SourceMetaData: null,
+            ContentMetaData: { __classname__: 'ContentMetaData', Format: mime },
+            WorkflowMetaData: {
+              __classname__: 'WorkflowMetaData',
+              State: { Id: state.Id, __classname__: 'State' },
+              Comment: null, Version: null, Modifier: null, Modified: null,
+              Creator: null, Created: null, Deletor: null, Deleted: null,
+              Routing: null, LockedBy: null,
+            },
+            ExtraMetaData: [],
+          },
+          Relations: [{
+            __classname__: 'Relation',
+            Parent: ctx.dossierId, Child: null, Type: 'Contained',
+            Placements: null, ParentVersion: null, ChildVersion: null,
+            Geometry: null, Rating: null, Targets: null,
+          }],
+          Pages: null,
+          Files: [{
+            __classname__: 'Attachment',
+            Rendition: 'native', Type: mime,
+            Content: null, FilePath: null, FileUrl: fileUrl,
+            EditionId: null, ContentSourceFileLink: null, ContentSourceProxyLink: null,
+          }],
+          Messages: null, Elements: null,
+          Targets: ctx.targets,
+          Renditions: null, MessageList: null, ObjectLabels: null, Operations: null,
+        }],
+      });
+    }).then(function (res) {
+      var created = res && res.Objects && res.Objects[0];
+      var id = created && created.MetaData && created.MetaData.BasicMetaData
+        ? created.MetaData.BasicMetaData.ID : null;
+      return { id: id, name: name, url: url };
+    });
+  }
+
+  // /image resizes to the house width (2500px, as WhatsApp pictures) on the
+  // Fly host; /proxy is the untouched original, used only while a server
+  // without /image is still deployed (404).
+  function fetchViaProxy(u) {
+    var base = String(window.PROXY_BASE).replace(/\/$/, '');
+    return fetch(base + '/image?url=' + encodeURIComponent(u), { credentials: 'omit' }).then(function (r) {
+      if (r.status === 404) {
+        return fetch(proxyUrl(u), { credentials: 'omit' });
+      }
+      return r;
+    }).then(function (r) {
+      if (!r.ok) throw new Error('fetch failed: HTTP ' + r.status);
+      return r.blob();
+    });
+  }
+
+  // Uploads sequentially so a long gallery can't swamp the server, and so a
+  // single failure is reported against its own image rather than aborting all.
+  // fetchImage(url) → Promise<Blob>; defaults to the topgear.com proxy, the
+  // WhatsApp source passes one that reads from the receiver.
+  function createImagesInDossier(urls, dossier, onProgress, fetchImage) {
+    fetchImage = fetchImage || fetchViaProxy;
+    if (!urls || !urls.length) return Promise.resolve({ created: [], failed: [] });
+    return resolveDossierContext(dossier).then(function (ctx) {
+      return callServer('GetStates', {
+        ID: null,
+        Publication: { Id: ctx.pubId, __classname__: 'Publication' },
+        Issue: null,
+        Section: ctx.catId ? { Id: ctx.catId, __classname__: 'Category' } : null,
+        Type: 'Image',
+      }).then(function (res) {
+        var states = (res && res.States) || [];
+        if (!states.length) {
+          throw new Error('No workflow statuses available for Images in this Brand/Category — ' +
+                          'the article was created, but images could not be added.');
+        }
+        var state = states[0];
+        var created = [], failed = [];
+        var chain = Promise.resolve();
+        urls.forEach(function (u, i) {
+          chain = chain.then(function () {
+            if (onProgress) onProgress(i, urls.length);
+            return fetchImage(u)
+              .then(function (blob) {
+                return createImageObject(blob, u, ctx, state).catch(function (e) {
+                  if (!/S1026|invalid characters|too long/i.test(e.message || '')) throw e;
+                  return createImageObject(blob, u, ctx, state, safeImageName(u, i));
+                });
+              })
+              .then(function (info) { created.push(info); })
+              .catch(function (e) { failed.push({ url: u, error: e.message }); });
+          });
+        });
+        return chain.then(function () {
+          if (onProgress) onProgress(urls.length, urls.length);
+          return { created: created, failed: failed };
+        });
+      });
+    });
+  }
+
+  // How a Digital Editor image component references a Studio Image object.
+  // Mirrors the shape the templates already use for the apple-news-follow
+  // component's image. If Studio expects something different, this is the only
+  // place that needs changing.
+  function imageRef(objectId) {
+    return { id: String(objectId), focuspoint: { x: 0.5, y: 0.5 }, cropper: false };
+  }
+
+  // Fills the article's image slots, in document order, from the created Image
+  // objects. imageUrls order is hero first then the gallery, and the template's
+  // slots run header-image then one per entry, so index order lines up.
+  // apple-news-follow is untouched — it carries its own branded image.
+  function applyImageIds(digital, ids) {
+    var slots = (digital.data.content || []).filter(function (c) {
+      return c.identifier === 'image' || c.identifier === 'header-image';
+    });
+    if (!ids || !ids.length) return { digital: digital, filled: 0, slots: slots.length };
+    var filled = 0;
+    for (var i = 0; i < slots.length && i < ids.length; i++) {
+      if (!ids[i]) continue;
+      slots[i].content = Object.assign({}, slots[i].content || {}, { image: imageRef(ids[i]) });
+      filled++;
+    }
+    return { digital: digital, filled: filled, slots: slots.length };
+  }
+
+  // Studio ingests an uploaded image asynchronously — the object exists as soon
+  // as CreateObjects returns, but its renditions are generated afterwards. If the
+  // article is created and opened before that finishes, the placements look
+  // empty. Wait until every new image reports a rendition before continuing.
+  function waitForImagesReady(ids, onProgress, timeoutMs) {
+    if (!ids || !ids.length) return Promise.resolve({ ready: [], pending: [] });
+    var deadline = Date.now() + (timeoutMs || 60000);
+    var remaining = ids.slice();
+    var ready = [];
+
+    function poll() {
+      return callServer('GetObjects', {
+        IDs: remaining, Lock: false, Rendition: 'thumb',
+        RequestInfo: ['MetaData'], HaveVersions: null, Areas: null, EditionId: null,
+      }).then(function (res) {
+        var objs = (res && res.Objects) || [];
+        var stillPending = [];
+        objs.forEach(function (o) {
+          var bm = (o.MetaData && o.MetaData.BasicMetaData) || {};
+          var hasFile = !!(o.Files && o.Files.length);
+          if (hasFile) ready.push(String(bm.ID));
+          else stillPending.push(String(bm.ID));
+        });
+        // Ids the server did not return at all are still settling
+        var returned = objs.map(function (o) {
+          return String(((o.MetaData || {}).BasicMetaData || {}).ID);
+        });
+        remaining.forEach(function (id) {
+          if (returned.indexOf(String(id)) === -1) stillPending.push(String(id));
+        });
+        remaining = stillPending;
+
+        if (onProgress) onProgress(ready.length, ids.length);
+        if (!remaining.length) return { ready: ready, pending: [] };
+        if (Date.now() > deadline) return { ready: ready, pending: remaining };
+        return new Promise(function (r) { setTimeout(r, 1500); }).then(poll);
+      }).catch(function () {
+        // A failed poll should never block article creation
+        return { ready: ready, pending: remaining };
+      });
+    }
+    return poll();
+  }
+
+  // ─── Shared furniture images ──────────────────────────────────────────────
+  // The Follow and Newsletter blocks use shared assets that live in the
+  // "general-furniture" dossier (52254), not per-article copies. Studio makes
+  // them show up in an article's dossier by adding a Contained relation from
+  // that dossier to the same object — the object ID never changes. So we
+  // reference the shared IDs in the template and link them into the dossier.
+  //
+  //   91357 tg-logo-tech-blue4x-88                    Follow, light
+  //   91358 tg-logo-white4x-100                       Follow, dark
+  //   91356 tg-follow-newsletter-signup-light-wide-88 Newsletter, light
+  //   91355 tg-follow-newsletter-signup-dark-wide-88  Newsletter, dark
+  var FURNITURE_IMAGE_IDS = ['91357', '91358', '91356', '91355'];
+
+  function linkFurnitureToDossier(dossierId) {
+    var relations = FURNITURE_IMAGE_IDS.map(function (id) {
+      return {
+        __classname__: 'Relation',
+        Parent: String(dossierId), Child: String(id), Type: 'Contained',
+        Placements: null, ParentVersion: null, ChildVersion: null,
+        Geometry: null, Rating: null, Targets: null,
+      };
+    });
+    return callServer('CreateObjectRelations', { Relations: relations })
+      .then(function () { return { linked: FURNITURE_IMAGE_IDS.length, error: null }; })
+      .catch(function (e) {
+        // Already-linked furniture is not an error worth failing the run for
+        return { linked: 0, error: e.message };
+      });
+  }
+
+  // ─── WhatsApp receiver (same Fly host as the proxy) ───────────────────────
+  // The receiver turns WhatsApp chat exports into bundles: the Word doc, its
+  // Dropbox pictures, and the AI's reading of picture instructions. The key is
+  // kept in this browser only (demo; see the PROXY_SECRET note in server.js).
+  var RECEIVER_KEY_STORE = 'wdab-receiver-key';
+
+  function receiverKey() {
+    try { return localStorage.getItem(RECEIVER_KEY_STORE) || ''; } catch (e) { return ''; }
+  }
+  function setReceiverKey(k) {
+    try { localStorage.setItem(RECEIVER_KEY_STORE, k); } catch (e) { /* private mode */ }
+  }
+
+  function receiverUrl(path) {
+    return String(window.PROXY_BASE || '').replace(/\/$/, '') + path;
+  }
+
+  function receiverFetch(urlOrPath, opts) {
+    opts = opts || {};
+    var u = /^https?:/.test(urlOrPath) ? urlOrPath : receiverUrl(urlOrPath);
+    return fetch(u, {
+      method: opts.method || 'GET',
+      body: opts.body,
+      credentials: 'omit',
+      headers: Object.assign({ 'X-Proxy-Key': receiverKey() }, opts.headers || {}),
+    }).then(function (r) {
+      if (r.status === 401) throw new Error('The receiver refused the key — check it and try again.');
+      if (!r.ok) {
+        // The receiver explains itself in { error }; show that, not a bare status.
+        return r.json().then(function (j) { return j && j.error; }, function () { return null; }).then(function (why) {
+          throw new Error(why || ('The receiver answered HTTP ' + r.status + '.'));
+        });
+      }
+      return r;
+    });
+  }
+
+  function fetchFromReceiver(u) {
+    return receiverFetch(u).then(function (r) { return r.blob(); });
+  }
+
+  function bundleFileUrl(bundle, rel) {
+    return receiverUrl('/bundles/' + bundle.key + '/files/' + rel.split('/').map(encodeURIComponent).join('/'));
+  }
+
+  // Upload order decides placement (applyImageIds fills slots in order):
+  // the AI's hero and ranking when it made one, else a hero named in the chat
+  // or doc, else the Dropbox filename order.
+  function orderedBundleImages(bundle) {
+    var images = (bundle.images || []).slice();
+    var byName = function (n) { return images.filter(function (im) { return im.name === n; })[0]; };
+    var front = [];
+    if (bundle.selection) {
+      [bundle.selection.hero].concat((bundle.selection.ranked || []).map(function (r) { return r.file; }))
+        .forEach(function (n) { var im = byName(n); if (im && front.indexOf(im) === -1) front.push(im); });
+    } else if (bundle.instructions && bundle.instructions.hero) {
+      var h = String(bundle.instructions.hero).toLowerCase();
+      var hit = images.filter(function (im) { return im.name.toLowerCase().indexOf(h) !== -1; })[0];
+      if (hit) front.push(hit);
+    }
+    return front.concat(images.filter(function (im) { return front.indexOf(im) === -1; }));
+  }
+
+  var PICTURE_STATUS = {
+    ready: 'Pictures downloaded',
+    fetchable: 'Dropbox link found, pictures not downloaded yet',
+    'flagged-link': 'Picture link needs a person (WeTransfer / press site)',
+    waiting: 'No pictures yet',
+    'built-by-hand': 'Already drafted — apple.news link posted in the chat',
+    'doc-missing': 'Word doc missing from the export',
+  };
+
+  // The article summary under the picker: one status line, a few one-line
+  // bullets for what the editor must know, and the AI's notes folded away.
+  // (Benn, 2026-10-12: "too much text, needs to be collapsed bullet points".)
+  function bundleInfoHtml(b) {
+    var when = function (ts) { return esc(String(ts || '').replace('T', ' ').slice(5, 16)); };
+    var n = (b.images || []).length;
+    var head = '<strong>' + esc(PICTURE_STATUS[b.pictureStatus] || b.pictureStatus) + '</strong>' +
+      (n ? ' · ' + n + ' picture' + (n === 1 ? '' : 's') : '') +
+      (b.source === 'upload' ? ' · your upload' : ' · ' + esc(b.sender) + ', ' + when(b.ts));
+    var link = function (href, text) { return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + text + '</a>'; };
+
+    var must = [];
+    if (b.statusNote) must.push(esc(brief(b.statusNote, 110)));
+    if (b.picturesArrivedAt && !n) must.push('Pictures arrived ' + when(b.picturesArrivedAt) + '. Re-import to fetch them.');
+    if (b.imported) must.push('In Studio since ' + esc(String(b.imported.at || '').slice(0, 10)) + '. Re-import fetches the pictures and runs the AI again.');
+    else if (b.builtByHand) {
+      must.push('Drafted by hand, ' + when(b.builtByHand.ts) + ' · ' + link(b.builtByHand.href, 'open draft') +
+        (b.builtByHand.rule === 'order' ? ' · matched by timing, check it' : ''));
+    }
+    (b.pictures || []).forEach(function (p) {
+      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') must.push('Fetch by hand: ' + link(p.href, esc(p.type) + ' link'));
+    });
+    (b.suggestedPictures || []).forEach(function (p) {
+      must.push('Possible pictures (' + Math.round(p.confidence * 100) + '%): ' + link(p.href, 'link'));
+    });
+    (b.errors || []).forEach(function (e) { must.push('⚠ ' + esc(e.step) + ': ' + esc(brief(e.message, 90))); });
+
+    var ai = [];
+    if (b.selection) {
+      ai.push(b.selection.hero
+        ? 'Opener: ' + esc(b.selection.hero) + (b.selection.heroReason ? ' — ' + esc(brief(b.selection.heroReason, 80)) : '')
+        : 'No picture works as the opener');
+      var matched = (b.selection.placements || []).filter(function (x) { return x.section && x.confidence >= SECTION_CONFIDENCE; }).length;
+      if (matched) ai.push(matched + ' picture' + (matched === 1 ? '' : 's') + ' matched to sections');
+    }
+    var ins = b.instructions;
+    if (ins) {
+      (ins.missing || []).forEach(function (m) { ai.push('Missing picture ' + esc(m.entry) + ': ' + esc(brief(m.note, 60))); });
+      (ins.embeds || []).forEach(function (e) { ai.push('Embed: ' + esc(e.url)); });
+      if (ins.embargo) ai.push('Embargo: ' + esc(brief(ins.embargo, 80)));
+      (ins.otherNotes || []).forEach(function (t) { if (!ALREADY_HANDLED.test(t)) ai.push(esc(brief(t, 110))); });
+    }
+    var q = ((b.review && b.review.queries) || []).length;
+    if (q) ai.push(q + ' copy quer' + (q === 1 ? 'y' : 'ies') + ' to check');
+    var list = function (items) { return '<ul>' + items.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul>'; };
+    return '<div>' + head + '</div>' + (must.length ? list(must) : '') +
+      (ai.length ? '<details><summary>AI notes (' + ai.length + ')</summary>' + list(ai) + '</details>' : '');
+  }
+  // What the receiver is doing with the latest export, in plain words — so an
+  // empty list is never mistaken for "it failed" while an export is still being
+  // prepared (pictures + AI take about 1–1½ minutes per new article).
+  function clockTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var today = new Date().toDateString() === d.toDateString();
+    return today ? t : d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + t;
+  }
+  function exportStatusText(ex, hasArticles) {
+    var pr = ex && ex.processing;
+    if (pr) {
+      var head = 'Export from ' + clockTime(pr.startedAt) + ': ';
+      if (pr.stage !== 'preparing' || pr.toPrepare == null) return { busy: true, text: head + 'reading the chat…' };
+      if (!pr.toPrepare) return { busy: true, text: head + 'nothing new so far, finishing up.' };
+      var mins = Math.max(1, Math.round((pr.expectedSeconds || 100) / 60));
+      return { busy: true, text: head + 'preparing ' + (pr.article ? '“' + pr.article + '”' : 'new articles') +
+        (pr.toPrepare > 1 ? ' (' + (pr.preparing || 1) + ' of ' + pr.toPrepare + ')' : '') +
+        ', about ' + mins + ' min. Updates by itself.' };
+    }
+    var last = ex && ex.last;
+    if (!last) {
+      return { text: hasArticles
+        ? 'Watching for exports. New ones appear here, usually within 2–3 minutes.'
+        : 'No export yet. Export the chat to the Dropbox folder “TG WhatsApp exports”.' };
+    }
+    if (last.error) return { failed: true, text: 'Export from ' + clockTime(last.startedAt) + ' failed (' + brief(last.error, 80) + '). Export again.' };
+    var n = (last.newArticles || []).length;
+    var pics = last.picturesArrived || [];
+    return { text: 'Last export ' + clockTime(last.finishedAt) + ': ' +
+      (n ? n + ' new (' + last.newArticles.join(', ') + ')' : pics.length ? 'no new articles' : 'nothing new') +
+      (pics.length ? '; pictures arrived for ' + pics.join(', ') + ' — re-import to fetch them' : '') + '.' };
+  }
+
+  // ─── Comments in the created article ──────────────────────────────────────
+  // Notes become Digital editor comments (see addComments in the engine). They
+  // carry the creating editor's user id; the prefix says who raised them.
+  // Comments are read at a glance (Benn, 2026-10-12): the problem and the
+  // fix, or one short fact. No paragraphs, no long justifications.
+  var AI_PREFIX = 'AI: ';
+  var TOOL_PREFIX = '';
+  // The first sentence of an AI answer, cut at a word, at most `max` characters
+  function brief(text, max) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim();
+    var first = t.match(/^.*?[.!?](?=\s|$)/);
+    if (first && first[0].length >= 20) t = first[0];
+    t = t.replace(/[.\s]+$/, '');
+    if (t.length <= max) return t;
+    return t.slice(0, max).replace(/\s+\S*$/, '') + '…';
+  }
+  var ALREADY_HANDLED = /feed headline|article headline|web gallery|^pics?:/i;
+
+  function currentUserId() {
+    try {
+      var info = ContentStationSdk.getInfo() || {};
+      var u = info.CurrentUser || info.User || {};
+      return u.UserID || u.ShortName || u.Id || info.UserID || '';
+    } catch (e) { return ''; }
+  }
+
+  // Notes from the WhatsApp bundle: AI copy queries, picture decisions, links
+  // someone must fetch, instructions. Empty frames are added after placement.
+  function bundleNotes(bundle) {
+    var notes = [];
+    var review = (bundle.review && bundle.review.queries) || [];
+    review.forEach(function (q) {
+      notes.push({
+        anchor: { quote: q.quote, entry: q.entry },
+        text: AI_PREFIX + brief(q.comment, 160),
+      });
+    });
+    var head = [];
+    // (The opener note is written after placement — see openerNote.)
+    (bundle.pictures || []).forEach(function (p) {
+      if (p.type !== 'dropbox-folder' && p.type !== 'dropbox-file') head.push('Fetch pictures by hand: ' + p.href);
+    });
+    (bundle.suggestedPictures || []).forEach(function (p) {
+      head.push('Possible pictures (' + Math.round(p.confidence * 100) + '%): ' + p.href);
+    });
+    var ins = bundle.instructions;
+    if (ins) {
+      (ins.embeds || []).forEach(function (e) { head.push('Embed: ' + e.url + (e.where ? ' (' + brief(e.where, 40) + ')' : '')); });
+      if (ins.embargo) head.push('Embargo: ' + brief(ins.embargo, 80));
+      (ins.otherNotes || []).forEach(function (n) { if (!ALREADY_HANDLED.test(n)) head.push(brief(n, 110)); });
+    }
+    head.forEach(function (h) { notes.push({ anchor: {}, text: h }); });
+    return notes;
+  }
+
+  // Which numbered entry a bundle image shows: the AI's match first, then a
+  // filename like "15-F90.jpg" or "15.jpg". Camera names such as
+  // "03.02.2026-Geely…" are not read as entry 3 (digit after the separator).
+  function entryOfImage(im, bundle) {
+    // The number the desk put on the file name comes first: "10 - Renault
+    // 4.jpg" was chosen for entry 10 even though a Renault 4 is also entry 51.
+    // The AI's reading of the picture is used only when the name has no number.
+    var fromName = entryFromFileName(im.name);
+    if (fromName != null) return fromName;
+    var r = rankedFor(im.name, bundle);
+    var fromAi = r && r.entry != null && String(r.entry).match(/\d+/);
+    return fromAi ? Number(fromAi[0]) : null;
+  }
+  function entryFromFileName(name) {
+    var m = String(name || '').match(/^0*(\d{1,3})(?:[\s._-]+(?!\d)|\.[a-z]+$)/i);
+    return m ? Number(m[1]) : null;
+  }
+  function rankedFor(name, bundle) {
+    return bundle.selection && (bundle.selection.ranked || []).filter(function (x) { return x.file === name; })[0];
+  }
+  // Pictures where the file name says one entry and the AI saw another. The
+  // name wins; the editor is told, on that entry, what the AI thought.
+  function numberConflictNotes(bundle) {
+    if (!bundle || !bundle.selection) return [];
+    return (bundle.selection.ranked || []).map(function (r) {
+      var n = entryFromFileName(r.file);
+      var aiRaw = r.aiEntry != null ? r.aiEntry : r.entry;
+      var ai = aiRaw != null && String(aiRaw).match(/\d+/);
+      if (n == null || !ai || Number(ai[0]) === n) return null;
+      return { anchor: { entry: n }, text: 'File name says entry ' + n + '; AI thinks entry ' + Number(ai[0]) + '. Check the picture.' };
+    }).filter(Boolean);
+  }
+
+  // Crosshead articles (first drives, Q&As): a picture frame above every
+  // crosshead from the second one down, the way the list layouts have one
+  // above every item (Benn, 2026-10-12). The first crosshead has none: it sits
+  // just under the opener.
+  //   - the first two pictures in upload order are the opener and the closing
+  //     picture, and are not used again;
+  //   - a frame is filled with the picture the AI matched most surely to the
+  //     section below it (at or above SECTION_CONFIDENCE), and gets a comment
+  //     with the AI's reason;
+  //   - otherwise the frame is left empty for the editor, with the usual
+  //     "no picture in this frame" comment. Empty frames must be deleted
+  //     before publishing;
+  //   - no gallery is built: where one belongs is the editor's call. Pictures
+  //     not placed stay in the Dossier.
+  // Numbers on these file names are export numbers and are ignored.
+  // 0.5, not the 0.7 used for chat links: the AI is told "a guess is below
+  // 0.5", and on the first real article (12 Oct) its sound matches — exhausts
+  // to the section on the engine note, cornering to handling — came in at
+  // 0.5–0.6.
+  var SECTION_CONFIDENCE = 0.5;
+  function sectionPictures(entries, bundle) {
+    var sel = (bundle && bundle.selection) || {};
+    var images = orderedBundleImages(bundle || {});
+    var heads = entries.filter(function (e) { return e.crosshead; });
+    if (heads.length < 2) return null;
+    var norm = function (t) { return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var urlOf = function (name) {
+      var im = images.filter(function (x) { return x.name === name; })[0];
+      return im ? bundleFileUrl(bundle, im.file) : null;
+    };
+    var taken = {};
+    images.slice(0, 2).forEach(function (im) { taken[im.name] = true; });
+
+    var out = entries.map(function (e) { return Object.assign({}, e, { bodyParts: (e.bodyParts || []).slice() }); });
+    var notes = [];
+    var filled = 0, frames = 0;
+    // Best matches first, so a picture goes to the section it fits most surely
+    var claims = (sel.placements || []).filter(function (p) {
+      return p.section && p.confidence >= SECTION_CONFIDENCE && urlOf(p.file);
+    }).sort(function (a, b) { return b.confidence - a.confidence; });
+    var chosen = {};
+    claims.forEach(function (p) {
+      var k = norm(p.section);
+      if (taken[p.file] || chosen[k]) return;
+      chosen[k] = p; taken[p.file] = true;
+    });
+    out.forEach(function (e, i) {
+      if (!e.crosshead || i === 0 || entries[i] === heads[0]) return;
+      // The frame above crosshead i is the last thing in the section before it
+      var best = chosen[norm(e.crosshead)];
+      out[i - 1].bodyParts.push({ picture: best ? urlOf(best.file) : PICTURE_EMPTY });
+      frames++;
+      if (!best) return;
+      filled++;
+      notes.push({ anchor: { crosshead: e.crosshead }, text: AI_PREFIX + 'picture above chosen for this section' + (best.reason ? ' — ' + brief(best.reason, 80) : '') });
+    });
+    // A picture matched to the first section has no frame; un-take it
+    var first = chosen[norm(heads[0].crosshead)];
+    if (first) delete taken[first.file];
+
+    var left = images.filter(function (im) { return !taken[im.name]; }).length;
+    if (frames) {
+      notes.push({ anchor: {}, text: 'Frames: ' + filled + ' of ' + frames + ' filled.' +
+        (frames - filled ? ' Fill or delete the empty ones.' : '') +
+        (left ? ' ' + left + ' spare picture' + (left === 1 ? '' : 's') + ' in the Dossier.' : '') });
+    }
+    return { entries: out, notes: notes, frames: frames, filled: filled };
+  }
+
+  // Image object ids per frame, in frame order (null = leave empty).
+  // created: [{ id, url }] in upload order; placement: { byUrl: {url: entry}, heroUrl }.
+  // A numbered list whose pictures mostly know their entry is placed by entry,
+  // so a missing picture leaves its own frame empty instead of shifting the
+  // rest; otherwise frames fill in upload order, as before.
+  function assignSlots(digital, created, placement) {
+    var content = digital.data.content || [];
+    var slots = [];
+    content.forEach(function (c, i) {
+      if (c.identifier !== 'image' && c.identifier !== 'header-image') return;
+      var title = content.slice(i + 1).filter(function (x) { return x.identifier === 'title'; })[0];
+      var num = c.identifier === 'image' && title && (opsText(title.content.text || []).match(/^\s*0*(\d+)/) || [])[1];
+      slots.push({ header: c.identifier === 'header-image', entry: num ? Number(num) : null, isEntry: c.identifier === 'image' });
+    });
+    // Type 4 snippet lists: titles carry no number, so entry N is the Nth
+    // entry picture frame — filename numbers and the AI's matches still apply.
+    if (!slots.some(function (s) { return s.entry != null; })) {
+      var n = 0;
+      slots.forEach(function (s) { if (s.isEntry) s.entry = ++n; });
+      if (n < 3) slots.forEach(function (s) { s.entry = null; });
+    }
+    var ids = created.map(function (c) { return c.id; });
+    if (!placement) return ids;
+    var known = created.filter(function (c) { return placement.byUrl[c.url] != null; });
+    var numbered = slots.some(function (s) { return s.entry != null; });
+    if (!numbered || known.length < created.length / 2) return ids;
+
+    var out = slots.map(function () { return null; });
+    var used = {};
+    known.forEach(function (c) {
+      var k = slots.findIndex(function (s, i) { return s.entry === placement.byUrl[c.url] && !out[i]; });
+      if (k >= 0) { out[k] = c.id; used[c.url] = true; }
+    });
+    // Opener: the AI's pick, which may reuse any entry's picture (the object is
+    // simply placed twice) — but never the picture in the frame directly under
+    // the header, or the same image would sit on top of itself. A picture with
+    // no entry number (e.g. "opener.jpg") is the fallback. Otherwise the header
+    // stays empty and gets a comment.
+    var headerIdx = slots.findIndex(function (s) { return s.header; });
+    if (headerIdx >= 0) {
+      var firstEntryId = out.slice(headerIdx + 1).filter(function (id, i) { return slots[headerIdx + 1 + i].entry != null; })[0];
+      var firstEntrySlot = slots.slice(headerIdx + 1).filter(function (s) { return s.entry != null; })[0];
+      var directlyBelow = function (c) {
+        return (firstEntryId && c.id === firstEntryId) ||
+               (firstEntrySlot && placement.byUrl[c.url] === firstEntrySlot.entry);
+      };
+      var hero = created.filter(function (c) { return c.url === placement.heroUrl && !directlyBelow(c); })[0] ||
+                 created.filter(function (c) { return placement.byUrl[c.url] == null && !used[c.url]; })[0];
+      if (hero) out[headerIdx] = hero.id;
+    }
+    return out; // pictures without a matching frame stay in the Dossier only
+  }
+
+  // What actually went in the header, said after placement so the comment can
+  // never contradict the article: the AI's pick and why, or why its pick was
+  // not used. An empty header gets its own note from pictureNotes.
+  function openerNote(digital, created, bundle) {
+    var sel = bundle && bundle.selection;
+    var header = (digital.data.content || []).filter(function (c) { return c.identifier === 'header-image'; })[0];
+    var placedId = header && header.content && header.content.image && header.content.image.id;
+    var nameOf = function (url) { return decodeURIComponent(String(url).split('/').pop()); };
+    var total = bundle ? (bundle.images || []).length : created.length;
+    if (placedId) {
+      var c = created.filter(function (x) { return String(x.id) === String(placedId); })[0];
+      var name = c ? nameOf(c.url) : String(placedId);
+      var why = sel && sel.hero === name && sel.heroReason ? ' — ' + brief(sel.heroReason, 80) : '';
+      return { anchor: {}, text: 'Opener' + (why ? ' (AI)' : '') + ': ' + name + why };
+    }
+    if (sel && sel.hero) {
+      return { anchor: {}, text: 'No opener: the AI\'s pick (' + sel.hero + ') is the picture directly below. Choose another.' };
+    }
+    return null;
+  }
+
+  // Frames still empty after placement, with the chat's reason where known;
+  // and frames the chat says were missing but that got a picture anyway.
+  function pictureNotes(digital, bundle) {
+    var missing = (bundle && bundle.instructions && bundle.instructions.missing) || [];
+    var notes = emptySlotNotes(digital, missing, TOOL_PREFIX);
+    var frames = (digital.data.content || []).filter(function (c) {
+      return c.identifier === 'image' || c.identifier === 'header-image';
+    }).length;
+    // Nothing placed at all: one note on the headline, not one per frame.
+    if (frames > 2 && notes.length === frames) {
+      var why = bundle && bundle.pictureStatus === 'waiting'
+        ? ' Doc says: ' + brief((bundle.doc && bundle.doc.picLineText) || 'no picture link', 60) + '.'
+        : '';
+      notes = [{ anchor: {}, text: 'No pictures placed: all ' + frames + ' frames are empty.' + why }];
+    }
+    var emptyEntries = notes.map(function (n) { return n.text; }).join('\n');
+    missing.forEach(function (m) {
+      if (emptyEntries.indexOf(m.note) !== -1) return; // already said on the empty frame
+      notes.push({ anchor: { entry: m.entry }, text: 'Chat says this picture was missing (' + brief(m.note, 60) + '). Check it.' });
+    });
+    return notes.concat(numberConflictNotes(bundle));
+  }
+
+  // ─── Shared converter UI ───────────────────────────────────────────────────
+  // Look taken from the content reuse plug-in (claude-content-re-use-assets-
+  // studio/plugin/src/15-styles.js): slate + amber + teal, numbered stepper,
+  // staged progress list with a spinning mark. Class names are the contract
+  // with the markup below; restyle freely.
+  var CSS = [
+    '.wdab{--w-page:#f8fafc;--w-surface:#fff;--w-line:#e2e8f0;--w-field:#d1d5db;--w-ink:#0f172a;--w-ink2:#374151;--w-ink3:#4b5563;--w-ink4:#94a3b8;' +
+      '--w-accent:#f59e0b;--w-accent-soft:#fff8e8;--w-mute:#f1f5f9;--w-teal:#0f766e;--w-ok:#0d9488;--w-bad:#8c1d18;--w-bad-soft:#fdecea;--w-warn:#7a5300;--w-warn-soft:#fff6e5;' +
+      'max-width:640px;margin:0 auto;padding:0 2px 8px;font:14px/1.45 Geist,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--w-ink)}',
+    '.wdab-scroll{max-height:calc(100vh - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch}',
+    '.wdab-modal{max-height:min(620px,calc(100vh - 280px));overflow-y:auto;-webkit-overflow-scrolling:touch}',
+    '.wdab button,.wdab input,.wdab select{font-family:inherit}',
+    '.wdab .wdab-hidden{display:none}',
+    // Stepper
+    '.wdab-steps{display:flex;align-items:center;gap:14px;list-style:none;margin:0 0 14px;padding:10px 0;border-bottom:1px solid var(--w-line);position:sticky;top:0;background:var(--w-surface);z-index:2}',
+    '.wdab-step{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--w-ink4);white-space:nowrap}',
+    '.wdab-step i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--w-mute);border:1px solid var(--w-line);color:var(--w-ink4);font-size:11px;font-weight:600}',
+    '.wdab-step.is-on{color:var(--w-ink);font-weight:600}',
+    '.wdab-step.is-on i,.wdab-step.is-done i{background:var(--w-teal);border-color:var(--w-teal);color:#fff}',
+    '.wdab-step.is-done{color:var(--w-ink3)}',
+    '.wdab-step+.wdab-step::before{content:"";width:18px;height:1px;background:var(--w-line);margin-right:8px}',
+    // Fields
+    '.wdab .wdab-row{margin-bottom:12px}',
+    '.wdab label{display:block;font-size:13px;font-weight:500;color:var(--w-ink3);margin:0 0 4px}',
+    '.wdab select,.wdab input[type=text],.wdab input[type=password],.wdab input[type=url]{width:100%;box-sizing:border-box;border:1px solid var(--w-field);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--w-ink);background:var(--w-surface)}',
+    // Own arrow: the browser's sits against the edge and is too faint to read as a menu
+    '.wdab select{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:pointer;background-repeat:no-repeat;background-position:right 14px center;background-size:14px 14px;' +
+      'background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27 stroke=%27%230f172a%27 stroke-width=%272.2%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M3 6l5 5 5-5%27/%3E%3C/svg%3E")}',
+    '.wdab input[type=file]{width:100%;box-sizing:border-box;font-size:13px;color:var(--w-ink3);border:1px dashed var(--w-field);border-radius:6px;padding:6px;background:var(--w-surface)}',
+    '.wdab input[type=file]::file-selector-button{margin-right:12px;padding:7px 14px;border:1px solid var(--w-field);border-radius:6px;background:var(--w-surface);color:var(--w-ink);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}',
+    '.wdab input[type=file]::file-selector-button:hover{background:var(--w-mute)}',
+    '.wdab input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:middle;accent-color:var(--w-teal)}',
+    '.wdab-row label input[type=checkbox]+span{font-weight:400;color:var(--w-ink2)}',
+    '.wdab .wdab-feed input{border-color:var(--w-accent);background:var(--w-accent-soft)}',
+    '.wdab .wdab-feed-note{display:inline-block;font-size:11px;color:var(--w-warn);background:var(--w-warn-soft);border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:500}',
+    // Buttons
+    // Pinned to the bottom of the dialog, so the next action never scrolls away
+    '.wdab-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:14px;padding:12px 0 4px;border-top:1px solid var(--w-line);position:sticky;bottom:0;background:var(--w-surface);z-index:2}',
+    '.wdab button.wdab-btn{border:none;border-radius:6px;padding:10px 18px;background:var(--w-accent);color:var(--w-ink);font-size:14px;font-weight:700;cursor:pointer}',
+    '.wdab button.wdab-btn:disabled{opacity:.45;cursor:default}',
+    '.wdab button.wdab-back{padding:10px 16px;border:1px solid var(--w-field);border-radius:6px;background:var(--w-surface);color:var(--w-ink);font-size:14px;font-weight:600;cursor:pointer;margin-right:auto}',
+    '.wdab button.wdab-linkbtn{border:0;background:none;padding:0;font-size:12px;font-weight:600;color:var(--w-ink3);cursor:pointer;text-decoration:underline}',
+    // Boxes, notes, alerts
+    '.wdab .wdab-box{background:var(--w-surface);border:1px solid var(--w-line);border-radius:8px;padding:12px 14px;margin-top:10px}',
+    '.wdab .wdab-wa-info{background:var(--w-page);border:1px solid var(--w-line);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--w-ink2)}',
+    '.wdab .wdab-wa-info ul{margin:4px 0 0;padding-left:16px}',
+    '.wdab .wdab-wa-info li{margin:2px 0}',
+    '.wdab .wdab-wa-info details{margin-top:6px}',
+    '.wdab .wdab-wa-info summary,.wdab details.wdab-more>summary{cursor:pointer;font-weight:600;color:var(--w-ink3);font-size:12px}',
+    '.wdab .wdab-wa-status{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:12px;color:var(--w-ink3);background:var(--w-mute);border-radius:6px;padding:7px 10px}',
+    '.wdab .wdab-wa-status>span{flex:1 1 auto;min-width:0}',
+    '.wdab .wdab-wa-status.wdab-busy{background:var(--w-accent-soft);color:var(--w-warn)}',
+    '.wdab .wdab-wa-status.wdab-failed{background:var(--w-bad-soft);color:var(--w-bad)}',
+    '.wdab .wdab-error{display:none;white-space:pre-wrap;margin-top:10px;padding:10px 12px;border-radius:6px;background:var(--w-bad-soft);color:var(--w-bad);font-size:13px}',
+    '.wdab .wdab-warn{display:none;margin-bottom:12px;padding:10px 12px;border-radius:6px;background:var(--w-warn-soft);border:1px solid #f0dcb4;color:var(--w-warn);font-size:13px}',
+    '.wdab .wdab-warn ul{margin:6px 0 0;padding-left:18px}',
+    '.wdab .wdab-note{color:var(--w-ink3);font-size:12px;margin:6px 0 0}',
+    '.wdab .wdab-chip{display:inline-block;background:var(--w-mute);border-radius:4px;padding:3px 8px;font-size:12px;font-weight:600;color:var(--w-ink3);margin-bottom:12px}',
+    '.wdab .wdab-entries{max-height:200px;overflow-y:auto;border:1px solid var(--w-line);border-radius:6px;padding:8px 12px;margin-top:6px;color:var(--w-ink2);font-size:13px}',
+    '.wdab .wdab-entries .n{color:var(--w-ink4);margin-right:6px}',
+    '.wdab h3.wdab-h{margin:4px 0 10px;font-size:15px;font-weight:600}',
+    // Staged progress
+    '.wdab-stages{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}',
+    '.wdab-stage{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 0;font-size:13px;color:var(--w-ink4)}',
+    '.wdab-stage.is-active,.wdab-stage.is-done{color:var(--w-ink)}',
+    '.wdab-stage.is-active{font-weight:600}',
+    '.wdab-stage.is-failed,.wdab-stage.is-failed .wdab-stage-d{color:var(--w-bad)}',
+    '.wdab-stage-d{grid-column:2 / 4;font-size:12px;font-weight:400;color:var(--w-ink3);margin-top:-2px;overflow-wrap:anywhere}',
+    '.wdab-stage-t{font-size:12px;font-weight:400;color:var(--w-ink4);font-variant-numeric:tabular-nums}',
+    '.wdab-mark{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;box-sizing:border-box}',
+    '.wdab-mark.pending{border:1.5px solid var(--w-field)}',
+    '.wdab-mark.done{background:var(--w-ok);color:#fff}',
+    '.wdab-mark.failed{background:var(--w-bad);color:#fff}',
+    '.wdab-mark.active{border:2px solid var(--w-mute);border-top-color:var(--w-accent);animation:wdab-spin .8s linear infinite}',
+    '@keyframes wdab-spin{to{transform:rotate(360deg)}}',
+    '.wdab-sbar{grid-column:2 / 4;height:4px;border-radius:2px;background:var(--w-mute);overflow:hidden}',
+    '.wdab-sbar>span{display:block;height:100%;background:var(--w-accent);transition:width .3s ease}',
+    '@media (prefers-reduced-motion:reduce){.wdab-mark.active{animation-duration:2.4s}}'
+  ].join('\n');
+
+  var cssInjected = false;
+  // Build id, replaced by build-plugin.js. Check it in Studio's console with
+  // __wdVersion to confirm which build the browser actually loaded.
+  var PLUGIN_BUILD = '03b9dab9';
+  try {
+    window.__wdVersion = PLUGIN_BUILD;
+    console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
+  } catch (e) { /* non-fatal */ }
+
+  function injectCss() {
+    if (cssInjected) return;
+    var style = document.createElement('style');
+    style.textContent = CSS;
+    document.head.appendChild(style);
+    cssInjected = true;
+  }
+
+  function esc(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // A staged progress list: one row per step, with a mark (pending, spinning,
+  // done, failed), the time it took and an optional bar. start(id) finishes
+  // whatever was running before it, so the callers only say what begins.
+  var STAGE_MARK = { done: '✓', failed: '!' };
+  function stageList(el, defs) {
+    var st = {};
+    defs.forEach(function (d) { st[d.id] = { state: 'pending', detail: d.detail || '', started: 0, took: null, bar: null }; });
+    var clock = function (ms) { var x = Math.round(ms / 1000); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+    function render() {
+      if (!el) return;
+      el.innerHTML = defs.map(function (d) {
+        var x = st[d.id];
+        var t = x.state === 'active' ? clock(Date.now() - x.started) : x.took != null ? clock(x.took) : '';
+        return '<li class="wdab-stage is-' + x.state + '" data-id="' + d.id + '">' +
+          '<span class="wdab-mark ' + x.state + '" aria-hidden="true">' + (STAGE_MARK[x.state] || '') + '</span>' +
+          '<span>' + esc(d.label) + '</span><span class="wdab-stage-t">' + t + '</span>' +
+          (x.bar != null && x.state === 'active' ? '<div class="wdab-sbar"><span style="width:' + x.bar + '%"></span></div>' : '') +
+          (x.detail ? '<div class="wdab-stage-d">' + esc(x.detail) + '</div>' : '') + '</li>';
+      }).join('');
+    }
+    // The clock ticks without re-rendering, so the spinner never restarts
+    var tick = setInterval(function () {
+      if (!el || !el.isConnected) return clearInterval(tick);
+      defs.forEach(function (d) {
+        if (st[d.id].state !== 'active') return;
+        var t = el.querySelector('[data-id="' + d.id + '"] .wdab-stage-t');
+        if (t) t.textContent = clock(Date.now() - st[d.id].started);
+      });
+    }, 1000);
+    var settle = function (state, detail) {
+      defs.forEach(function (d) {
+        var x = st[d.id];
+        if (x.state !== 'active') return;
+        x.state = state; x.took = Date.now() - x.started; x.bar = null;
+        if (detail != null) x.detail = detail;
+      });
+    };
+    var api = {
+      start: function (id, detail) {
+        if (!st[id]) return api;
+        settle('done');
+        st[id].state = 'active'; st[id].started = Date.now();
+        if (detail != null) st[id].detail = detail;
+        render(); return api;
+      },
+      // Bar and detail change in place — again so the spinner keeps turning
+      progress: function (id, done, total, detail) {
+        var x = st[id]; if (!x) return api;
+        var first = x.bar == null;
+        x.bar = total ? Math.round(100 * done / total) : 0;
+        if (detail != null) x.detail = detail;
+        var row = el && el.querySelector('[data-id="' + id + '"]');
+        var bar = row && row.querySelector('.wdab-sbar > span'), det = row && row.querySelector('.wdab-stage-d');
+        if (first || !bar || (detail != null && !det)) render();
+        else { bar.style.width = x.bar + '%'; if (det && detail != null) det.textContent = detail; }
+        return api;
+      },
+      done: function (id, detail) {
+        var x = st[id]; if (!x) return api;
+        if (x.state !== 'active') { x.started = Date.now(); }
+        x.state = 'done'; x.took = x.started ? Date.now() - x.started : null; x.bar = null;
+        if (detail != null) x.detail = detail;
+        render(); return api;
+      },
+      // One step went wrong but the run carries on (pictures failed, article still made)
+      failed: function (id, detail) {
+        var x = st[id]; if (!x) return api;
+        x.state = 'failed'; x.took = x.started ? Date.now() - x.started : null; x.bar = null;
+        if (detail != null) x.detail = detail;
+        render(); return api;
+      },
+      finish: function () { settle('done'); render(); clearInterval(tick); return api; },
+      fail: function (detail) { settle('failed', detail); render(); clearInterval(tick); return api; },
+    };
+    render();
+    return api;
+  }
+
+  function formHtml(p, actionLabel) {
+    var step = function (n, label) {
+      return '<li class="wdab-step' + (n === 1 ? ' is-on' : '') + '" data-step="' + n + '"><i>' + n + '</i><span>' + label + '</span></li>';
+    };
+    return '<div class="wdab">' +
+      '<ol class="wdab-steps" id="' + p + '-steps">' + step(1, 'Source') + step(2, 'Check') + step(3, 'Create') + '</ol>' +
+      '<div class="wdab-warn" id="' + p + '-brand-warn"></div>' +
+
+      // ── Stage 1: where the article comes from ──
+      '<div id="' + p + '-stage1">' +
+      '  <div class="wdab-row">' +
+      '    <label for="' + p + '-source">Source</label>' +
+      '    <select id="' + p + '-source">' +
+      '      <option value="docx">Word document (.docx)</option>' +
+      '      <option value="url">TopGear article URL</option>' +
+      '      <option value="whatsapp">From WhatsApp</option>' +
+      '    </select>' +
+      '  </div>' +
+      '  <div class="wdab-row wdab-hidden" id="' + p + '-wa-row">' +
+      '    <label for="' + p + '-wa-bundle">Article</label>' +
+      '    <select id="' + p + '-wa-bundle"><option value="">—</option></select>' +
+      '    <div class="wdab-wa-status" id="' + p + '-wa-status" role="status" aria-live="polite">' +
+      '      <span id="' + p + '-wa-status-text">Checking for exports…</span>' +
+      '      <button type="button" class="wdab-linkbtn" id="' + p + '-wa-refresh">Refresh</button>' +
+      '    </div>' +
+      '    <div class="wdab-wa-info wdab-hidden" id="' + p + '-wa-info"></div>' +
+      '    <details class="wdab-more" style="margin-top:8px" id="' + p + '-wa-key-box"><summary>Receiver key</summary>' +
+      '      <input type="password" id="' + p + '-wa-key" autocomplete="off" style="margin-top:6px">' +
+      '    </details>' +
+      '  </div>' +
+      '  <div class="wdab-row" id="' + p + '-docx-row">' +
+      '    <label for="' + p + '-file">Word document (.docx)</label>' +
+      '    <input type="file" id="' + p + '-file" accept=".docx">' +
+      '    <label style="margin-top:10px"><input type="checkbox" id="' + p + '-docx-fetch"> <span>Fetch the linked pictures and run the AI checks (1–2 minutes)</span></label>' +
+      '    <details class="wdab-more wdab-hidden" style="margin-top:8px" id="' + p + '-docx-key-row"><summary>Receiver key</summary>' +
+      '      <input type="password" id="' + p + '-docx-key" autocomplete="off" style="margin-top:6px">' +
+      '    </details>' +
+      '    <div class="wdab-wa-info wdab-hidden" id="' + p + '-docx-info"></div>' +
+      '  </div>' +
+      '  <div class="wdab-row wdab-hidden" id="' + p + '-url-row">' +
+      '    <label for="' + p + '-url">TopGear article URL</label>' +
+      '    <input type="url" id="' + p + '-url" placeholder="https://www.topgear.com/…">' +
+      '  </div>' +
+      '  <div class="wdab-row">' +
+      '    <label for="' + p + '-type">Article template</label>' +
+      '    <select id="' + p + '-type">' +
+      '      <option value="auto" selected>Auto-detect from the document</option>' +
+      '      <option value="countdown">Type 1 — Numbered countdown (50 → 1)</option>' +
+      '      <option value="ascending">Type 2 — Numbered ascending (1 → 50)</option>' +
+      '      <option value="crosshead">Type 3 — Crosshead / generic article</option>' +
+      '      <option value="snippet">Type 4 — Snippet list (unnumbered items)</option>' +
+      '    </select>' +
+      '  </div>' +
+      '  <div class="wdab-box wdab-hidden" id="' + p + '-load"><ol class="wdab-stages" id="' + p + '-load-list"></ol></div>' +
+      '  <p class="wdab-error" id="' + p + '-parse-error"></p>' +
+      '  <div class="wdab-foot"><button class="wdab-btn" id="' + p + '-parse" disabled>Load</button></div>' +
+      '</div>' +
+
+      // ── Stage 2: what was found, before anything is created ──
+      '<div id="' + p + '-preview" class="wdab-hidden">' +
+      '  <span class="wdab-chip wdab-hidden" id="' + p + '-type-note"></span>' +
+      '  <div class="wdab-row wdab-feed wdab-hidden" id="' + p + '-feed-row">' +
+      '    <label>Feed headline<span class="wdab-feed-note" id="' + p + '-feed-note">Saved to C_HEADLINE</span></label>' +
+      '    <input type="text" id="' + p + '-feed">' +
+      '  </div>' +
+      '  <div class="wdab-row"><label>Article title</label><input type="text" id="' + p + '-title"></div>' +
+      '  <div class="wdab-row"><label>Subtitle</label><input type="text" id="' + p + '-subtitle"></div>' +
+      '  <div class="wdab-row"><label>Author</label><input type="text" id="' + p + '-author"></div>' +
+      '  <div class="wdab-row wdab-hidden" id="' + p + '-images-row">' +
+      '    <label><input type="checkbox" id="' + p + '-images-add" checked> <span id="' + p + '-images-label"></span></label>' +
+      '    <p class="wdab-note" id="' + p + '-images-progress"></p>' +
+      '  </div>' +
+      '  <div class="wdab-row">' +
+      '    <label><input type="checkbox" id="' + p + '-comments-add" checked> <span>Add comments for missing pictures and things to check</span></label>' +
+      '    <p class="wdab-note" id="' + p + '-comments-note"></p>' +
+      '  </div>' +
+      '  <div class="wdab-warn" id="' + p + '-warn"><strong>Editor instructions left in the copy.</strong> Kept in place; delete any that shouldn\'t ship.<ul id="' + p + '-warn-list"></ul></div>' +
+      '  <details class="wdab-more"><summary>Entries (<span id="' + p + '-count">0</span>)</summary>' +
+      '    <div class="wdab-entries" id="' + p + '-entries"></div>' +
+      '  </details>' +
+      (actionLabel
+        ? '<p class="wdab-note" id="' + p + '-note"></p>' +
+          '<div class="wdab-foot"><button type="button" class="wdab-back" id="' + p + '-back">Back</button>' +
+          '<button class="wdab-btn" id="' + p + '-action">' + esc(actionLabel) + '</button></div>'
+        : '') +
+      '</div>' +
+
+      // ── Stage 3: creating, step by step ──
+      '<div id="' + p + '-stage3" class="wdab-hidden">' +
+      '  <h3 class="wdab-h" id="' + p + '-run-title">Creating the article</h3>' +
+      '  <div class="wdab-box" style="margin-top:0"><ol class="wdab-stages" id="' + p + '-run-list"></ol></div>' +
+      '  <p class="wdab-error" id="' + p + '-action-error"></p>' +
+      '  <div class="wdab-foot wdab-hidden" id="' + p + '-run-foot"><button type="button" class="wdab-back" id="' + p + '-run-back">Back</button></div>' +
+      '</div>' +
+      '</div>';
+  }
+
+  // Wires the converter form; returns a controller for reading the result.
+  function wireForm(p, onAction) {
+    var $ = function (id) { return document.getElementById(p + '-' + id); };
+    var state = { parsedData: null, uploadedFilename: '' };
+
+    // 1 Source → 2 Check → 3 Create. One stage is on screen at a time.
+    function setStage(n) {
+      $('stage1').classList.toggle('wdab-hidden', n !== 1);
+      $('preview').classList.toggle('wdab-hidden', n !== 2);
+      $('stage3').classList.toggle('wdab-hidden', n !== 3);
+      Array.prototype.forEach.call($('steps').children, function (li) {
+        var k = Number(li.getAttribute('data-step'));
+        li.classList.toggle('is-on', k === n);
+        li.classList.toggle('is-done', k < n);
+        li.firstChild.textContent = k < n ? '✓' : String(k);
+      });
+      var box = $('steps').closest('.wdab-modal') || $('steps').closest('.wdab-scroll');
+      if (box) box.scrollTop = 0;
+    }
+    if ($('back')) $('back').addEventListener('click', function () { setStage(1); });
+    $('run-back').addEventListener('click', function () { setStage(2); });
+
+    $('file').addEventListener('change', function () {
+      $('parse').disabled = !$('file').files.length;
+      $('preview').classList.add('wdab-hidden');
+      state.parsedData = null;
+      state.bundle = null;
+      $('docx-info').classList.add('wdab-hidden');
+      $('parse-error').style.display = 'none';
+    });
+
+    // Word source, optional: send the doc to the receiver for its pictures and
+    // the AI checks. On by default only when a receiver key is already stored,
+    // so a Word upload without a key behaves exactly as before.
+    $('docx-key').value = receiverKey();
+    $('docx-fetch').checked = SERVER.receiverWrites && !!receiverKey();
+    if (!SERVER.receiverWrites) $('docx-fetch').closest('label').classList.add('wdab-hidden');
+    // Same as on the WhatsApp source: folded away once a key is stored
+    $('docx-key-row').open = !receiverKey();
+    function syncDocxFetch() { $('docx-key-row').classList.toggle('wdab-hidden', !$('docx-fetch').checked); }
+    $('docx-fetch').addEventListener('change', syncDocxFetch);
+    $('docx-key').addEventListener('change', function () {
+      setReceiverKey($('docx-key').value.trim());
+      $('wa-key').value = receiverKey();
+    });
+    syncDocxFetch();
+
+    $('source').addEventListener('change', function () {
+      var src = $('source').value;
+      $('docx-row').classList.toggle('wdab-hidden', src !== 'docx');
+      $('url-row').classList.toggle('wdab-hidden', src !== 'url');
+      $('wa-row').classList.toggle('wdab-hidden', src !== 'whatsapp');
+      if (src === 'whatsapp') loadBundles();
+      refreshParse();
+    });
+    $('url').addEventListener('input', refreshParse);
+
+    // ── WhatsApp source ──
+    $('wa-key').value = receiverKey();
+    // Folded away once a key is stored; open when one is still needed
+    $('wa-key-box').open = !receiverKey();
+    $('wa-key').addEventListener('change', function () {
+      setReceiverKey($('wa-key').value.trim());
+      $('docx-key').value = receiverKey();
+      loadBundles();
+    });
+
+    function showParseError(msg) {
+      $('parse-error').textContent = msg;
+      $('parse-error').style.display = msg ? 'block' : 'none';
+    }
+
+    // Status line + self-refresh. While an export is being processed the list is
+    // re-read every few seconds; once it finishes the list reloads by itself,
+    // unless an article is already selected (then it just says so).
+    var pollTimer = null;
+    function showExportStatus(ex, hasArticles) {
+      if (!$('wa-status')) return false; // dialog closed
+      var st = exportStatusText(ex, hasArticles);
+      $('wa-status-text').textContent = st.text;
+      $('wa-status').classList.toggle('wdab-busy', !!st.busy);
+      $('wa-status').classList.toggle('wdab-failed', !!st.failed);
+      // While an export is being prepared, an empty list must not say "nothing new".
+      var first = $('wa-bundle').options[0];
+      if (first && !first.value && /^Nothing new/.test(first.textContent) && st.busy) first.textContent = 'Still preparing — see above';
+      return !!st.busy;
+    }
+    // Keeps checking while the WhatsApp source is showing — the dialog is often
+    // open before the export arrives. Quicker while an export is in progress.
+    var seenExport = null; // finishedAt of the last export the list reflects
+    function schedulePoll(busy) {
+      clearTimeout(pollTimer);
+      pollTimer = setTimeout(function () {
+        if (!$('wa-status') || $('source').value !== 'whatsapp') return;
+        receiverFetch('/bundles?all=1').then(function (r) { return r.json(); }).then(function (j) {
+          var nowBusy = showExportStatus(j.export, (j.bundles || []).length > 0);
+          var finished = j.export && j.export.last ? j.export.last.finishedAt : null;
+          if (nowBusy || finished === seenExport) return schedulePoll(nowBusy);
+          // A new export has finished. Reload the list, but never under an
+          // article that is being worked on.
+          if (!$('wa-bundle').value) return loadBundles();
+          $('wa-status-text').textContent += ' Press Refresh to see new articles.';
+          seenExport = finished;
+          schedulePoll(false);
+        }).catch(function () { schedulePoll(busy); });
+      }, busy ? 5000 : 12000);
+    }
+    $('wa-refresh').addEventListener('click', function () { loadBundles(); });
+
+    function loadBundles() {
+      clearTimeout(pollTimer);
+      state.bundle = null;
+      $('wa-info').classList.add('wdab-hidden');
+      $('wa-bundle').innerHTML = '<option value="">Loading…</option>';
+      refreshParse();
+      receiverFetch('/bundles?all=1')
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          showParseError('');
+          var busy = showExportStatus(j.export, (j.bundles || []).length > 0);
+          seenExport = j.export && j.export.last ? j.export.last.finishedAt : null;
+          schedulePoll(busy);
+          var list = j.bundles || [];
+          // Built-by-hand and imported bundles go through the receiver's
+          // re-import, which rewrites them. Not from a server that only reads.
+          if (!SERVER.receiverWrites) list = list.filter(function (b) { return !b.imported && !b.builtByHand; });
+          // New first; then docs the chat shows were already built by hand
+          // (BRS replied with an apple.news draft); then ones imported here.
+          var waiting = list.filter(function (b) { return !b.imported && !b.builtByHand; });
+          var byHand = list.filter(function (b) { return !b.imported && b.builtByHand; });
+          var done = list.filter(function (b) { return b.imported; });
+          var day = function (ts) { return String(ts || '').slice(0, 10); };
+          var opt = function (b) {
+            // Pictures that came in after the article was made (or drafted by hand)
+            var newPics = b.picturesArrivedAt && (!b.imported || b.picturesArrivedAt > b.imported.at) && !b.imageCount;
+            var label = newPics ? 'pictures arrived, re-import'
+              : b.imported ? 'imported ' + day(b.imported.at)
+              : b.builtByHand ? 'draft posted ' + day(b.builtByHand.ts)
+              : (PICTURE_STATUS[b.pictureStatus] || b.pictureStatus);
+            return '<option value="' + esc(b.key) + '">' + esc(b.name) + ' — ' + esc(label) + '</option>';
+          };
+          var group = function (label, items) {
+            return items.length ? '<optgroup label="' + esc(label) + '">' + items.map(opt).join('') + '</optgroup>' : '';
+          };
+          $('wa-bundle').innerHTML =
+            '<option value="">' + (waiting.length ? 'Choose an article…' : busy ? 'Still preparing — see above' : 'Nothing new from WhatsApp') + '</option>' +
+            group('Waiting', waiting) +
+            group('Already drafted — apple.news link posted in the chat', byHand) +
+            group('Already in Studio — choose to re-import', done);
+        })
+        .catch(function (e) {
+          $('wa-bundle').innerHTML = '<option value="">—</option>';
+          if ($('wa-status-text')) $('wa-status-text').textContent = 'Could not reach the WhatsApp receiver.';
+          showParseError(e.message);
+        });
+    }
+
+    $('wa-bundle').addEventListener('change', function () {
+      var key = $('wa-bundle').value;
+      state.bundle = null;
+      $('preview').classList.add('wdab-hidden');
+      $('wa-info').classList.add('wdab-hidden');
+      refreshParse();
+      if (!key) return;
+      receiverFetch('/bundles/' + key)
+        .then(function (r) { return r.json(); })
+        .then(function (b) {
+          if ($('wa-bundle').value !== key) return; // changed while loading
+          state.bundle = b;
+          $('wa-info').innerHTML = bundleInfoHtml(b);
+          $('wa-info').classList.remove('wdab-hidden');
+          refreshParse();
+        })
+        .catch(function (e) { showParseError(e.message); });
+    });
+
+    // Slots available in the layout the current article type would produce.
+    var ctlGalleries = { slideshows: 0, slides: 0 };
+    function ctlSlotCount() {
+      if (!state.parsedData) return 0;
+      var t = deepClone(TEMPLATES[state.parsedData.type]);
+      var d = state.parsedData.type === 'crosshead'
+        ? buildCrosshead(t, state.parsedData.meta, state.parsedData.entries)
+        : buildNumbered(t, state.parsedData.meta, state.parsedData.entries, state.parsedData.type);
+      ctlGalleries = gallerySummary(d);
+      return (d.data.content || []).filter(function (c) {
+        return c.identifier === 'image' || c.identifier === 'header-image';
+      }).length;
+    }
+
+    function refreshParse() {
+      var src = $('source').value;
+      $('parse').disabled = src === 'docx' ? !$('file').files.length
+        : src === 'url' ? !$('url').value.trim()
+        : !(state.bundle && state.bundle.docStored);
+      $('parse').textContent = src === 'docx' ? 'Read document'
+        : src === 'url' ? 'Fetch article'
+        : state.bundle && state.bundle.imported ? 'Re-import'
+        : state.bundle && state.bundle.pictureStatus === 'built-by-hand' ? 'Import'
+        : 'Load';
+    }
+
+    $('parse').addEventListener('click', function () {
+      var source = $('source').value;
+      var file = $('file').files[0];
+      if (source === 'docx' && !file) return;
+      if (source === 'url' && !$('url').value.trim()) return;
+      if (source === 'whatsapp' && !(state.bundle && state.bundle.docStored)) return;
+      state.fetchImage = null;
+      state.bundleKey = null;
+      state.placement = null;
+      var type = $('type').value;
+      $('parse').disabled = true;
+      // Imported before, or held back as built by hand: fetch the pictures and
+      // run the AI now, through the receiver's re-import.
+      var needsImport = source === 'whatsapp' && (state.bundle.imported || state.bundle.pictureStatus === 'built-by-hand');
+      $('parse').textContent = 'Working…';
+      $('parse-error').style.display = 'none';
+      $('type-note').classList.add('wdab-hidden');
+
+      // What is happening, step by step, while the article loads
+      var viaReceiverNow = source === 'docx' && $('docx-fetch').checked && !!receiverKey();
+      var load = stageList($('load-list'), []
+        .concat(needsImport ? [{ id: 'import', label: 'Fetch the pictures again and run the AI checks', detail: 'Usually 1–2 minutes' }] : [])
+        .concat(viaReceiverNow ? [{ id: 'receiver', label: 'Fetch the linked pictures and run the AI checks', detail: 'Usually 1–2 minutes' }] : [])
+        .concat(source === 'url' ? [{ id: 'fetch', label: 'Fetch the article from topgear.com' }] : [{ id: 'doc', label: 'Read the Word document' }])
+        .concat([{ id: 'layout', label: 'Choose the article template' }]));
+      $('load').classList.remove('wdab-hidden');
+
+      // 'auto' reads the article type from the document itself, so nobody has
+      // to open the Word file first. The editor can still pick one and re-parse.
+      function showDetected(d) {
+        if (!d) return;
+        $('type-note').textContent = 'Template: ' + TYPE_LABELS[d.type] + ' — ' + d.reason;
+        $('type-note').classList.remove('wdab-hidden');
+      }
+      function parseDocHtml(html) {
+        load.start('layout');
+        if (type === 'auto') { var d = detectArticleType(html); type = d.type; showDetected(d); }
+        return type === 'crosshead' ? parseCrosshead(html) : parseNumbered(html, type);
+      }
+
+      // Pictures, their order and the AI's picks from a receiver bundle — the
+      // same for a WhatsApp article and for a Word doc sent to the receiver.
+      function useBundle(bundle) {
+        var ordered = orderedBundleImages(bundle);
+        state.imageUrls = ordered.map(function (im) { return bundleFileUrl(bundle, im.file); });
+        state.placement = { byUrl: {}, heroUrl: null };
+        ordered.forEach(function (im, i) {
+          state.placement.byUrl[state.imageUrls[i]] = entryOfImage(im, bundle);
+          if (bundle.selection && bundle.selection.hero === im.name) state.placement.heroUrl = state.imageUrls[i];
+        });
+        state.fetchImage = fetchFromReceiver;
+        state.bundleKey = bundle.key;
+        state.uploadedFilename = bundle.name;
+      }
+
+      var pipeline;
+      if (source === 'url') {
+        var articleUrl = $('url').value.trim();
+        try { articleUrl = normaliseArticleUrl(articleUrl); $('url').value = articleUrl; } catch (e) { /* parseFromUrl reports it */ }
+        load.start('fetch');
+        pipeline = parseFromUrl(articleUrl, type).then(function (r) {
+          load.start('layout');
+          type = r.type;
+          showDetected(r.detected);
+          state.imageUrls = r.imageUrls || [];
+          // A topgear.com list says which item each picture belongs to: place
+          // by entry, and the page's own main picture as the opener (it may
+          // also be an item's picture — then it is placed in both).
+          if (r.imageEntries && state.imageUrls.length) state.placement = { byUrl: r.imageEntries, heroUrl: state.imageUrls[0] };
+          state.uploadedFilename = slugFromUrl(articleUrl);
+          return { meta: r.meta, entries: r.entries };
+        });
+      } else if (source === 'whatsapp') {
+        var bundle = state.bundle;
+        // Already in Studio: fetch its pictures again (the missing ones may
+        // have arrived) and re-run the AI before loading it.
+        if (needsImport) load.start('import');
+        var ready = needsImport
+          ? receiverFetch('/bundles/' + bundle.key + '/reimport', { method: 'POST' })
+              .then(function () { return receiverFetch('/bundles/' + bundle.key); })
+              .then(function (r) { return r.json(); })
+              .then(function (fresh) {
+                bundle = state.bundle = fresh;
+                $('wa-info').innerHTML = bundleInfoHtml(fresh);
+              })
+          : Promise.resolve();
+        pipeline = ready.then(function () {
+          load.start('doc');
+          return Promise.all([
+            loadMammoth(),
+            receiverFetch(bundleFileUrl(bundle, 'doc.docx')).then(function (r) { return r.arrayBuffer(); }),
+          ]);
+        })
+          .then(function (x) { return x[0].convertToHtml({ arrayBuffer: x[1] }); })
+          .then(function (result) {
+            useBundle(bundle);
+            return parseDocHtml(result.value);
+          });
+      } else {
+        // Optionally send the doc to the receiver first: it fetches the Dropbox
+        // pictures the doc links to, resizes them and runs the AI checks, as it
+        // does for a WhatsApp article. If that fails the doc is still parsed
+        // here, without pictures, and the reason is shown — nothing is lost.
+        var viaReceiver = $('docx-fetch').checked;
+        if (viaReceiver && !receiverKey()) {
+          showParseError('Enter the receiver key to fetch pictures, or untick the box.');
+          $('load').classList.add('wdab-hidden');
+          $('parse').disabled = false; refreshParse();
+          return;
+        }
+        load.start(viaReceiver ? 'receiver' : 'doc');
+        var fresh = state.docFresh; state.docFresh = false;
+        pipeline = file.arrayBuffer().then(function (buf) {
+          var fromReceiver = !viaReceiver ? Promise.resolve(null)
+            : receiverFetch('/docs?name=' + encodeURIComponent(file.name) + (fresh ? '&fresh=1' : ''), {
+                method: 'POST', body: buf, headers: { 'Content-Type': 'application/octet-stream' },
+              }).then(function (r) { return r.json(); })
+                .catch(function (e) { return { failed: e.message }; });
+          return Promise.all([loadMammoth(), fromReceiver]).then(function (x) {
+            load.start('doc');
+            var bundle = x[1];
+            state.imageUrls = [];
+            state.uploadedFilename = file.name.replace(/\.docx$/i, '');
+            $('docx-info').classList.add('wdab-hidden');
+            if (bundle && bundle.failed) {
+              $('docx-info').innerHTML = '<div><strong>Pictures were not fetched.</strong> ' + esc(bundle.failed) + ' The document has been converted without them.</div>';
+              $('docx-info').classList.remove('wdab-hidden');
+            } else if (bundle) {
+              state.bundle = bundle;
+              useBundle(bundle);
+              $('docx-info').innerHTML = bundleInfoHtml(bundle) +
+                '<div>' + (bundle.reused ? 'Using the pictures and AI checks from a few minutes ago. ' : '') +
+                '<button type="button" class="wdab-linkbtn" id="' + p + '-docx-again">Fetch again</button></div>';
+              $('docx-info').classList.remove('wdab-hidden');
+              $('docx-again').addEventListener('click', function () { state.docFresh = true; $('parse').click(); });
+            }
+            return x[0].convertToHtml({ arrayBuffer: buf });
+          });
+        }).then(function (result) { return parseDocHtml(result.value); });
+      }
+
+      pipeline
+        .then(function (parsed) {
+          state.parsedData = { meta: parsed.meta, entries: parsed.entries, type: type };
+
+          $('feed').value = parsed.meta.feedHeadline;
+          $('feed-row').classList.toggle('wdab-hidden', !parsed.meta.feedHeadline);
+          $('title').value = parsed.meta.title;
+          $('subtitle').value = parsed.meta.subtitle;
+          $('author').value = parsed.meta.author;
+
+          if (parsed.meta.flagged && parsed.meta.flagged.length) {
+            $('warn-list').innerHTML = parsed.meta.flagged.map(function (f) {
+              var links = f.hrefs.filter(function (h) { return f.text.indexOf(h) === -1; }).map(function (h) {
+                return ' → <a href="' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
+              }).join('');
+              return '<li>' + esc(f.text) + links + '</li>';
+            }).join('');
+            $('warn').style.display = 'block';
+          } else {
+            $('warn').style.display = 'none';
+          }
+
+          var imgs = state.imageUrls || [];
+          $('images-row').classList.toggle('wdab-hidden', !imgs.length);
+          if (imgs.length) {
+            var slotCount = 0;
+            try { slotCount = ctlSlotCount(); } catch (e) { slotCount = 0; }
+            var placeable = Math.min(slotCount, imgs.length);
+            $('images-label').textContent = 'Also add ' + imgs.length + ' article image' +
+              (imgs.length === 1 ? '' : 's') + ' to this Dossier';
+            var note = placeable + ' of ' + imgs.length + ' will be placed in the article' +
+              ' (' + slotCount + ' image slot' + (slotCount === 1 ? '' : 's') + ' in this template).';
+            if (ctlGalleries.slideshows) {
+              note += ' The web galler' + (ctlGalleries.slideshows === 1 ? 'y becomes a slideshow' : 'ies become ' + ctlGalleries.slideshows + ' slideshows') +
+                ' (' + ctlGalleries.slides + ' pictures).';
+            } else if (imgs.length > slotCount) {
+              note += ' The rest are added to the Dossier only' +
+                (type === 'crosshead' ? ' — Type 1 or 2 has one image slot per entry.' : '.');
+            }
+            $('images-progress').textContent = note;
+          }
+
+          $('count').textContent = parsed.entries.filter(function (e) { return !e.section; }).length;
+          $('entries').innerHTML = parsed.entries.slice(0, 60).map(function (e, i) {
+            return type === 'crosshead'
+              ? '<div><span class="n">' + (i + 1) + '.</span>' + esc(e.crosshead || e.name || '(no crosshead)') + '</div>'
+              : e.section ? '<div><strong>' + esc(e.name) + '</strong> <span class="n">(section heading)</span></div>'
+              : (e.sectionBefore ? '<div><strong>' + esc(e.sectionBefore.name) + '</strong> <span class="n">(section heading)</span></div>' : '') +
+                '<div><span class="n">[' + e.number + ']</span>' + esc(e.name || e.crosshead || '') + '</div>';
+          }).join('') + (parsed.entries.length > 60 ? '<div class="n">… and ' + (parsed.entries.length - 60) + ' more</div>' : '');
+
+          load.finish();
+          $('load').classList.add('wdab-hidden');
+          setStage(2);
+        })
+        .catch(function (err) {
+          load.fail(brief(err.message, 140));
+          $('parse-error').textContent = (source === 'docx' ? 'Could not read the document: ' : '') + err.message;
+          $('parse-error').style.display = 'block';
+        })
+        .then(function () {
+          $('parse').disabled = false;
+          refreshParse();
+        });
+    });
+
+    if (onAction && $('action')) {
+      $('action').addEventListener('click', function () { onAction(controller); });
+    }
+
+    refreshParse(); // the button names the action for the source showing
+
+    var controller = {
+      $: $,
+      setStage: setStage,
+      getResult: function () {
+        if (!state.parsedData) return null;
+        var pm = state.parsedData.meta;
+        var pd = pm.deltas || {};
+        var meta = {
+          feedHeadline: $('feed').value,
+          title: $('title').value,
+          subtitle: $('subtitle').value,
+          author: $('author').value,
+          score: pm.score,
+          intro: pm.intro,
+          introParts: pm.introParts,
+          leadParts: pm.leadParts,
+          titleDeltas: $('title').value === pm.title ? pd.title : null,
+          subtitleDeltas: $('subtitle').value === pm.subtitle ? pd.subtitle : null,
+        };
+        // created: [{ id, url }] from createImagesInDossier, in upload order.
+        // template: the article template read from Studio (loadTemplate);
+        // the built-in copy when none is given (the Check stage's preview).
+        function build(created, template) {
+          template = deepClone(template || TEMPLATES[state.parsedData.type]);
+          // Crosshead article from WhatsApp: pictures the AI matched to a
+          // section go under that section; the rest become a gallery.
+          var sectioned = created && state.bundleKey && state.parsedData.type === 'crosshead'
+            ? sectionPictures(state.parsedData.entries, state.bundle) : null;
+          var d = state.parsedData.type === 'crosshead'
+            ? buildCrosshead(template, meta, sectioned ? sectioned.entries : state.parsedData.entries)
+            : buildNumbered(template, meta, state.parsedData.entries, state.parsedData.type);
+          var placed = applyImageIds(d, created ? assignSlots(d, created, state.placement) : null);
+          // Web galleries → slideshows, pointing at the pictures just created
+          placed.galleries = placeGalleries(placed.digital, created);
+          placed.comments = 0;
+          if ($('comments-add') && $('comments-add').checked) {
+            var bundle = state.bundleKey ? state.bundle : null;
+            // Frame notes only when pictures were expected (WhatsApp or a web
+            // article); a plain Word import has its pictures added by hand later.
+            var expectPictures = !!bundle || (state.imageUrls || []).length > 0;
+            var opener = expectPictures && created && created.length ? openerNote(placed.digital, created, bundle) : null;
+            var notes = flaggedNotes(pm, TOOL_PREFIX)
+              .concat(pullQuoteNotes(pm, TOOL_PREFIX))
+              .concat(bundle ? bundleNotes(bundle) : [])
+              .concat(opener ? [opener] : [])
+              .concat(expectPictures ? pictureNotes(placed.digital, bundle) : [])
+              .concat(sectioned ? sectioned.notes : []);
+            var withComments = addComments(placed.digital, notes, currentUserId());
+            placed.digital = withComments.digital;
+            placed.comments = withComments.placed.length;
+          }
+          return placed;
+        }
+        return {
+          digital: build().digital, build: build, type: state.parsedData.type, meta: meta, filename: state.uploadedFilename,
+          imageUrls: (state.imageUrls || []),
+          fetchImage: state.fetchImage || null,
+          bundleKey: state.bundleKey || null,
+          addImages: !!($('images-add') && $('images-add').checked && (state.imageUrls || []).length),
+        };
+      },
+    };
+    return controller;
+  }
+
+  // ─── Dossier toolbar: convert and create directly in this Dossier ─────────
+  // (The Apps-menu custom app was removed on request — the Dossier button is
+  // the only trigger. The standalone web version on GitHub Pages still offers
+  // a .digital download when one is needed.)
+  ContentStationSdk.addDossierToolbarButton({
+    label: 'Word & Web → Digital',
+    onAction: function (config, selection, dossier) {
+      injectCss();
+      var dialogId = null;
+      var busy = false;
+      // Pictures already uploaded by this dialog, so a retry after a failed
+      // article (e.g. a rejected name) reuses them instead of adding a second set.
+      var uploaded = { key: null, images: null };
+
+      var content = '<div class="wdab-modal">' + formHtml('wdabm', 'Create article') + '</div>';
+
+      dialogId = ContentStationSdk.openModalDialog({
+        title: 'Word & Web → Digital',
+        subtitle: 'Creates the digital article in Dossier “' + esc(dossier.Name || '') + '”',
+        content: content,
+        width: 640,
+        buttons: [{ label: 'Close', class: 'pale' }],
+      });
+
+      // Digital styles (component set, Look and Feel, Twixl collection) come
+      // from BRAND_DEFAULTS. A dossier in a brand with no Look and Feel there gets
+      // an article with none — say so before anything is created.
+      resolveDossierContext(dossier).then(function (ctx) {
+        var el = document.getElementById('wdabm-brand-warn');
+        var bd = BRAND_DEFAULTS[ctx.pubId];
+        if (!el || (bd && bd.lookAndFeel)) return;
+        el.innerHTML = '<strong>No digital styles for this brand.</strong> This Dossier is in “' +
+          esc(ctx.pubName || ('brand ' + ctx.pubId)) + '”, which has no Look and Feel set up in this plug-in, ' +
+          (Object.keys(BRAND_DEFAULTS).some(function (k) { return BRAND_DEFAULTS[k].lookAndFeel; })
+            ? 'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.'
+            : 'so the article will be created without digital styles.');
+        el.style.display = 'block';
+      }).catch(function () { /* the warning is advisory; creation reports its own errors */ });
+
+      wireForm('wdabm', function (ctl) {
+        if (busy) return;
+        var result = ctl.getResult();
+        if (!result) return;
+        busy = true;
+        var btn = ctl.$('action');
+        var errEl = ctl.$('action-error');
+        var noteEl = ctl.$('note');
+        btn.disabled = true;
+        errEl.style.display = 'none';
+
+        var name = result.meta.title || result.filename;
+
+        // The server's name-length limit varies by install, so step down through
+        // NAME_LIMITS rather than hard-coding a guess.
+        var tpl = null; // { template, info } from loadTemplate
+        function attempt(digital, i) {
+          return createArticleInDossier(digital, name, result.meta.feedHeadline, dossier, NAME_LIMITS[i], tpl && tpl.info)
+            .catch(function (err) {
+              var tooLong = /S1026|too long|invalid characters/i.test(err.message || '');
+              if (tooLong && i + 1 < NAME_LIMITS.length) return attempt(digital, i + 1);
+              throw err;
+            });
+        }
+
+        // Images are created first so the article can reference their object
+        // IDs and arrive with pictures already in its image slots. Image failure
+        // is never fatal — the article is still created, just without them.
+        var imagesStep = Promise.resolve(null);
+        var imagesKey = result.imageUrls.join('|');
+        var nPics = result.imageUrls.length;
+        // Stage 3: every step on screen, so a slow one is never mistaken for a hang
+        ctl.$('run-title').textContent = 'Creating “' + brief(name, 60) + '”';
+        ctl.$('run-foot').classList.add('wdab-hidden');
+        ctl.setStage(3);
+        var run = stageList(ctl.$('run-list'), []
+          .concat(result.addImages ? [
+            { id: 'images', label: 'Add ' + nPics + ' picture' + (nPics === 1 ? '' : 's') + ' to the Dossier' },
+            { id: 'process', label: 'Wait for Studio to process the pictures' }] : [])
+          .concat([{ id: 'template', label: 'Read the article template from Studio' },
+            { id: 'article', label: 'Build and create the article' }]));
+        if (result.addImages && uploaded.key === imagesKey && uploaded.images && uploaded.images.created.length) {
+          imagesStep = Promise.resolve(uploaded.images);
+          run.done('images', 'Using the ' + uploaded.images.created.length + ' already added');
+        } else if (result.addImages) {
+          run.start('images');
+          imagesStep = createImagesInDossier(result.imageUrls, dossier, function (done, total) {
+            run.progress('images', done, total, Math.min(done + 1, total) + ' of ' + total);
+          }, result.fetchImage).catch(function (e) {
+            return { created: [], failed: [], fatal: e.message };
+          }).then(function (images) {
+            if (images && images.created.length) uploaded = { key: imagesKey, images: images };
+            if (images && images.fatal) run.failed('images', 'Not added: ' + brief(images.fatal, 100));
+            else run.done('images', images ? images.created.length + ' added' + (images.failed.length ? ', ' + images.failed.length + ' failed' : '') : '');
+            return images;
+          });
+        }
+
+        // The Follow/Newsletter assets are shared objects; link them into this
+        // dossier so the components resolve. Never fatal.
+        var furnitureStep = linkFurnitureToDossier(String(dossier.ID || dossier.Id));
+
+        // Read quietly while the pictures upload (starting its row now would
+        // close the pictures' row); reported just before the article is built.
+        var templateStep = loadTemplate(result.type, dossier).catch(function (e) {
+          return { template: TEMPLATES[result.type], info: { source: 'built-in', error: e.message } };
+        }).then(function (t) { tpl = t; return t; });
+
+        Promise.all([furnitureStep, templateStep])
+          .then(function () { return imagesStep; })
+          .then(function (images) {
+            // Don't build the article until Studio has finished ingesting the
+            // images, or opening it straight away shows empty placements.
+            if (!images || !images.created.length) return images;
+            run.start('process');
+            var ids0 = images.created.map(function (c) { return c.id; }).filter(Boolean);
+            return waitForImagesReady(ids0, function (done, total) {
+              run.progress('process', done, total, done + ' of ' + total + ' ready');
+            }).then(function (r) {
+              images.pending = r.pending;
+              run.done('process', r.pending && r.pending.length ? r.pending.length + ' still processing' : 'All ready');
+              return images;
+            });
+          })
+          .then(function (images) {
+            run.start('template');
+            if (tpl.info.source === 'studio') run.done('template', '“' + brief(tpl.info.name, 60) + '”, version ' + tpl.info.version);
+            else run.failed('template', 'Used the copy built into the plug-in' + (tpl.info.error ? ': ' + brief(tpl.info.error, 80) : ''));
+            run.start('article');
+            var created = images ? images.created.filter(function (c) { return c.id; }) : [];
+            var built = result.build(created, tpl && tpl.template);
+            return attempt(built.digital, 0).then(function (res) {
+              return { res: res, images: images, placed: built.filled, slots: built.slots, comments: built.comments };
+            });
+          })
+          .then(function (r) {
+            var created = r.res && r.res.Objects && r.res.Objects[0];
+            var bmd = created && created.MetaData && created.MetaData.BasicMetaData;
+            var newName = bmd ? bmd.Name : name;
+            var out = { newName: newName, images: r.images, placed: r.placed, slots: r.slots, comments: r.comments };
+            if (!result.bundleKey || !SERVER.receiverWrites) return out;
+            // Tell the receiver this bundle is in Studio so a re-export never
+            // offers it again. Never fatal — the article already exists.
+            return receiverFetch('/bundles/' + result.bundleKey + '/imported', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ dossierId: String(dossier.ID || dossier.Id), articleId: bmd ? String(bmd.ID) : null }),
+            }).then(function () { return out; }, function (e) {
+              console.warn('[word-digital] could not mark WhatsApp bundle imported:', e.message);
+              return out;
+            });
+          })
+          .then(function (out) {
+            var msg = 'Digital article “' + esc(out.newName) + '” created in Dossier “' + esc(dossier.Name || '') + '”.';
+            var im = out.images;
+            if (im) {
+              if (im.fatal) msg += ' Images were not added: ' + esc(im.fatal);
+              else {
+                msg += ' ' + im.created.length + ' image' + (im.created.length === 1 ? '' : 's') + ' added';
+                if (out.placed) msg += ' (' + out.placed + ' of ' + out.slots + ' slots filled)';
+                if (im.failed.length) msg += ', ' + im.failed.length + ' failed';
+                msg += '.';
+                if (im.pending && im.pending.length) {
+                  msg += ' ' + im.pending.length + ' were still processing — give Studio a moment before opening the article.';
+                }
+                if (im.failed.length) console.warn('[word-digital] image failures:', im.failed);
+              }
+            }
+            if (out.comments) msg += ' ' + out.comments + ' comment' + (out.comments === 1 ? '' : 's') + ' added — see the Comments panel.';
+            run.finish();
+            ContentStationSdk.showNotification({ content: msg, icon: 'check' });
+            try { ContentStationSdk.refreshCurrentSearch(); } catch (e) { /* non-fatal */ }
+            if (dialogId !== null) ContentStationSdk.closeModalDialog(dialogId);
+          })
+          .catch(function (err) {
+            // Say what really happened: the pictures are created before the article.
+            var kept = uploaded.key === imagesKey && uploaded.images ? uploaded.images.created.length : 0;
+            run.fail(brief(err.message, 140));
+            ctl.$('run-foot').classList.remove('wdab-hidden');
+            errEl.textContent = err.message + '\n' + (kept
+              ? 'The article was not created, but ' + kept + ' image' + (kept === 1 ? ' is' : 's are') + ' already in this Dossier. ' +
+                'Go back and create again — they will be reused, not uploaded twice.'
+              : 'Nothing was created. Go back, fix it and try again.');
+            errEl.style.display = 'block';
+          })
+          .then(function () {
+            busy = false;
+            btn.disabled = false;
+            btn.textContent = 'Create article';
+          });
+
+        noteEl.textContent = result.meta.feedHeadline ? 'Feed headline will be saved to C_HEADLINE.' : '';
+      });
+    },
+  });
+})();
