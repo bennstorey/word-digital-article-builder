@@ -141,7 +141,16 @@ function deltasAfterText(ops, prefix) {
     out.push(Object.assign({}, op, { insert: op.insert.slice(skip) }));
     skip = 0;
   }
-  return trimDeltas(out);
+  const value = trimDeltas(out);
+  // A label line set wholly in italics ("Sub headline: …") is the line's
+  // styling, not emphasis: the template styles the field itself.
+  if (value.length && value.every(o => o.attributes && o.attributes.italic)) {
+    value.forEach(o => {
+      delete o.attributes.italic;
+      if (!Object.keys(o.attributes).length) delete o.attributes;
+    });
+  }
+  return value;
 }
 
 function joinDeltas(parts) {
@@ -154,18 +163,38 @@ function joinDeltas(parts) {
 }
 
 // ─── Docx parsing ────────────────────────────────────────────────────────
+// The house labels are "Feed headline:", "Article headline:", "Article subhead:"
+// and "Words:"; writers also use the variants below (Mechatronik M SEC,
+// 2026-11-06: "Sub headline:", and "Author Tom Ford" with no colon).
 const METADATA_PREFIXES = [
-  { key: 'feedHeadline', prefix: 'Feed headline:' },
-  { key: 'title',        prefix: 'Article headline:' },
-  { key: 'subtitle',     prefix: 'Article subhead:' },
-  { key: 'author',       prefix: 'Words:' },
+  { key: 'feedHeadline', re: /^feed\s*headline\s*:/i },
+  { key: 'title',        re: /^(?:article\s*)?headline\s*:/i },
+  { key: 'subtitle',     re: /^(?:article\s*)?(?:sub[\s-]*head(?:line)?|standfirst)\s*:/i },
+  { key: 'author',       re: /^(?:words|author|byline|by)\s*:/i },
 ];
+// Anywhere in a paragraph: used to find labels run together with line breaks
+const HAS_META_LABEL = /(?:headline|sub[\s-]*head|standfirst|words|author|byline)\s*:/i;
+// A bold "Author" / "Words" followed by the name, no colon
+const BARE_AUTHOR = /^(?:author|words|byline)\s+(?=\S)/i;
 
-function matchMetaPrefix(text) {
-  for (const { key, prefix } of METADATA_PREFIXES) {
-    if (text.toLowerCase().startsWith(prefix.toLowerCase())) {
-      return { key, prefix, value: text.slice(prefix.length).trim() };
-    }
+function matchMetaPrefix(text, p) {
+  for (const { key, re } of METADATA_PREFIXES) {
+    const m = text.match(re);
+    if (!m) continue;
+    let value = text.slice(m[0].length).trim();
+    // "Feed headline: Article Headline: …": the second label is not copy
+    const inner = METADATA_PREFIXES.map(l => value.match(l.re)).find(Boolean);
+    if (inner) value = value.slice(inner[0].length).trim();
+    return { key, prefix: text.slice(0, text.length - value.length).trim(), value };
+  }
+  // Only when the bold run is the label word alone and a short name follows,
+  // so a crosshead such as "Words fail me" is never taken for a byline.
+  const lead = p && p.firstElementChild;
+  const bare = text.match(BARE_AUTHOR);
+  if (bare && lead && /^(strong|b)$/i.test(lead.tagName) && text.startsWith(lead.textContent.trim()) &&
+      /^(?:author|words|byline)$/i.test(lead.textContent.trim())) {
+    const value = text.slice(bare[0].length).trim();
+    if (value.split(/\s+/).length <= 6) return { key: 'author', prefix: text.slice(0, text.length - value.length).trim(), value };
   }
   return null;
 }
@@ -190,7 +219,7 @@ function paras(html) {
   // 2026-10-29: the headline went into the feed headline, the byline into
   // the standfirst). Only paragraphs holding a label are split.
   doc.querySelectorAll('p').forEach(p => {
-    if (!p.querySelector('br') || !METADATA_PREFIXES.some(m => p.textContent.toLowerCase().includes(m.prefix.toLowerCase()))) return;
+    if (!p.querySelector('br') || !HAS_META_LABEL.test(p.textContent)) return;
     const lines = p.innerHTML.split(/<br\s*\/?>/i);
     lines.forEach(html => {
       const line = doc.createElement('p');
@@ -380,7 +409,7 @@ function parseNumbered(html, type) {
         pending = take(first);
         continue;
       }
-      const match = matchMetaPrefix(text);
+      const match = matchMetaPrefix(text, p);
       if (match) {
         if (match.value === '') { pendingMetaKey = match.key; }
         else {
@@ -488,7 +517,7 @@ function parseCrosshead(html) {
       if (!shouldFlag(text)) {
         // Don't consume the value if it looks like a crosshead we've been waiting for
         const crosshead = extractCrosshead(p);
-        const isMeta = !!matchMetaPrefix(text);
+        const isMeta = !!matchMetaPrefix(text, p);
         if (!isMeta) {
           meta[pendingMetaKey] = text;
           meta.deltas[pendingMetaKey] = trimDeltas(paraToDeltas(p, { italicOnly: true }));
@@ -500,7 +529,7 @@ function parseCrosshead(html) {
     }
 
     // 2. Always check metadata FIRST — even bold lines can be metadata (e.g. "Words: Jack Rix")
-    const metaMatch = matchMetaPrefix(text);
+    const metaMatch = matchMetaPrefix(text, p);
     if (metaMatch) {
       if (metaMatch.value === '') { pendingMetaKey = metaMatch.key; }
       else {
@@ -1720,27 +1749,51 @@ function pullQuoteNotes(meta, prefix) {
 
   var DIGITAL_MIME = 'application/ww-digital+json';
 
-  // Per-brand defaults applied to created digital articles, keyed by
-  // Publication (Brand) id. GUIDs verified against existing articles on
-  // lab-studio.woodwing.cloud (all current TG AN+ articles carry these).
-  var BRAND_DEFAULTS = {
-    // Top Gear
-    '3': {
-      componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
-      lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
-      twixlCollectionId: '102069',
-      // Article templates read from Studio when an article is built, so an
-      // edit to the template in Studio reaches the next article. All four in
-      // dossier "2024-tg-templates" (29570). The built-in copies in TEMPLATES
-      // are used only if Studio can't be read.
-      templates: {
-        countdown: '66075',  // Ad hoc Apple-features-long numbered list 50-1
-        ascending: '67380',  // Ad hoc Apple-features-long numbered list 1-50
-        snippet: '67380',    // Type 4 reuses the ascending layout
-        crosshead: '66074',  // Ad hoc Apple-features-generic-crossheads
+  // What differs between the Studio servers this file runs on. The same file
+  // runs on all of them, so a version proven on Discovery reaches the lab as is.
+  // A brand id only means something on its own server: 3 is Top Gear on the lab
+  // and a test brand on Discovery. A server not listed gets no brand defaults.
+  //
+  // receiverWrites: the WhatsApp bundles are one inbox, shared by every server.
+  // Marking one imported drops it from the list for good, and a Word doc sent to
+  // the receiver lands in it too. So only the lab writes to it. Elsewhere the
+  // waiting bundles can be read and nothing changes.
+  var SERVER_SETTINGS = {
+    'lab-studio.woodwing.cloud': {
+      receiverWrites: true,
+      // Per-brand defaults applied to created digital articles, keyed by
+      // Publication (Brand) id. GUIDs verified against existing articles on
+      // lab-studio.woodwing.cloud (all current TG AN+ articles carry these).
+      brands: {
+        // Top Gear
+        '3': {
+          componentSet: '11bd53cb-47fd-4040-8a62-486e7eb7850e',  // Default component set
+          lookAndFeel: 'cc7a498a-7980-4d69-875b-06533c881d77',   // TG-custom-styles-ISSUE-APPLE 2026
+          twixlCollectionId: '102069',
+          // Article templates read from Studio when an article is built, so an
+          // edit to the template in Studio reaches the next article. All four in
+          // dossier "2024-tg-templates" (29570). The built-in copies in TEMPLATES
+          // are used only if Studio can't be read.
+          templates: {
+            countdown: '66075',  // Ad hoc Apple-features-long numbered list 50-1
+            ascending: '67380',  // Ad hoc Apple-features-long numbered list 1-50
+            snippet: '67380',    // Type 4 reuses the ascending layout
+            crosshead: '66074',  // Ad hoc Apple-features-generic-crossheads
+          },
+        },
+      },
+    },
+    'discovery-studio.woodwing.cloud': {
+      receiverWrites: false,
+      brands: {
+        // Content copy test. Read from a digital article in this brand; that
+        // article has no Look and Feel, so none is set here.
+        '3': { componentSet: '81193f98-097e-4043-b8b1-d33c1c2c02c4' },
       },
     },
   };
+  var SERVER = SERVER_SETTINGS[window.location.hostname] || { receiverWrites: false, brands: {} };
+  var BRAND_DEFAULTS = SERVER.brands;
 
   // Word parsing dependency, loaded on demand and kept plugin-local per the
   // SDK guidance on managing external dependencies.
@@ -2830,7 +2883,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '5c349239';
+  var PLUGIN_BUILD = '03b9dab9';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
@@ -3058,7 +3111,8 @@ function pullQuoteNotes(meta, prefix) {
     // the AI checks. On by default only when a receiver key is already stored,
     // so a Word upload without a key behaves exactly as before.
     $('docx-key').value = receiverKey();
-    $('docx-fetch').checked = !!receiverKey();
+    $('docx-fetch').checked = SERVER.receiverWrites && !!receiverKey();
+    if (!SERVER.receiverWrites) $('docx-fetch').closest('label').classList.add('wdab-hidden');
     // Same as on the WhatsApp source: folded away once a key is stored
     $('docx-key-row').open = !receiverKey();
     function syncDocxFetch() { $('docx-key-row').classList.toggle('wdab-hidden', !$('docx-fetch').checked); }
@@ -3145,6 +3199,9 @@ function pullQuoteNotes(meta, prefix) {
           seenExport = j.export && j.export.last ? j.export.last.finishedAt : null;
           schedulePoll(busy);
           var list = j.bundles || [];
+          // Built-by-hand and imported bundles go through the receiver's
+          // re-import, which rewrites them. Not from a server that only reads.
+          if (!SERVER.receiverWrites) list = list.filter(function (b) { return !b.imported && !b.builtByHand; });
           // New first; then docs the chat shows were already built by hand
           // (BRS replied with an apple.news draft); then ones imported here.
           var waiting = list.filter(function (b) { return !b.imported && !b.builtByHand; });
@@ -3524,14 +3581,17 @@ function pullQuoteNotes(meta, prefix) {
       });
 
       // Digital styles (component set, Look and Feel, Twixl collection) come
-      // from BRAND_DEFAULTS. A dossier in any other brand gets an article with
-      // no Look and Feel — say so before anything is created.
+      // from BRAND_DEFAULTS. A dossier in a brand with no Look and Feel there gets
+      // an article with none — say so before anything is created.
       resolveDossierContext(dossier).then(function (ctx) {
         var el = document.getElementById('wdabm-brand-warn');
-        if (!el || BRAND_DEFAULTS[ctx.pubId]) return;
+        var bd = BRAND_DEFAULTS[ctx.pubId];
+        if (!el || (bd && bd.lookAndFeel)) return;
         el.innerHTML = '<strong>No digital styles for this brand.</strong> This Dossier is in “' +
           esc(ctx.pubName || ('brand ' + ctx.pubId)) + '”, which has no Look and Feel set up in this plug-in, ' +
-          'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.';
+          (Object.keys(BRAND_DEFAULTS).some(function (k) { return BRAND_DEFAULTS[k].lookAndFeel; })
+            ? 'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.'
+            : 'so the article will be created without digital styles.');
         el.style.display = 'block';
       }).catch(function () { /* the warning is advisory; creation reports its own errors */ });
 
@@ -3635,7 +3695,7 @@ function pullQuoteNotes(meta, prefix) {
             var bmd = created && created.MetaData && created.MetaData.BasicMetaData;
             var newName = bmd ? bmd.Name : name;
             var out = { newName: newName, images: r.images, placed: r.placed, slots: r.slots, comments: r.comments };
-            if (!result.bundleKey) return out;
+            if (!result.bundleKey || !SERVER.receiverWrites) return out;
             // Tell the receiver this bundle is in Studio so a re-export never
             // offers it again. Never fatal — the article already exists.
             return receiverFetch('/bundles/' + result.bundleKey + '/imported', {
