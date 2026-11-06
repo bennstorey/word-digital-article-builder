@@ -68,7 +68,14 @@
         },
       },
     },
-    'discovery-studio.woodwing.cloud': { receiverWrites: false, brands: {} },
+    'discovery-studio.woodwing.cloud': {
+      receiverWrites: false,
+      brands: {
+        // Content copy test. Read from a digital article in this brand; that
+        // article has no Look and Feel, so none is set here.
+        '3': { componentSet: '81193f98-097e-4043-b8b1-d33c1c2c02c4' },
+      },
+    },
   };
   var SERVER = SERVER_SETTINGS[window.location.hostname] || { receiverWrites: false, brands: {} };
   var BRAND_DEFAULTS = SERVER.brands;
@@ -1859,14 +1866,15 @@
       });
 
       // Digital styles (component set, Look and Feel, Twixl collection) come
-      // from BRAND_DEFAULTS. A dossier in any other brand gets an article with
-      // no Look and Feel — say so before anything is created.
+      // from BRAND_DEFAULTS. A dossier in a brand with no Look and Feel there gets
+      // an article with none — say so before anything is created.
       resolveDossierContext(dossier).then(function (ctx) {
         var el = document.getElementById('wdabm-brand-warn');
-        if (!el || BRAND_DEFAULTS[ctx.pubId]) return;
+        var bd = BRAND_DEFAULTS[ctx.pubId];
+        if (!el || (bd && bd.lookAndFeel)) return;
         el.innerHTML = '<strong>No digital styles for this brand.</strong> This Dossier is in “' +
           esc(ctx.pubName || ('brand ' + ctx.pubId)) + '”, which has no Look and Feel set up in this plug-in, ' +
-          (Object.keys(BRAND_DEFAULTS).length
+          (Object.keys(BRAND_DEFAULTS).some(function (k) { return BRAND_DEFAULTS[k].lookAndFeel; })
             ? 'so the article will be created without the Top Gear styles. Use a Dossier in Top Gear for the styled article.'
             : 'so the article will be created without digital styles.');
         el.style.display = 'block';
