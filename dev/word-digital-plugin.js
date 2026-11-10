@@ -247,6 +247,21 @@ function galleryUrls(json) {
   if (!Array.isArray(media)) return [];
   return media.map(m => m && m.image && m.image.src).filter(src => typeof src === 'string' && src).map(articleImageUrl);
 }
+// The carousel at the top of a topgear.com article, as a body gallery block.
+// Its first slide is the hero picture, which the article already opens on, so
+// that slide is left out and the rest keep the web order. Null when nothing
+// but the hero is left.
+function carouselBlock(article) {
+  const list = Array.isArray(article.carousel) ? article.carousel : [];
+  const heroSrc = article.image && article.image.src;
+  const hero = heroSrc ? imageFileName(articleImageUrl(heroSrc)) : null;
+  const media = list.filter(m => m && m.image && typeof m.image.src === 'string' && m.image.src);
+  const rest = media.filter((m, i) => !(i === 0 && (!hero || imageFileName(articleImageUrl(m.image.src)) === hero)));
+  if (!rest.length) return null;
+  const json = JSON.stringify({ component: 'Carousel', props: { media: rest } }).replace(/</g, '\\u003c');
+  // "<\/script>" escaped: this engine sits inside an inline <script> in index.html
+  return '<script type="application/json">' + json + '<\/script>';
+}
 // A gallery among the body paragraphs is carried as { gallery: [urls] } and
 // built as a slideshow where it sat. Only the crosshead layout places them.
 const galleryOf = p => p.hasAttribute(GALLERY_ATTR) ? JSON.parse(p.getAttribute(GALLERY_ATTR)) : null;
@@ -1215,7 +1230,13 @@ async function parseFromUrl(articleUrl, type) {
               reason: `topgear.com list of ${entries.length}${article.reversedList ? ', counting down' : ''}` };
       }
     } else {
-      const bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
+      let bodyHtml = (typeof article.body === 'string' && article.body.includes('<')) ? article.body : '';
+      // The gallery at the top of the web page is the article's carousel, not
+      // a block in the body, so it was never placed (Polestar Formula 2030,
+      // 2026-11-10). It goes in front of the body as a gallery block and is
+      // placed like the inline ones.
+      const topGallery = carouselBlock(article);
+      if (topGallery) { bodyHtml = topGallery + bodyHtml; debug.topGallery = true; }
       debug.bodyHtmlLength = bodyHtml.length;
       if (type === 'auto') { detected = detectArticleType(bodyHtml, { title: meta.title || meta.feedHeadline }); type = detected.type; }
       const parsed = parseBody(bodyHtml, type);
@@ -1490,7 +1511,9 @@ function buildCrosshead(template, meta, entries) {
   channelFollow.id = genId();
 
   const introComps = [];
-  if (meta.intro) {
+  // A gallery ahead of the first crosshead is kept even when there is no
+  // intro copy (an article that opens on a crosshead).
+  if (meta.intro || (meta.introParts || []).some(isGalleryPart)) {
     const parts = meta.introParts && meta.introParts.length
       ? meta.introParts
       : [mkPart([{ insert: meta.intro }], false)];
@@ -1514,9 +1537,11 @@ function buildCrosshead(template, meta, entries) {
   // The channel FOLLOW block goes directly after the article's first paragraph:
   // after the first intro paragraph when there is an intro, otherwise after the
   // first crosshead section (matching the reference articles).
+  // A gallery above the first paragraph does not count as that paragraph.
   let followPlaced = false;
-  if (introComps.length) {
-    introComps.splice(1, 0, deepClone(channelFollow));
+  const firstIntroText = introComps.findIndex(comp => comp.identifier !== 'slideshow' && comp.identifier !== PICTURE_HOLD);
+  if (firstIntroText >= 0) {
+    introComps.splice(firstIntroText + 1, 0, deepClone(channelFollow));
     followPlaced = true;
   }
 
@@ -2883,7 +2908,7 @@ function pullQuoteNotes(meta, prefix) {
   var cssInjected = false;
   // Build id, replaced by build-plugin.js. Check it in Studio's console with
   // __wdVersion to confirm which build the browser actually loaded.
-  var PLUGIN_BUILD = '03b9dab9';
+  var PLUGIN_BUILD = '9b73bf4c';
   try {
     window.__wdVersion = PLUGIN_BUILD;
     console.info('[word-digital] plug-in build ' + PLUGIN_BUILD);
